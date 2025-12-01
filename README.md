@@ -7,6 +7,8 @@
 
 # KURO
 A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. 
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-0baaaa.svg)](CODE_OF_CONDUCT.md)
+[![GitHub license](https://img.shields.io/github/license/TeamSHIRO/KURO.svg)](LICENSE)
 
 ## Building
 
