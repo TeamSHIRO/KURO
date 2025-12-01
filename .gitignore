@@ -1,0 +1,11 @@
+# IDE specific files/folders
+.idea/
+.vscode/
+
+# Build directories
+build/
+cmake-build-*/
+clang_tidy_build/
+
+# macOS files
+.DS_Store

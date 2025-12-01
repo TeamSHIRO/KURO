@@ -1,0 +1,53 @@
+name: Format
+
+on:
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: read
+
+jobs:
+  run-linters:
+    name: Check Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Check for cached Clang-Format
+        id: clang-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache
+          key: clang-format-cache
+
+      - if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        name: Install Clang-Format
+        run: |
+          echo "Installing Clang-Format..."
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+          echo "Copying binaries to cache..."
+          mkdir -p ~/.cache
+          cp /usr/bin/clang-format ~/.cache/clang-format
+          echo "Installation complete."
+        shell: bash
+
+      - if: ${{ steps.clang-cache.outputs.cache-hit == 'true' }}
+        name: Restore Clang-Format from cache
+        run: |
+          echo "Restoring Clang-Format from cache..."
+          sudo cp ~/.cache/clang-format /usr/bin/clang-format
+          sudo chmod +x /usr/bin/clang-format
+          echo "Cache restored."
+
+      - name: Run Clang-Format
+        run: |
+          echo "Running clang-format..."
+          echo "---------------------------------------------------"
+          ./automated/clang-format.sh
+        shell: bash
