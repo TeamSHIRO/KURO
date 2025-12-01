@@ -5,10 +5,10 @@
        style="width: 100%; height: 100%; object-fit: cover;">
 </div>
 
-# KURO
-A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. 
+# KURO: An UEFI bootloader
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-0baaaa.svg)](CODE_OF_CONDUCT.md)
 [![GitHub license](https://img.shields.io/github/license/TeamSHIRO/KURO.svg)](LICENSE)
+A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. 
 
 ## Building
 
