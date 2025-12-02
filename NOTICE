@@ -1,0 +1,24 @@
+=====================================================
+                KURO Project NOTICE
+=====================================================
+
+The AKL Project is made available under the Apache License, Version 2.0.
+You may obtain a copy of the License at
+
+    <http://www.apache.org/licenses/LICENSE-2.0>
+
+The License is also included in the LICENSE file of this distribution.
+
+The copyright for KURO is held by its individual contributors.
+These copyrights are retained and documented within the source code.
+Source code can be obtained from:
+    <https://github.com/TeamSHIRO/KURO>
+
+=====================================================
+                Third-Party Notices
+=====================================================
+
+This project used EFI headers by yoppeh
+under the MIT license.
+Source code can be obtained from:
+<https://github.com/yoppeh/efi>
