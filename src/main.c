@@ -6,6 +6,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-int main(int argc, char *argv[]) {
+int efi_main(int argc, char *argv[]) {
 	return 0;
 }
