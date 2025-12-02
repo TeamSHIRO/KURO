@@ -12,11 +12,11 @@ set(CMAKE_ASM_NASM_COMPILE_OBJECT
         "<CMAKE_ASM_NASM_COMPILER> <FLAGS> -f win64 <INCLUDES> -o <OBJECT> <SOURCE>"
 )
 set(CMAKE_C_COMPILE_OBJECT
-        "<CMAKE_C_COMPILER> <FLAGS> -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
+        "<CMAKE_C_COMPILER> <FLAGS> -D EFI_PLATFORM=1 -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
 )
 
 set(CMAKE_C_FLAGS "-ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -fshort-wchar")
-set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:efi_main -nodefaultlib <OBJECTS> <LINK_LIBRARIES> /out:<TARGET>")
+set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:efi_main -nodefaultlib <OBJECTS> <LINK_LIBRARIES> /out:<TARGET>.EFI")
 
 include(FetchContent)
 
@@ -39,5 +39,3 @@ include_directories(${efi-clang_SOURCE_DIR})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-set(CMAKE_EXECUTABLE_SUFFIX ".EFI")

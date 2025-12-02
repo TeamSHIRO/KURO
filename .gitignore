@@ -9,3 +9,6 @@ clang_tidy_build/
 
 # macOS files
 .DS_Store
+
+# ignore me pls
+.ignore-*
