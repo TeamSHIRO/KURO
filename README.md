@@ -15,7 +15,8 @@ A minimal secure UEFI bootloader to load executables in the ELF format using KUR
 
 ### Prerequisites
 
-- A C17-compatible Clang Compiler and Linker
+- A Clang compiler
+- A LLD linker
 - CMake 3.26 or Newer
 - A Git Client
 - Internet Connection (for fetching dependencies duh)
@@ -33,9 +34,10 @@ To build the project, follow these steps:
    ```
 3. Run CMake to configure the project. You may additionally add build options here (`-D`). You can find available options inside [**CMakeLists.txt**](CMakeLists.txt).
     ```bash
-    cmake -S . -B build
+    cmake -S . -B build --toolchain toolchain/efi.cmake
     ```
-   Pro tip: You can change `build` to your preferred build directory.
+   Change the `--toolchain` argument to where the **[efi.cmake](toolchain/efi.cmake)** toolchain file is located.
+   tip: You can change `build` to your preferred build directory.
 4. Build the project with CMake
     ```bash
     cmake --build build
