@@ -36,7 +36,7 @@ this project, you agree to abide by its terms.
 ## Contributing Guide 101
 If you're ready to dive into the codebase and submit new features or bug fixes, this section is for you.
 
-These guides assume that you have a basic understanding of Git, GitHub, and C++ development tools.
+These guides assume that you have a basic understanding of Git, GitHub, and C development tools.
 
 ---
 
@@ -135,8 +135,13 @@ Tips: You can use `git commit -s` to sign your commits.
 
 - **Macro and Enumerator names should be in `UPPER_SNAKE_CASE`**
 - **Anything else should be in `snake_case`**
-
-I think that's all... I guess?
+- **License headers:**
+    - Every source file must have a license header at the top of the file.
+    - The license header must follow the format specified in the [**license-template**](docs/license-template.md) file.
+- **File names:**
+    - Every file should be in `lowercase` where words are separated by any of the following characters or none: `-`, `_`.
+    - Every C file (source or header) must have a `.c` or `.h` extension.
+    - Every NASM file must have a `.asm` extension and `.inc` for include files.
 
 ---
 
