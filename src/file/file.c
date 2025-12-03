@@ -15,34 +15,24 @@
 
 #include "main.h"
 
-EFI_FILE_PROTOCOL get_volume_handle(EFI_HANDLE img_handle) {
+EFI_FILE_PROTOCOL* get_volume_handle(EFI_HANDLE img_handle) {
   EFI_LOADED_IMAGE_PROTOCOL* loaded_image = NULL;
   EFI_GUID lip_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
   EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* sfsp;
   EFI_GUID sfsp_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
-  EFI_FILE_PROTOCOL volume_handle;
+  EFI_FILE_PROTOCOL* volume_handle;
 
   system_table->BootServices->HandleProtocol(img_handle, &lip_guid,
                                              (void**)&loaded_image);
   system_table->BootServices->HandleProtocol(loaded_image->DeviceHandle,
                                              &sfsp_guid, (void**)&sfsp);
-  sfsp->OpenVolume(sfsp, (EFI_HANDLE)&volume_handle);
+  sfsp->OpenVolume(sfsp, &volume_handle);
 
   return volume_handle;
 }
 
-void open(EFI_FILE_PROTOCOL* volume, CHAR16* path, EFI_FILE_PROTOCOL* file) {
-  volume->Open(volume, &file, path, EFI_FILE_MODE_READ, 0);
-}
-
-void read(EFI_FILE_PROTOCOL* file, UINTN* size, void* buffer) {
-  file->Read(file, size, buffer);
-}
-
-void close(EFI_FILE_PROTOCOL* file) { file->Close(file); }
-
 UINT64 get_file_size(EFI_FILE_PROTOCOL* file) {
-  // Nah, I'm gonna use hack instead of the intended way of GetInfo() :3
+  // Nah, I'm going to use hack instead of the intended way of GetInfo() :3
 
   UINT64 size;
   file->SetPosition(file, 0xFFFFFFFFFFFFFFFF);
