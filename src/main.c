@@ -1,5 +1,5 @@
 /*
- * File: main.c
+* File: main.c
  * Description: Entry point.
  *
  * Copyright (C) 2025 TheMonHub
@@ -33,17 +33,21 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   UINTN file_size = (UINTN)get_file_size(file_protocol);
 
   void* input_buffer;
-  system_table->BootServices->AllocatePool(EfiLoaderData, file_size,
-                                           &input_buffer);
+  if (system_table->BootServices->AllocatePool(EfiLoaderData, file_size,
+                                          &input_buffer) != EFI_SUCCESS) {
+    return EFI_OUT_OF_RESOURCES;
+                                          }
 
   file_protocol->Read(file_protocol, &file_size, input_buffer);
 
   const UINTN char_count = file_size / sizeof(CHAR16);
 
   CHAR16* out;
-  system_table->BootServices->AllocatePool(EfiLoaderData,
+  if (system_table->BootServices->AllocatePool(EfiLoaderData,
                                            (char_count + 3) * sizeof(CHAR16),
-                                           (void**)&out);
+                                           (void**)&out) != EFI_SUCCESS) {
+    return EFI_OUT_OF_RESOURCES;
+                                           }
 
   const CHAR16* in = (CHAR16*)input_buffer;
   for (UINTN i = 0; i < char_count; ++i) {
