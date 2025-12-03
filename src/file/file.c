@@ -1,12 +1,12 @@
 /*
-* File: disk.c
- * Description: Disk-related functions.
+ * File: file.c
+ * Description: File-related functions.
  *
  * Copyright (C) 2025 TheMonHub
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "disk.h"
+#include "file/file.h"
 
 #include <efi.h>
 #include <protocol/efi-lip.h>
@@ -42,6 +42,11 @@ void read(EFI_FILE_PROTOCOL* file, UINTN* size, void* buffer) {
 void close(EFI_FILE_PROTOCOL* file) { file->Close(file); }
 
 UINT64 get_file_size(EFI_FILE_PROTOCOL* file) {
+  // Nah, I'm gonna use hack instead of the intended way of GetInfo() :3
+
   UINT64 size;
-  EFI_FILE_INFO* info;
+  file->SetPosition(file, 0xFFFFFFFFFFFFFFFF);
+  file->GetPosition(file, &size);
+  file->SetPosition(file, 0);
+  return size;
 }
