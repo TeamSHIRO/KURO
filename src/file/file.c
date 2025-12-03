@@ -35,12 +35,14 @@ EFI_FILE_PROTOCOL* get_volume_handle(EFI_HANDLE img_handle) {
   return volume_handle;
 }
 
-UINT64 get_file_size(EFI_FILE_PROTOCOL* file) {
-  // Nah, I'm going to use hack instead of the intended way of GetInfo() :3
+UINT64
+get_file_size(EFI_FILE_PROTOCOL *file)
+{
+    // Nah, I'm going to use hack instead of the intended way of GetInfo() :3
 
-  UINT64 size;
-  file->SetPosition(file, 0xFFFFFFFFFFFFFFFF);
-  file->GetPosition(file, &size);
-  file->SetPosition(file, 0);
-  return size;
+    UINT64 size;
+    file->SetPosition(file, 0xFFFFFFFFFFFFFFFF);
+    file->GetPosition(file, &size);
+    file->SetPosition(file, 0);
+    return size;
 }
