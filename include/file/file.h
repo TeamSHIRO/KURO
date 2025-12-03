@@ -1,3 +1,11 @@
+/*
+ * File: file.h
+ * Description: File-related functions.
+ *
+ * Copyright (C) 2025 TheMonHub
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef KURO_DISK_H
 #define KURO_DISK_H
 
