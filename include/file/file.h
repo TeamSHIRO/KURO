@@ -12,7 +12,7 @@
 #include <efi.h>
 #include <protocol/efi-fp.h>
 
-EFI_FILE_PROTOCOL* get_volume_handle(EFI_HANDLE img_handle);
-UINT64 get_file_size(EFI_FILE_PROTOCOL* file);
+EFI_FILE_PROTOCOL *get_volume_handle(EFI_HANDLE img_handle);
+UINT64 get_file_size(EFI_FILE_PROTOCOL *file);
 
-#endif  //KURO_DISK_H
+#endif // KURO_DISK_H
