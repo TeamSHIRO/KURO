@@ -1,6 +1,6 @@
 /*
  * File: main.h
- * Description: Common global variable
+ * Description: Common global variable.
  *
  * Copyright (C) 2025 TheMonHub
  * SPDX-License-Identifier: Apache-2.0
