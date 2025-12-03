@@ -12,20 +12,20 @@
 
 #include "file/file.h"
 
-EFI_HANDLE image_handle;
-EFI_SYSTEM_TABLE* system_table;
+EFI_HANDLE g_image_handle;
+EFI_SYSTEM_TABLE* g_system_table;
 
 CHAR16* hello_str = L"Hello, World!\r\n";
 
 EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
                     EFI_SYSTEM_TABLE* system_table_p) {
-  image_handle = image_handle_p;
-  system_table = system_table_p;
+  g_image_handle = image_handle_p;
+  g_system_table = system_table_p;
 
-  system_table->ConOut->OutputString(system_table->ConOut,
+  g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                      L"Hello, World!\r\n");
 
-  EFI_FILE_PROTOCOL* volume = get_volume_handle(image_handle);
+  EFI_FILE_PROTOCOL* volume = get_volume_handle(g_system_table);
 
   EFI_FILE_PROTOCOL* file_protocol;
   volume->Open(volume, &file_protocol, L"something", EFI_FILE_MODE_READ, 0);
@@ -33,7 +33,7 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   UINTN file_size = (UINTN)get_file_size(file_protocol);
 
   void* input_buffer;
-  system_table->BootServices->AllocatePool(EfiLoaderData, file_size,
+  g_system_table->BootServices->AllocatePool(EfiLoaderData, file_size,
                                            &input_buffer);
 
   file_protocol->Read(file_protocol, &file_size, input_buffer);
@@ -41,7 +41,7 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   const UINTN char_count = file_size / sizeof(CHAR16);
 
   CHAR16* out;
-  system_table->BootServices->AllocatePool(EfiLoaderData,
+  g_system_table->BootServices->AllocatePool(EfiLoaderData,
                                            (char_count + 3) * sizeof(CHAR16),
                                            (void**)&out);
 
@@ -55,6 +55,6 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   out[char_count + 1] = L'\n';
   out[char_count + 2] = L'\0';
 
-  system_table->ConOut->OutputString(system_table->ConOut, out);
+  g_system_table->ConOut->OutputString(g_system_table->ConOut, out);
   return (EFI_SUCCESS);
 }
