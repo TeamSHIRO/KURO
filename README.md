@@ -37,7 +37,8 @@ To build the project, follow these steps:
     cmake -S . -B build --toolchain toolchain/efi.cmake
     ```
    Change the `--toolchain` argument to where the **[efi.cmake](toolchain/efi.cmake)** toolchain file is located.
-   tip: You can change `build` to your preferred build directory.
+
+   Pro tip: You can change `build` to your preferred build directory.
 4. Build the project with CMake
     ```bash
     cmake --build build
