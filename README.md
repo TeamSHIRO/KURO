@@ -9,7 +9,7 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-0baaaa.svg)](CODE_OF_CONDUCT.md)
 [![GitHub license](https://img.shields.io/github/license/TeamSHIRO/KURO.svg)](LICENSE)
 
-A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. 
+A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention.
 
 ## Building
 
@@ -37,7 +37,8 @@ To build the project, follow these steps:
     cmake -S . -B build --toolchain toolchain/efi.cmake
     ```
    Change the `--toolchain` argument to where the **[efi.cmake](toolchain/efi.cmake)** toolchain file is located.
-   tip: You can change `build` to your preferred build directory.
+
+   Pro tip: You can change `build` to your preferred build directory.
 4. Build the project with CMake
     ```bash
     cmake --build build
