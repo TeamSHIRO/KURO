@@ -23,8 +23,10 @@ EFI_FILE_PROTOCOL *get_volume_handle(EFI_HANDLE img_handle)
     EFI_GUID sfsp_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
     EFI_FILE_PROTOCOL *volume_handle;
 
-    system_table->BootServices->HandleProtocol(img_handle, &lip_guid, (void **)&loaded_image);
-    system_table->BootServices->HandleProtocol(loaded_image->DeviceHandle, &sfsp_guid, (void **)&sfsp);
+    g_system_table->BootServices->OpenProtocol(img_handle, &lip_guid, (void **)&loaded_image, g_image_handle, NULL,
+                                               EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
+    g_system_table->BootServices->OpenProtocol(loaded_image->DeviceHandle, &sfsp_guid, (void **)&sfsp, g_image_handle,
+                                               NULL, EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
     sfsp->OpenVolume(sfsp, &volume_handle);
 
     return volume_handle;
