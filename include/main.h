@@ -12,6 +12,6 @@
 #include <efi.h>
 
 extern EFI_HANDLE image_handle;
-extern EFI_SYSTEM_TABLE* system_table;
+extern EFI_SYSTEM_TABLE *system_table;
 
-#endif  //KURO_MAIN_H
+#endif // KURO_MAIN_H
