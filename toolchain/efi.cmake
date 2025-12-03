@@ -1,3 +1,7 @@
+# Build options:
+# efi-clang - path to EFI-clang repository. if empty, it will be fetched automatically. Useful for offline builds.
+#
+
 set(efi-clang "" CACHE PATH "Path to EFI-clang repository. if empty, it will be fetched automatically.")
 
 set(CMAKE_SYSTEM_NAME Generic)

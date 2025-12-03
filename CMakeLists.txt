@@ -19,5 +19,7 @@ project(KURO
 
 # KURO Bootloader
 add_executable(KUROX64
-    src/main.c
+        src/main.c
+        src/file/file.c
 )
+target_include_directories(KUROX64 PRIVATE include)
