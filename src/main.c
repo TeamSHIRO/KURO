@@ -23,7 +23,7 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   g_system_table = system_table_p;
 
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
-                                     L"Hello, World!\r\n");
+                                       L"Hello, World!\r\n");
 
   EFI_FILE_PROTOCOL* volume = get_volume_handle(g_system_table);
 
@@ -34,7 +34,7 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
 
   void* input_buffer;
   g_system_table->BootServices->AllocatePool(EfiLoaderData, file_size,
-                                           &input_buffer);
+                                             &input_buffer);
 
   file_protocol->Read(file_protocol, &file_size, input_buffer);
 
@@ -42,8 +42,8 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
 
   CHAR16* out;
   g_system_table->BootServices->AllocatePool(EfiLoaderData,
-                                           (char_count + 3) * sizeof(CHAR16),
-                                           (void**)&out);
+                                             (char_count + 3) * sizeof(CHAR16),
+                                             (void**)&out);
 
   const CHAR16* in = (CHAR16*)input_buffer;
   for (UINTN i = 0; i < char_count; ++i) {
