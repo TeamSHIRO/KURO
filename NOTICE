@@ -12,6 +12,7 @@ The License is also included in the LICENSE file of this distribution.
 The copyright for KURO is held by its individual contributors.
 These copyrights are retained and documented within the source code.
 Source code can be obtained from:
+
     <https://github.com/TeamSHIRO/KURO>
 
 =====================================================
@@ -19,6 +20,7 @@ Source code can be obtained from:
 =====================================================
 
 This project used EFI headers by yoppeh
-under the MIT license.
-Source code can be obtained from:
-<https://github.com/yoppeh/efi>
+provided under the MIT license.
+Source code along with the copyright can be obtained from:
+
+    <https://github.com/yoppeh/efi>
