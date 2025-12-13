@@ -34,9 +34,8 @@ To build the project, follow these steps:
    ```
 3. Run CMake to configure the project. You may additionally add build options here (`-D`). You can find available options inside [**CMakeLists.txt**](CMakeLists.txt).
     ```bash
-    cmake -S . -B build --toolchain toolchain/efi.cmake
+    cmake -S . -B build
     ```
-   Change the `--toolchain` argument to where the **[efi.cmake](toolchain/efi.cmake)** toolchain file is located.
 
    Pro tip: You can change `build` to your preferred build directory.
 4. Build the project with CMake

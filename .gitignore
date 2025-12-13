@@ -11,4 +11,4 @@ clang_tidy_build/
 .DS_Store
 
 # ignore me pls
-.ignore-*
+ignore-*
