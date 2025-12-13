@@ -137,7 +137,7 @@ Tips: You can use `git commit -s` to sign your commits.
 - **Anything else should be in `snake_case`**
 - **License headers:**
     - Every source file must have a license header at the top of the file.
-    - The license header must follow the format specified in the [**license-template**](docs/license-template.md) file.
+    - The license header must follow the format specified in the [**license-header-template**](docs/license-header-template.md) file.
 - **File names:**
     - Every file should be in `lowercase` where words are separated by any of the following characters or none: `-`, `_`.
     - Every C file (source or header) must have a `.c` or `.h` extension.

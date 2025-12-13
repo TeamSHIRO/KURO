@@ -8,18 +8,10 @@
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
 project(KURO
-        VERSION 0.1.0
         DESCRIPTION "A minimal monolithic UEFI bootloader"
         HOMEPAGE_URL https://oshub.org/projects/kuro
-        LANGUAGES C ASM_NASM
 )
 
-# Build options
-
-
-# KURO Bootloader
-add_executable(KUROX64
-        src/main.c
-        src/file/file.c
-)
-target_include_directories(KUROX64 PRIVATE include)
+set(KURO_BUILD_DIRECTLY OFF CACHE BOOL "Build KURO bootloader directly as an executable instead of a library" FORCE)
+add_subdirectory(bootloader)
+add_subdirectory(installer)
