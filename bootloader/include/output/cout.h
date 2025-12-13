@@ -14,6 +14,7 @@
 #include <__stddef_wchar_t.h>
 #include <efi.h>
 
+// TODO: Consider moving this to inlines
 
 #ifdef NDEBUG
 #define DEBUG_PRINT(str)
