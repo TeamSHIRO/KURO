@@ -12,6 +12,6 @@ project(KURO
         HOMEPAGE_URL https://oshub.org/projects/kuro
 )
 
-set(KURO_BUILD_DIRECTLY OFF CACHE BOOL "Build KURO bootloader directly as an executable instead of a library" FORCE)
+set(KURO_BUILD_DIRECTLY OFF CACHE BOOL "Build KURO bootloader directly as an executable instead of a library")
 add_subdirectory(bootloader)
 add_subdirectory(installer)
