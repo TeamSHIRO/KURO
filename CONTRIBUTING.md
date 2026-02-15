@@ -25,7 +25,7 @@ The following terms are used throughout this document.
 * **Contributor:** Anyone who submits a pull request to the project.
 * **Maintainer:** A member of the !SHIRO GitHub organization who has the privilege to merge pull requests.
 * **Source file:** A file that contains source code, Including headers. This includes but not limited to files with the
-  following extensions: `.hpp`, `.cpp`, `.h`, `.c`. Build scripts or Shell scripts or any configuration files are **not** considered source files
+  following extensions: `.h`, `.c`. Build scripts or Shell scripts or any configuration files are **not** considered source files
   (e.g., `CMakeLists.txt`, `something.cmake`, `do_something.sh`, `README.md`).
 
 ## Code of Conduct
