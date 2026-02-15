@@ -135,6 +135,7 @@ Tips: You can use `git commit -s` to sign your commits.
 
 - **Macro and Enumerator names should be in `UPPER_SNAKE_CASE`**
 - **Anything else should be in `snake_case`**
+- **Prefer `2` spaces indent**
 - **License headers:**
     - Every source file must have a license header at the top of the file.
     - The license header must follow the format specified in the [**license-template**](docs/license-template.md) file.
