@@ -12,11 +12,10 @@ set(CMAKE_C_COMPILER_ID_RUN TRUE)
 set(CMAKE_C_COMPILER_ID Clang)
 set(CMAKE_C_COMPILER_FORCED TRUE)
 
-set(CMAKE_ASM_NASM_COMPILE_OBJECT
-        "<CMAKE_ASM_NASM_COMPILER> <FLAGS> -f win64 <INCLUDES> -o <OBJECT> <SOURCE>"
-)
+add_compile_definitions(EFI_PLATFORM=1)
+
 set(CMAKE_C_COMPILE_OBJECT
-        "<CMAKE_C_COMPILER> <FLAGS> -D EFI_PLATFORM=1 -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
+        "<CMAKE_C_COMPILER> <FLAGS> <DEFINES> -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
 )
 
 set(CMAKE_C_FLAGS "-ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -fshort-wchar")
@@ -39,7 +38,3 @@ endif ()
 message(STATUS "Using EFI-clang from ${efi-clang_SOURCE_DIR}")
 
 include_directories(${efi-clang_SOURCE_DIR})
-
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
