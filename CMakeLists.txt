@@ -1,6 +1,5 @@
 #
 # KURO - A minimal monolithic UEFI bootloader
-# Subproject - KURO_BOOTLOADER
 # =========================================
 # Generate an incomplete library for the installer subproject.
 #
