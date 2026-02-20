@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (C) 2025 TheMonHub
+# SPDX-License-Identifier: Apache-2.0
+#
 
 cd "$(dirname "$0")"/.. || error_exit "Failed to change directory"
 shopt -s globstar
