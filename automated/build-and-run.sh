@@ -1,6 +1,5 @@
 #!/bin/bash
 #
-# Copyright (C) 2025-2026 TheMonHub
 # Copyright (C) 2026 Ellicode
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -39,19 +38,18 @@ echo "➔ Build completed. Attempting to launch QEMU..."
 
 if [ -f "$LOCAL_OVMF_CODE_PATH" ]; then
     echo "➔ Launching QEMU with local OVMF..."
-    qemu-system-x86_64 \
-        -m $ALLOCATED_MEMORY \
-        -drive if=pflash,format=raw,readonly=on,file=$REMOTE_OVMF_CODE_PATH \
-        -drive if=ide,format=raw,file=fat:rw:esp \
-        -net none \
-        $EXTRA_QEMU_ARGS
 else
     echo -e "${RED}⚠ Error: OVMF_CODE.fd not found in the '.ovmf' directory${NC}"
     read -p "Do you wish to move automatically $REMOTE_OVMF_CODE_PATH to the '.ovmf' directory? (y/n): " yn
     case $yn in
-        [Yy]* ) mkdir -p .ovmf && cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH; echo "Moved. Please run the script again."; exit;;
-        * ) echo "Cancelled. Run 'mv $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH' manually if needed."; exit;;
+        [Yy]* ) mkdir -p .ovmf && cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH; echo "➔ Moved.";;
+        * ) echo "Cancelled. Run 'cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH' manually if needed."; exit;;
     esac
 fi
 
-# @ellicode
+qemu-system-x86_64 \
+    -m $ALLOCATED_MEMORY \
+    -drive if=pflash,format=raw,readonly=on,file=$LOCAL_OVMF_CODE_PATH \
+    -drive if=ide,format=raw,file=fat:rw:esp \
+    -net none \
+    $EXTRA_QEMU_ARGS
