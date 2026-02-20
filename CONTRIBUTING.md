@@ -142,7 +142,6 @@ Tips: You can use `git commit -s` to sign your commits.
 - **File names:**
     - Every file should be in `lowercase` where words are separated by any of the following characters or none: `-`, `_`.
     - Every C file (source or header) must have a `.c` or `.h` extension.
-    - Every NASM file must have a `.asm` extension and `.inc` for include files.
 - **Every global variable should be prefixed with `g_`**
 
 ---
