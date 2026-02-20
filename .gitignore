@@ -1,6 +1,6 @@
 # IDE specific files/folders
 .idea/
-.vscode/
+# .vscode/
 
 # Build directories
 build/
@@ -12,3 +12,9 @@ clang_tidy_build/
 
 # ignore me pls
 ignore-*
+
+# OVMF installation path
+.ovmf/
+
+# QEMU files
+esp/

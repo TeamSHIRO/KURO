@@ -1,0 +1,20 @@
+// DO NOT GITIGNORE THIS FILE!
+// Reccomended config for Visual Studio Code to build and run the project with a single command (Ctrl+Shift+B by default).
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and Run",
+			"type": "shell",
+			"command": "${workspaceFolder}/scripts/build-and-run.sh"
+		},
+		{
+			"label": "Clean Build Folder",
+			"type": "shell",
+			"command": "${workspaceFolder}/scripts/clean-build-folder.sh"
+		}
+	]
+}
+// Courtesy of @ellicode <3
