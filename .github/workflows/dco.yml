@@ -1,7 +1,6 @@
 name: DCO
 on:
   pull_request:
-  merge_group:
   workflow_dispatch:
 jobs:
   check_dco:
