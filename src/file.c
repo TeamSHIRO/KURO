@@ -3,6 +3,8 @@
  * Description: File-related functions.
  *
  * Copyright (C) 2025-2026 TheMonHub
+ * Copyright (C) 2026 Ellicode
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,12 +20,11 @@
 EFI_GUID g_lip_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
 EFI_GUID g_sfsp_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
 
-EFI_LOADED_IMAGE_PROTOCOL* get_loaded_image_protocol(
-    const EFI_HANDLE* image_handle) {
+EFI_LOADED_IMAGE_PROTOCOL* get_loaded_image_protocol(EFI_HANDLE image_handle) {
   EFI_LOADED_IMAGE_PROTOCOL* loaded_image;
 
   if (g_system_table->BootServices->OpenProtocol(
-          *image_handle, &g_lip_guid, (void**)&loaded_image, g_image_handle,
+          image_handle, &g_lip_guid, (void**)&loaded_image, g_image_handle,
           NULL, EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL) != EFI_SUCCESS) {
     return NULL;
   }
