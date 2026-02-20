@@ -1,6 +1,6 @@
 # IDE specific files/folders
 .idea/
-# .vscode/
+.vscode/
 
 # Build directories
 build/
