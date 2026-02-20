@@ -25,8 +25,8 @@ option(KURO_BOOTLOADER_NO_LOGGING "Disable logging in the bootloader" OFF)
 
 set(KURO_BOOTLOADER_SOURCES
         src/main.c
-        src/file/file.c
-        src/output/logger.c
+        src/file.c
+        src/logger.c
 )
 
 add_executable(KUROX64
