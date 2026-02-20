@@ -1,6 +1,5 @@
 #!/bin/bash
 #
-# Copyright (C) 2025-2026 TheMonHub
 # Copyright (C) 2026 Ellicode
 # SPDX-License-Identifier: Apache-2.0
 #

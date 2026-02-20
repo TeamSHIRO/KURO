@@ -53,7 +53,6 @@ EFI_FILE_PROTOCOL* get_volume_handle(
 }
 
 UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
-  // dirty lil hack!!!
   UINT64 size = 0;
   if (file->SetPosition(file, 0xFFFFFFFFFFFFFFFF) != EFI_SUCCESS) {
     return 0;
@@ -61,4 +60,12 @@ UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
   file->GetPosition(file, &size);
   file->SetPosition(file, 0);
   return size;
+}
+
+// Helper to write wide string to file
+static void write_string(EFI_FILE_PROTOCOL* file, const CHAR16* str) {
+  UINTN len = 0;
+  while (str[len]) len++;
+  UINTN size = len * sizeof(CHAR16);
+  file->Write(file, &size, (void*)str);
 }

@@ -3,12 +3,15 @@
  * Description: Logging helpers.
  *
  * Copyright (C) 2026 TheMonHub
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../include/logger.h"
 
 #include <protocol/efi-fp.h>
+
+#include "../include/string.h"
 
 // TODO: Implement a proper logger that writes to a file.
 
@@ -25,4 +28,17 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
   }
 
   return EFI_SUCCESS;
+}
+
+EFI_STATUS append_log(const char* buffer) {
+  UINT64 buffer_size = strlen(buffer);
+
+  if (!log_dir) {
+    return EFI_NOT_READY;
+  }
+
+  const EFI_STATUS write_status =
+      log_dir->Write(log_dir, &buffer_size, (void*)buffer);
+
+  return write_status;
 }
