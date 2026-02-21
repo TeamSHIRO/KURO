@@ -8,15 +8,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "config.h"
+
 #include <protocol/efi-fp.h>
 
-#include "../include/file.h"
-#include "../include/memory.h"
-#include "../include/output/cout.h"
-#include "../include/string.h"
-#include "main.h"
+#include "file.h"
+#include "memory.h"
+#include "string.h"
 
-EFI_FILE_PROTOCOL* config_dir;
+EFI_FILE_PROTOCOL* config_dir = NULL;
 
 EFI_STATUS read_config(char* buffer, UINT64 buffer_size) {
   if (!config_dir) {
@@ -83,16 +83,15 @@ EFI_STATUS write_config(const char* buffer) {
 
 EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
                        BOOLEAN break_on_error) {
-  DEBUG_PRINT("Initializing configuration.\n\r");
   const EFI_STATUS dir_status = volume_handle->Open(
-      (EFI_FILE_PROTOCOL*)volume_handle, &config_dir, L".\\kuro.conf",
+      (EFI_FILE_PROTOCOL*)volume_handle, &config_dir, L".\\KURO\\kuro.conf",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
 
   if (dir_status != EFI_SUCCESS) {
+    config_dir = NULL;
     return dir_status;
   }
 
-  DEBUG_PRINT("Config file opened successfully.\n\r");
   // Check if a file is empty (newly created)
   const UINT64 file_size = get_writable_file_size(config_dir);
 
@@ -100,10 +99,11 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
     // Write default config to a newly created file
     const char default_config[] =
         "# Default config file for KURO\n"
-        "kernel_path=\\kuro.elf\n";
+        "# Please make sure the directory exists!"
+        "kernel_path=\\shiro.kernel\n"
+        "logger_path=\\kuro\\logs\n";
 
     const EFI_STATUS write_status = write_config(default_config);
-    DEBUG_PRINT("Default config written successfully.\n\r");
 
     if (write_status != EFI_SUCCESS) {
       config_dir->Close(config_dir);

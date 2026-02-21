@@ -17,4 +17,4 @@ EFI_STATUS malloc(UINT64 size, void** buffer);
 void* memcpy(void* dest, const void* src, size_t n);
 void* memset(void* s, int c, size_t n);
 
-#endif  // KURO_BOOTLOADER_MEMORY_H
+#endif  // KURO_MEMORY_H
