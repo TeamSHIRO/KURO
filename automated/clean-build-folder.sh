@@ -1,10 +1,14 @@
 #!/bin/bash
 #
 # Copyright (C) 2026 Ellicode
+# Copyright (C) 2026 TheMonHub
+#
 # SPDX-License-Identifier: Apache-2.0
 #
 # "Clean build folder" is a script that removes all files from the build directory, effectively cleaning it.
 # It assumes that the build directory is named "build" and is located in the same directory
+
+cd "$(dirname "$0")"/.. || error_exit "${RED}⚠ Error: Failed to change directory${NC}"
 
 BUILD_DIR="build"
 
