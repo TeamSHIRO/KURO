@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
-project(KURO_BOOTLOADER
+project(KURO
         VERSION 0.1.0
         DESCRIPTION "A minimal monolithic UEFI bootloader"
         HOMEPAGE_URL "https://oshub.org/projects/kuro"
@@ -22,7 +22,7 @@ option(KURO_BOOTLOADER_NO_LOGGING "Disable logging in the bootloader" OFF)
 
 # =========================================
 
-set(KURO_BOOTLOADER_SOURCES
+set(KURO_SOURCES
         src/main.c
         src/file.c
         src/logger.c
@@ -32,7 +32,7 @@ set(KURO_BOOTLOADER_SOURCES
 )
 
 add_executable(KUROX64
-        ${KURO_BOOTLOADER_SOURCES}
+        ${KURO_SOURCES}
 )
 target_include_directories(KUROX64 PRIVATE
         include
