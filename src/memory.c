@@ -3,11 +3,11 @@
  * Description: Memory helpers.
  *
  * Copyright (C) 2026 Ellicode
+ * Copyright (C) 2026 TheMonHub
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <protocol/efi-fp.h>
 #include <stddef.h>
 
 #include "main.h"
@@ -18,8 +18,8 @@ EFI_STATUS malloc(UINT64 size, void** buffer) {
 }
 
 void* memcpy(void* dest, const void* src, size_t n) {
-  unsigned char* d = (unsigned char*)dest;
-  const unsigned char* s = (const unsigned char*)src;
+  unsigned char* d = dest;
+  const unsigned char* s = src;
 
   for (size_t i = 0; i < n; i++) {
     d[i] = s[i];
@@ -29,7 +29,7 @@ void* memcpy(void* dest, const void* src, size_t n) {
 }
 
 void* memset(void* s, int c, size_t n) {
-  unsigned char* p = (unsigned char*)s;
+  unsigned char* p = s;
 
   for (size_t i = 0; i < n; i++) {
     p[i] = (unsigned char)c;
