@@ -22,5 +22,6 @@ EFI_LOADED_IMAGE_PROTOCOL* get_loaded_image_protocol(EFI_HANDLE image_handle);
 EFI_FILE_PROTOCOL* get_volume_handle(
     const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_protocol);
 UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file);
+static void write_string(EFI_FILE_PROTOCOL* file, const CHAR16* str);
 
 #endif  // KURO_DISK_H

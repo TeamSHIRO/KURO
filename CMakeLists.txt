@@ -26,6 +26,9 @@ set(KURO_BOOTLOADER_SOURCES
         src/main.c
         src/file.c
         src/logger.c
+        src/config.c
+        src/memory.c
+        src/string.c
 )
 
 add_executable(KUROX64
