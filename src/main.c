@@ -13,69 +13,128 @@
 #include <efi.h>
 #include <stddef.h>
 
-#include "../include/config.h"
-#include "../include/file.h"
-#include "../include/logger.h"
-#include "../include/string.h"
+#include "config.h"
+#include "file.h"
+#include "logger.h"
+#include "string.h"
 
 EFI_HANDLE g_image_handle;
 EFI_SYSTEM_TABLE* g_system_table;
+
+EFI_FILE_PROTOCOL* g_file_prot = NULL;
 
 EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
                     EFI_SYSTEM_TABLE* system_table_p) {
   g_image_handle = image_handle_p;
   g_system_table = system_table_p;
 
-  const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_handle =
-      get_loaded_image_protocol(image_handle_p);
-  if (loaded_image_handle == NULL) {
-    // error log here
-    return EFI_LOAD_ERROR;
+  const EFI_STATUS init_status = init();
+  if (init_status != EFI_SUCCESS) {
+    fini(init_status);
+    return init_status;
   }
-  const EFI_FILE_PROTOCOL* file_protocol =
-      get_volume_handle(loaded_image_handle);
-  if (file_protocol == NULL) {
-    // error log here
+
+  const EFI_STATUS bootloader_status = main();
+
+  fini(bootloader_status);
+  return bootloader_status;
+}
+
+EFI_STATUS init() {
+  const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_handle =
+  get_loaded_image_protocol(g_image_handle);
+  if (loaded_image_handle == NULL) {
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to get loaded image protocol.\n\r");
     return EFI_LOAD_ERROR;
   }
 
+  g_file_prot =
+      get_volume_handle(loaded_image_handle);
+  if (g_file_prot == NULL) {
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to get volume handle.\n\r");
+    g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid, g_image_handle, NULL);
+    return EFI_LOAD_ERROR;
+  }
+  g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid, g_image_handle, NULL);
+
+  EFI_FILE_PROTOCOL* kuro_dir;
+  const EFI_STATUS dir_status = g_file_prot->Open(
+    (EFI_FILE_PROTOCOL*)g_file_prot, &kuro_dir, L"\\KURO",
+    EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
+    EFI_FILE_DIRECTORY);
+  if (dir_status != EFI_SUCCESS) {
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to open/create KURO directory.\n\r");
+    return dir_status;
+  }
+  kuro_dir->Close(kuro_dir);
+
   const EFI_STATUS config_status =
-      init_config((EFI_FILE_PROTOCOL*)file_protocol, 0);
+      init_config(g_file_prot, 0);
   if (config_status != EFI_SUCCESS) {
-    // error log here
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to initialize config.\n\r");
     return config_status;
   }
 
   const EFI_STATUS logger_status =
-      init_logger((EFI_FILE_PROTOCOL*)file_protocol);
+      init_logger(g_file_prot);
   if (logger_status != EFI_SUCCESS) {
-    // error log here
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to initialize logger.\n\r");
     return logger_status;
   }
 
+  log("Disabling watchdog timer...\n");
   const EFI_STATUS disable_wd =
       g_system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
 
   if (disable_wd != EFI_SUCCESS) {
-    // error log here
+    log("Error: Failed to disable watchdog timer.\n");
     return disable_wd;
   }
+  log("Watchdog timer disabled successfully.\n");
+  return EFI_SUCCESS;
+}
 
+void fini(EFI_STATUS exit_status) {
+  if (exit_status == EFI_SUCCESS) {
+    log("KURO bootloader exited successfully.\n");
+  } else {
+    char* exit_code[21];
+    log("KURO bootloader exited with error: ");
+    u64_to_str(exit_status, exit_code[0]);
+    log(exit_code[0]);
+    log("\n");
+  }
+
+  if (g_file_prot != NULL) {
+    g_file_prot->Close(g_file_prot);
+  }
+
+  log("Closing config...\n");
+  if (close_config() == EFI_SUCCESS) {
+        log("Config closed successfully.\n");
+          } else {
+        log("Error: Failed to close config.\n");
+  }
+  log("Closing logger...\n");
+  if (close_logger() != EFI_SUCCESS) {
+            g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to close logger.\n\r");
+  }
+}
+
+EFI_STATUS main(void) {
   // Test config parsing by reading the kernel path from the config file and
   char kernel_path[256];
   get_config_key("kernel_path", kernel_path);
   CHAR16 kernel_path_wide[256];
-  wchar(kernel_path, kernel_path_wide, 256);
+  wchar(kernel_path, kernel_path_wide, sizeof(kernel_path_wide));
 
-  system_table_p->ConOut->OutputString(system_table_p->ConOut,
+  g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        L"Kernel path: ");
-  system_table_p->ConOut->OutputString(system_table_p->ConOut,
+  g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        kernel_path_wide);
 
-  system_table_p->BootServices->WaitForEvent(
+  g_system_table->BootServices->WaitForEvent(
       1, &g_system_table->ConIn->WaitForKey, NULL);
-
-  close_config();
 
   return EFI_SUCCESS;
 }

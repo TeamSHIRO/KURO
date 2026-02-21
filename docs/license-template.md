@@ -8,6 +8,7 @@ For .c or .h files:
  * Description: Do something.
  *
  * Copyright (C) 2025 Your Name
+ * 
  * SPDX-License-Identifier: Apache-2.0
  */
 ```

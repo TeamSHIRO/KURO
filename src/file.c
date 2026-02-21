@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "../include/file.h"
+#include "file.h"
 
 #include <efi.h>
 #include <protocol/efi-lip.h>
@@ -19,6 +19,7 @@
 
 EFI_GUID g_lip_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
 EFI_GUID g_sfsp_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
+EFI_GUID g_efi_file_info_guid = EFI_FILE_INFO_ID;
 
 EFI_LOADED_IMAGE_PROTOCOL* get_loaded_image_protocol(EFI_HANDLE image_handle) {
   EFI_LOADED_IMAGE_PROTOCOL* loaded_image;
@@ -50,6 +51,24 @@ EFI_FILE_PROTOCOL* get_volume_handle(
   }
 
   return volume_handle;
+}
+
+// ALWAYS REMEMBER TO FREE POOL
+EFI_STATUS get_file_info(EFI_FILE_PROTOCOL* file, EFI_FILE_INFO** file_info) {
+  UINTN buffer_size = 0;
+  EFI_STATUS status = file->GetInfo(file, &g_efi_file_info_guid, &buffer_size,
+                                   NULL);
+  if (status != EFI_BUFFER_TOO_SMALL) {
+    return status;
+  }
+
+  status = g_system_table->BootServices->AllocatePool(
+      EfiLoaderData, buffer_size, (void**)file_info);
+  if (status != EFI_SUCCESS) {
+    return status;
+  }
+
+  return file->GetInfo(file, &g_efi_file_info_guid, &buffer_size, *file_info);
 }
 
 UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
