@@ -72,7 +72,8 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   system_table_p->ConOut->OutputString(system_table_p->ConOut,
                                        kernel_path_wide);
 
-  system_table_p->BootServices->WaitForEvent(1, &g_system_table->ConIn->WaitForKey, NULL);
+  system_table_p->BootServices->WaitForEvent(
+      1, &g_system_table->ConIn->WaitForKey, NULL);
 
   close_config();
 
