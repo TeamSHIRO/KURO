@@ -13,8 +13,6 @@
 
 #include "../include/string.h"
 
-// TODO: Implement a proper logger that writes to a file.
-
 EFI_FILE_PROTOCOL* log_dir;
 
 EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
