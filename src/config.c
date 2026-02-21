@@ -83,7 +83,6 @@ EFI_STATUS write_config(const char* buffer) {
 
 EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
                        BOOLEAN break_on_error) {
-  DEBUG_PRINT("Initializing configuration.\n\r");
   const EFI_STATUS dir_status = volume_handle->Open(
       (EFI_FILE_PROTOCOL*)volume_handle, &config_dir, L".\\kuro.conf",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
@@ -92,7 +91,6 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
     return dir_status;
   }
 
-  DEBUG_PRINT("Config file opened successfully.\n\r");
   // Check if a file is empty (newly created)
   const UINT64 file_size = get_writable_file_size(config_dir);
 
@@ -103,7 +101,6 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
         "kernel_path=\\kuro.elf\n";
 
     const EFI_STATUS write_status = write_config(default_config);
-    DEBUG_PRINT("Default config written successfully.\n\r");
 
     if (write_status != EFI_SUCCESS) {
       config_dir->Close(config_dir);
