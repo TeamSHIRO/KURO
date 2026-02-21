@@ -42,43 +42,52 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
 
 EFI_STATUS init() {
   const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_handle =
-  get_loaded_image_protocol(g_image_handle);
+      get_loaded_image_protocol(g_image_handle);
   if (loaded_image_handle == NULL) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to get loaded image protocol.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut,
+        L"[KURO] Error: Failed to get loaded image protocol.\n\r");
     return EFI_LOAD_ERROR;
   }
 
-  g_file_prot =
-      get_volume_handle(loaded_image_handle);
+  g_file_prot = get_volume_handle(loaded_image_handle);
   if (g_file_prot == NULL) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to get volume handle.\n\r");
-    g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid, g_image_handle, NULL);
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut,
+        L"[KURO] Error: Failed to get volume handle.\n\r");
+    g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid,
+                                                g_image_handle, NULL);
     return EFI_LOAD_ERROR;
   }
-  g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid, g_image_handle, NULL);
+  g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid,
+                                              g_image_handle, NULL);
 
   EFI_FILE_PROTOCOL* kuro_dir;
   const EFI_STATUS dir_status = g_file_prot->Open(
-    (EFI_FILE_PROTOCOL*)g_file_prot, &kuro_dir, L"\\KURO",
-    EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
-    EFI_FILE_DIRECTORY);
+      (EFI_FILE_PROTOCOL*)g_file_prot, &kuro_dir, L"\\KURO",
+      EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
+      EFI_FILE_DIRECTORY);
   if (dir_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to open/create KURO directory.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut,
+        L"[KURO] Error: Failed to open/create KURO directory.\n\r");
     return dir_status;
   }
   kuro_dir->Close(kuro_dir);
 
-  const EFI_STATUS config_status =
-      init_config(g_file_prot, 0);
+  const EFI_STATUS config_status = init_config(g_file_prot, 0);
   if (config_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to initialize config.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut,
+        L"[KURO] Error: Failed to initialize config.\n\r");
     return config_status;
   }
 
-  const EFI_STATUS logger_status =
-      init_logger(g_file_prot);
+  const EFI_STATUS logger_status = init_logger(g_file_prot);
   if (logger_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to initialize logger.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut,
+        L"[KURO] Error: Failed to initialize logger.\n\r");
     return logger_status;
   }
 
@@ -111,13 +120,14 @@ void fini(EFI_STATUS exit_status) {
 
   log("Closing config...\n");
   if (close_config() == EFI_SUCCESS) {
-        log("Config closed successfully.\n");
-          } else {
-        log("Error: Failed to close config.\n");
+    log("Config closed successfully.\n");
+  } else {
+    log("Error: Failed to close config.\n");
   }
   log("Closing logger...\n");
   if (close_logger() != EFI_SUCCESS) {
-            g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to close logger.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut, L"[KURO] Error: Failed to close logger.\n\r");
   }
 }
 
