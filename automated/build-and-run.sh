@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2026 Ellicode
+# Copyright (C) 2026 TheMonHub
 # SPDX-License-Identifier: Apache-2.0
 #
 # "Build and run" is a script that builds the project and then opens the resulting EFI application in QEMU.
@@ -8,11 +9,9 @@
 
 ALLOCATED_MEMORY=512M
 EXTRA_QEMU_ARGS="" # You can add extra arguments for QEMU here if needed
-LOCAL_OVMF_CODE_PATH=".ovmf/OVMF_CODE.fd"
-LOCAL_OVMF_VARS_PATH=".ovmf/OVMF_VARS.fd"
+LOCAL_OVMF_CODE_PATH="ignore-automated/ovmf/OVMF_CODE.fd"
 REMOTE_OVMF_CODE_PATH="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
-REMOTE_OVMF_VARS_PATH="/usr/share/edk2/x64/OVMF_VARS.4m.fd"
-BOOT_DIRECTORY="esp/EFI/BOOT"
+BOOT_DIRECTORY="ignore-automated/esp/EFI/BOOT"
 BUILD_FILE_NAME="KUROX64"
 
 RED='\033[0;31m' # Red color for error messages
@@ -21,7 +20,10 @@ NC='\033[0m' # No Color (reset)
 
 echo "➔ Starting build process..."
 
+cd "$(dirname "$0")"/.. || error_exit "${RED}⚠ Error: Failed to change directory${NC}"
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
+mkdir -p ignore-automated
 
 echo "➔ Build successful. Preparing boot directory..."
 
@@ -42,7 +44,7 @@ else
     echo -e "${RED}⚠ Error: OVMF_CODE.fd not found in the '.ovmf' directory${NC}"
     read -p "Do you wish to move automatically $REMOTE_OVMF_CODE_PATH to the '.ovmf' directory? (y/n): " yn
     case $yn in
-        [Yy]* ) mkdir -p .ovmf && cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH; echo "➔ Moved.";;
+        [Yy]* ) mkdir -p ignore-automated/ovmf && cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH; echo "➔ Moved.";;
         * ) echo "Cancelled. Run 'cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH' manually if needed."; exit;;
     esac
 fi
@@ -50,6 +52,6 @@ fi
 qemu-system-x86_64 \
     -m $ALLOCATED_MEMORY \
     -drive if=pflash,format=raw,readonly=on,file=$LOCAL_OVMF_CODE_PATH \
-    -drive if=ide,format=raw,file=fat:rw:esp \
+    -drive if=ide,format=raw,file=fat:rw:ignore-automated/esp \
     -net none \
     $EXTRA_QEMU_ARGS

@@ -3,6 +3,7 @@
  * Description: Entry point.
  *
  * Copyright (C) 2025-2026 TheMonHub
+ * Copyright (C) 2026 Ellicode
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -15,7 +16,6 @@
 #include "../include/config.h"
 #include "../include/file.h"
 #include "../include/logger.h"
-#include "../include/output/cout.h"
 #include "../include/string.h"
 
 EFI_HANDLE g_image_handle;
@@ -72,10 +72,9 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
   system_table_p->ConOut->OutputString(system_table_p->ConOut,
                                        kernel_path_wide);
 
-  // Stay here indefinitely to prevent the system from rebooting
-  while (1) {
-    g_system_table->BootServices->Stall(1000000);
-  }
+  system_table_p->BootServices->WaitForEvent(1, &g_system_table->ConIn->WaitForKey, NULL);
+
+  close_config();
 
   return EFI_SUCCESS;
 }
