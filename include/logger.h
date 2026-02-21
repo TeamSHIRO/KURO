@@ -17,4 +17,4 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle);
 EFI_STATUS log(const char* buffer);
 EFI_STATUS close_logger(void);
 
-#endif  // KURO_BOOTLOADER_LOGGER_H
+#endif  // KURO_LOGGER_H

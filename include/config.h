@@ -20,4 +20,4 @@ EFI_STATUS get_config_key(const char* key, char* value);
 EFI_STATUS write_config(const char* buffer);
 EFI_STATUS close_config();
 
-#endif  // KURO_BOOTLOADER_CONFIG_H
+#endif  // KURO_CONFIG_H

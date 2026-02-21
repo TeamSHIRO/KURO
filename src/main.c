@@ -14,6 +14,7 @@
 #include <stddef.h>
 
 #include "config.h"
+#include "cout.h"
 #include "file.h"
 #include "logger.h"
 #include "string.h"
@@ -44,17 +45,13 @@ EFI_STATUS init() {
   const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_handle =
       get_loaded_image_protocol(g_image_handle);
   if (loaded_image_handle == NULL) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut,
-        L"[KURO] Error: Failed to get loaded image protocol.\n\r");
+    ERROR_PRINT(L"Failed to get loaded image protocol.\n\r");
     return EFI_LOAD_ERROR;
   }
 
   g_file_prot = get_volume_handle(loaded_image_handle);
   if (g_file_prot == NULL) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut,
-        L"[KURO] Error: Failed to get volume handle.\n\r");
+    ERROR_PRINT(L"Failed to get volume handle.\n\r");
     g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid,
                                                 g_image_handle, NULL);
     return EFI_LOAD_ERROR;
@@ -68,26 +65,20 @@ EFI_STATUS init() {
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
       EFI_FILE_DIRECTORY);
   if (dir_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut,
-        L"[KURO] Error: Failed to open/create KURO directory.\n\r");
+    ERROR_PRINT(L"Failed to open or create KURO directory.\n\r");
     return dir_status;
   }
   kuro_dir->Close(kuro_dir);
 
   const EFI_STATUS config_status = init_config(g_file_prot, 0);
   if (config_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut,
-        L"[KURO] Error: Failed to initialize config.\n\r");
+    ERROR_PRINT(L"Failed to initialize config.\n\r");
     return config_status;
   }
 
   const EFI_STATUS logger_status = init_logger(g_file_prot);
   if (logger_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut,
-        L"[KURO] Error: Failed to initialize logger.\n\r");
+    ERROR_PRINT(L"Failed to initialize logger.\n\r");
     return logger_status;
   }
 
@@ -126,8 +117,7 @@ void fini(EFI_STATUS exit_status) {
   }
   log("Closing logger...\n");
   if (close_logger() != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut, L"[KURO] Error: Failed to close logger.\n\r");
+    ERROR_PRINT(L"Failed to close logger.\n\r");
   }
 }
 
