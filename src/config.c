@@ -3,6 +3,7 @@
  * Description: Configuration helpers.
  *
  * Copyright (C) 2026 Ellicode
+ * Copyright (C) 2026 TheMonHub
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -42,7 +43,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
     return read_status;
   }
 
-  char* line = strtok(buffer, "\n");
+  const char* line = strtok(buffer, "\n");
   while (line != NULL) {
     // Skip lines that start with a hashtag (comments)
     if (line[0] == '#') {
@@ -53,8 +54,8 @@ EFI_STATUS get_config_key(const char* key, char* value) {
     char* equal_sign = strchr(line, '=');
     if (equal_sign != NULL) {
       *equal_sign = '\0';  // Split the line into key and value
-      char* current_key = line;
-      char* current_value = equal_sign + 1;
+      const char* current_key = line;
+      const char* current_value = equal_sign + 1;
 
       if (strcmp(current_key, key) == 0) {
         strcpy(value, current_value);
@@ -82,7 +83,7 @@ EFI_STATUS write_config(const char* buffer) {
 
 EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
                        BOOLEAN break_on_error) {
-  DEBUG_PRINT("Initializing configuration.\n");
+  DEBUG_PRINT("Initializing configuration.\n\r");
   const EFI_STATUS dir_status = volume_handle->Open(
       (EFI_FILE_PROTOCOL*)volume_handle, &config_dir, L".\\kuro.conf",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
@@ -91,18 +92,18 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
     return dir_status;
   }
 
-  DEBUG_PRINT("Config file opened successfully.\n");
-  // Check if file is empty (newly created)
-  UINT64 file_size = get_writable_file_size(config_dir);
+  DEBUG_PRINT("Config file opened successfully.\n\r");
+  // Check if a file is empty (newly created)
+  const UINT64 file_size = get_writable_file_size(config_dir);
 
   if (file_size == 0 && !break_on_error) {
-    // Write default config to newly created file
-    char default_config[] =
-        "# Default config file for KURO\n"
-        "kernel_path=\\kuro.elf\n";
+    // Write default config to a newly created file
+    const char default_config[] =
+        "# Default config file for KURO\n\r"
+        "kernel_path=\\kuro.elf\n\r";
 
     const EFI_STATUS write_status = write_config(default_config);
-    DEBUG_PRINT("Default config written successfully.\n");
+    DEBUG_PRINT("Default config written successfully.\n\r");
 
     if (write_status != EFI_SUCCESS) {
       config_dir->Close(config_dir);
