@@ -99,8 +99,8 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
   if (file_size == 0 && !break_on_error) {
     // Write default config to a newly created file
     const char default_config[] =
-        "# Default config file for KURO\n\r"
-        "kernel_path=\\kuro.elf\n\r";
+        "# Default config file for KURO\n"
+        "kernel_path=\\kuro.elf\n";
 
     const EFI_STATUS write_status = write_config(default_config);
     DEBUG_PRINT("Default config written successfully.\n\r");
