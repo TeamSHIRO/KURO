@@ -98,10 +98,10 @@ void fini(EFI_STATUS exit_status) {
   if (exit_status == EFI_SUCCESS) {
     log("KURO bootloader exited successfully.\n");
   } else {
-    char* exit_code[21];
+    char exit_code[21];
     log("KURO bootloader exited with error: ");
-    u64_to_str(exit_status, exit_code[0]);
-    log(exit_code[0]);
+    u64_to_str(exit_status, &exit_code[0]);
+    log(&exit_code[0]);
     log("\n");
   }
 

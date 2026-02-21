@@ -22,7 +22,7 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
   char logger_path[256];
   get_config_key("logger_path", logger_path);
   CHAR16 logger_path_wide[256];
-  wchar(logger_path, logger_path_wide, sizeof(logger_path));
+  wchar(logger_path, logger_path_wide, sizeof(logger_path_wide));
   const EFI_STATUS dir_status = volume_handle->Open(
       (EFI_FILE_PROTOCOL*)volume_handle, &log_dir, logger_path_wide,
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
@@ -33,44 +33,17 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
     return dir_status;
   }
 
-  EFI_TIME time;
-  g_system_table->RuntimeServices->GetTime(&time, NULL);
+  const EFI_STATUS exist = log_dir->Open(log_dir, &log_file, L".\\log", EFI_FILE_MODE_READ , 0);
+  if (exist == EFI_SUCCESS) {
+    log_file->Delete(log_file);
+  } else if (exist != 0x800000000000000E) {
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to open log file.\n\r");
 
-  const CHAR16 year = time.Year;
-  const CHAR16 month = time.Month;
-  const CHAR16 day = time.Day;
-  const CHAR16 hour = time.Hour;
-  const CHAR16 minute = time.Minute;
-  const CHAR16 second = time.Second;
-
-  char year_str[6];
-  char month_str[6];
-  char day_str[6];
-  char hour_str[6];
-  char minute_str[6];
-  char second_str[6];
-
-  u16_to_str(year, year_str);
-  u16_to_str(month, month_str);
-  u16_to_str(day, day_str);
-  u16_to_str(hour, hour_str);
-  u16_to_str(minute, minute_str);
-  u16_to_str(second, second_str);
-
-  char log_file_name[34] = "log";
-  strcat(log_file_name, year_str);
-  strcat(log_file_name, month_str);
-  strcat(log_file_name, day_str);
-  strcat(log_file_name, hour_str);
-  strcat(log_file_name, minute_str);
-  strcat(log_file_name, second_str);
-
-  CHAR16 log_file_name_wide[34];
-
-  wchar(log_file_name, log_file_name_wide, sizeof(log_file_name));
+    return exist;
+  }
 
   const EFI_STATUS file_status = log_dir->Open(
-      log_dir, &log_file, log_file_name_wide,
+      log_dir, &log_file, L".\\log",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
   if (file_status != EFI_SUCCESS) {
     log_file = NULL;
