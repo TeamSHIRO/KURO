@@ -99,6 +99,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
     // Write default config to a newly created file
     const char default_config[] =
         "# Default config file for KURO\n"
+        "# Please make sure the directory exists!"
         "kernel_path=\\shiro.kernel\n"
         "logger_path=\\kuro\\logs\n";
 
