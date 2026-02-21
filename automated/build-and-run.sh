@@ -2,6 +2,7 @@
 #
 # Copyright (C) 2026 Ellicode
 # Copyright (C) 2026 TheMonHub
+#
 # SPDX-License-Identifier: Apache-2.0
 #
 # "Build and run" is a script that builds the project and then opens the resulting EFI application in QEMU.
