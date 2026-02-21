@@ -14,8 +14,6 @@
 
 #include "main.h"
 
-// TODO: Remove this thang outta here boi
-
 #ifdef NDEBUG
 #define DEBUG_PRINT(str)
 #else
