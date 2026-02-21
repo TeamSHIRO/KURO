@@ -12,6 +12,7 @@
 #include <protocol/efi-fp.h>
 
 #include "config.h"
+#include "cout.h"
 #include "main.h"
 #include "string.h"
 
@@ -38,9 +39,7 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
   if (exist == EFI_SUCCESS) {
     log_file->Delete(log_file);
   } else if (exist != 0x800000000000000E) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut, L"[KURO] Error: Failed to open log file.\n\r");
-
+    ERROR_PRINT(L"Failed to check log file existence.\n\r");
     return exist;
   }
 
@@ -49,6 +48,7 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
   if (file_status != EFI_SUCCESS) {
     log_file = NULL;
+    ERROR_PRINT(L"Failed to open log file.\n\r");
     log_dir->Close(log_dir);
     log_dir = NULL;
     return file_status;
@@ -67,9 +67,7 @@ EFI_STATUS log(const char* buffer) {
   const EFI_STATUS write_status =
       log_file->Write(log_file, &buffer_size, (void*)buffer);
   if (write_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(
-        g_system_table->ConOut,
-        L"[KURO] Error: Failed to write to log file.\n\r");
+    ERROR_PRINT(L"Failed to write to log file.\n\r");
   }
 
   return write_status;
