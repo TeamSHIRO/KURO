@@ -33,11 +33,13 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
     return dir_status;
   }
 
-  const EFI_STATUS exist = log_dir->Open(log_dir, &log_file, L".\\log", EFI_FILE_MODE_READ , 0);
+  const EFI_STATUS exist =
+      log_dir->Open(log_dir, &log_file, L".\\log", EFI_FILE_MODE_READ, 0);
   if (exist == EFI_SUCCESS) {
     log_file->Delete(log_file);
   } else if (exist != 0x800000000000000E) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to open log file.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut, L"[KURO] Error: Failed to open log file.\n\r");
 
     return exist;
   }
@@ -65,7 +67,9 @@ EFI_STATUS log(const char* buffer) {
   const EFI_STATUS write_status =
       log_file->Write(log_file, &buffer_size, (void*)buffer);
   if (write_status != EFI_SUCCESS) {
-    g_system_table->ConOut->OutputString(g_system_table->ConOut, L"[KURO] Error: Failed to write to log file.\n\r");
+    g_system_table->ConOut->OutputString(
+        g_system_table->ConOut,
+        L"[KURO] Error: Failed to write to log file.\n\r");
   }
 
   return write_status;

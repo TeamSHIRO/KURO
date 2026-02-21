@@ -56,8 +56,8 @@ EFI_FILE_PROTOCOL* get_volume_handle(
 // ALWAYS REMEMBER TO FREE POOL
 EFI_STATUS get_file_info(EFI_FILE_PROTOCOL* file, EFI_FILE_INFO** file_info) {
   UINTN buffer_size = 0;
-  EFI_STATUS status = file->GetInfo(file, &g_efi_file_info_guid, &buffer_size,
-                                   NULL);
+  EFI_STATUS status =
+      file->GetInfo(file, &g_efi_file_info_guid, &buffer_size, NULL);
   if (status != EFI_BUFFER_TOO_SMALL) {
     return status;
   }
