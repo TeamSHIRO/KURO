@@ -18,8 +18,6 @@ project(KURO_BOOTLOADER
 
 include(toolchain/efi.cmake)
 
-option(KURO_BOOTLOADER_NO_LOGGING "Disable logging in the bootloader" OFF)
-
 # =========================================
 
 set(KURO_BOOTLOADER_SOURCES
@@ -37,10 +35,3 @@ add_executable(KUROX64
 target_include_directories(KUROX64 PRIVATE
         include
 )
-
-if (KURO_BOOTLOADER_NO_LOGGING)
-    target_compile_definitions(
-            KUROX64 PRIVATE
-            KURO_NO_LOG
-    )
-endif ()
