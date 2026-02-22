@@ -61,9 +61,9 @@ EFI_STATUS init() {
 
   EFI_FILE_PROTOCOL* kuro_dir;
   const EFI_STATUS kuro_dir_status = mkdir(&kuro_dir, L"\\kuro");
-  EFI_FILE_PROTOCOL* config_dir;
-  EFI_STATUS config_dir_status =
-      mkdir_if_not_exists(&config_dir, L"\\kuro\\config");
+  EFI_FILE_PROTOCOL* temp_config_dir;
+  const EFI_STATUS config_dir_status =
+      mkdir(&temp_config_dir, L"\\kuro\\config");
 
   if (kuro_dir_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to create or open KURO directory.\n\r");
