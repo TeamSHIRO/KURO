@@ -12,6 +12,7 @@
 
 #include <protocol/efi-fp.h>
 
+#include "cout.h"
 #include "file.h"
 #include "memory.h"
 #include "string.h"
@@ -20,6 +21,7 @@ EFI_FILE_PROTOCOL* config_dir = NULL;
 
 EFI_STATUS read_config(char* buffer, UINT64 buffer_size) {
   if (!config_dir) {
+    ERROR_PRINT(L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
@@ -40,6 +42,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
   const EFI_STATUS read_status = read_config(buffer, sizeof(buffer));
 
   if (read_status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to read config file.\n\r");
     return read_status;
   }
 
@@ -65,6 +68,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
     line = strtok(NULL, "\n");
   }
 
+  ERROR_PRINT(L"Key not found in config file.\n\r");
   return EFI_NOT_FOUND;
 }
 
@@ -72,6 +76,7 @@ EFI_STATUS write_config(const char* buffer) {
   UINT64 buffer_size = strlen(buffer);
 
   if (!config_dir) {
+    ERROR_PRINT(L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
@@ -81,25 +86,28 @@ EFI_STATUS write_config(const char* buffer) {
   return write_status;
 }
 
-EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
-                       BOOLEAN break_on_error) {
-  const EFI_STATUS dir_status = volume_handle->Open(
-      (EFI_FILE_PROTOCOL*)volume_handle, &config_dir, L".\\KURO\\kuro.conf",
+EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
+  const EFI_STATUS open_status = volume_handle->Open(
+      (EFI_FILE_PROTOCOL*)volume_handle, &config_dir,
+      L"\\kuro\\config\\kuro.conf",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
 
-  if (dir_status != EFI_SUCCESS) {
+  if (open_status != EFI_SUCCESS) {
     config_dir = NULL;
-    return dir_status;
+    ERROR_PRINT(L"Failed to open or create config file.\n\r");
+    return open_status;
   }
+
+  DEBUG_PRINT(L"Config file opened successfully.\n\r");
 
   // Check if a file is empty (newly created)
   const UINT64 file_size = get_writable_file_size(config_dir);
 
-  if (file_size == 0 && !break_on_error) {
+  if (file_size == 0) {
     // Write default config to a newly created file
     const char default_config[] =
         "# Default config file for KURO\n"
-        "# Please make sure the directory exists!"
+        "# Please make sure the directory exists!\n"
         "kernel_path=\\shiro.kernel\n"
         "logger_path=\\kuro\\logs\n";
 
@@ -108,11 +116,15 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
     if (write_status != EFI_SUCCESS) {
       config_dir->Close(config_dir);
       config_dir = NULL;
+      ERROR_PRINT(L"Failed to write default config.\n\r");
       return write_status;
     }
 
     // Reset file position to beginning
     config_dir->SetPosition(config_dir, 0);
+  } else {
+    DEBUG_PRINT(
+        L"Config file already exists, skipping default config write.\n\r");
   }
 
   return EFI_SUCCESS;
@@ -120,6 +132,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
 
 EFI_STATUS close_config() {
   if (!config_dir) {
+    ERROR_PRINT(L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
