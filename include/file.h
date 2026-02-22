@@ -23,6 +23,6 @@ EFI_FILE_PROTOCOL* get_volume_handle(
     const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_protocol);
 UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file);
 static void write_string(EFI_FILE_PROTOCOL* file, const CHAR16* str);
-EFI_STATUS mkdir_if_not_exists(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name);
+EFI_STATUS mkdir(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name);
 
 #endif  // KURO_DISK_H
