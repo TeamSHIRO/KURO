@@ -86,8 +86,7 @@ EFI_STATUS write_config(const char* buffer) {
   return write_status;
 }
 
-EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle,
-                       BOOLEAN break_on_error) {
+EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
   const EFI_STATUS open_status = volume_handle->Open(
       (EFI_FILE_PROTOCOL*)volume_handle, &config_dir,
       L"\\kuro\\config\\kuro.conf",
