@@ -7,6 +7,7 @@
 #
 # "Build and run" is a script that builds the project and then opens the resulting EFI application in QEMU.
 # It assumes that the project is set up to build an EFI application and that QEMU is installed on the system.
+set -e
 
 ALLOCATED_MEMORY=512M
 EXTRA_QEMU_ARGS="" # You can add extra arguments for QEMU here if needed
