@@ -1,7 +1,7 @@
 name: DCO
 on:
   push:
-  workflow_dispatch:
+  
 jobs:
   check_dco:
     runs-on: ubuntu-latest
