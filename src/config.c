@@ -22,6 +22,7 @@ EFI_FILE_PROTOCOL* config_dir = NULL;
 EFI_STATUS read_config(char* buffer, UINT64 buffer_size) {
   if (!config_dir) {
     ERROR_PRINT(L"Config directory is not initialized.\n\r");
+    return EFI_NOT_READY;
   }
 
   UINT64 file_size = get_writable_file_size(config_dir);
