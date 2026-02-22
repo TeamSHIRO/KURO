@@ -1,7 +1,6 @@
 name: DCO
 on:
   push:
-  pull_request:
   workflow_dispatch:
 jobs:
   check_dco:
