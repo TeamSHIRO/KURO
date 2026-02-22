@@ -10,6 +10,7 @@
 
 #include "string.h"
 
+#include <protocol/efi-fp.h>
 #include <stddef.h>
 
 static char* strtok_ptr = NULL;

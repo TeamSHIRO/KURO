@@ -82,14 +82,6 @@ UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
   return size;
 }
 
-// Helper to write wide string to file
-static void write_string(EFI_FILE_PROTOCOL* file, const CHAR16* str) {
-  UINTN len = 0;
-  while (str[len]) len++;
-  UINTN size = len * sizeof(CHAR16);
-  file->Write(file, &size, (void*)str);
-}
-
 EFI_STATUS mkdir(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name) {
   const EFI_STATUS dir_status = g_file_prot->Open(
       (EFI_FILE_PROTOCOL*)g_file_prot, dir, dir_name,

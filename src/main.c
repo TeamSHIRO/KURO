@@ -75,7 +75,7 @@ EFI_STATUS init() {
     return config_dir_status;
   }
 
-  const EFI_STATUS config_status = init_config(g_file_prot, 0);
+  const EFI_STATUS config_status = init_config(g_file_prot);
   if (config_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to initialize config.\n\r");
     return config_status;
