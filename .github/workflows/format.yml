@@ -1,6 +1,7 @@
 name: Format
 
 on:
+  push:
   pull_request:
   workflow_dispatch:
 
@@ -10,14 +11,14 @@ permissions:
 
 jobs:
   run-linters:
-    name: Check Format
+    name: Check format
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Check for cached Clang-Format
+      - name: Check for cached clang-format
         id: clang-cache
         uses: actions/cache@v4
         with:
@@ -25,26 +26,26 @@ jobs:
           key: clang-format-cache
 
       - if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        name: Install Clang-Format
+        name: Install clang-format
         run: |
-          echo "Installing Clang-Format..."
+          echo "Installing clang-format..."
           sudo apt-get update
           sudo apt-get install -y clang-format
           echo "Copying binaries to cache..."
           mkdir -p ~/.cache
           cp /usr/bin/clang-format ~/.cache/clang-format
-          echo "Installation complete."
+          echo "Installation complete"
         shell: bash
 
       - if: ${{ steps.clang-cache.outputs.cache-hit == 'true' }}
-        name: Restore Clang-Format from cache
+        name: Restore clang-format from cache
         run: |
-          echo "Restoring Clang-Format from cache..."
+          echo "Restoring clang-format from cache..."
           sudo cp ~/.cache/clang-format /usr/bin/clang-format
           sudo chmod +x /usr/bin/clang-format
-          echo "Cache restored."
+          echo "Cache restored"
 
-      - name: Run Clang-Format
+      - name: Run clang-format
         run: |
           echo "Running clang-format..."
           echo "---------------------------------------------------"
