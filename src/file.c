@@ -15,6 +15,7 @@
 #include <protocol/efi-sfsp.h>
 #include <stddef.h>
 
+#include "cout.h"
 #include "main.h"
 
 EFI_GUID g_lip_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
@@ -87,4 +88,17 @@ static void write_string(EFI_FILE_PROTOCOL* file, const CHAR16* str) {
   while (str[len]) len++;
   UINTN size = len * sizeof(CHAR16);
   file->Write(file, &size, (void*)str);
+}
+
+EFI_STATUS mkdir_if_not_exists(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name) {
+  const EFI_STATUS dir_status = g_file_prot->Open(
+      (EFI_FILE_PROTOCOL*)g_file_prot, dir, dir_name,
+      EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
+      EFI_FILE_DIRECTORY);
+  if (dir_status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to open or create KURO directory.\n\r");
+    return dir_status;
+  }
+  (*dir)->Close(*dir);
+  return EFI_SUCCESS;
 }
