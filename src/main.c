@@ -60,7 +60,7 @@ EFI_STATUS init() {
                                               g_image_handle, NULL);
 
   EFI_FILE_PROTOCOL* kuro_dir;
-  EFI_STATUS kuro_dir_status = mkdir_if_not_exists(&kuro_dir, L"\\kuro");
+  const EFI_STATUS kuro_dir_status = mkdir(&kuro_dir, L"\\kuro");
   EFI_FILE_PROTOCOL* config_dir;
   EFI_STATUS config_dir_status =
       mkdir_if_not_exists(&config_dir, L"\\kuro\\config");
