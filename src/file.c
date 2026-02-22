@@ -90,7 +90,7 @@ static void write_string(EFI_FILE_PROTOCOL* file, const CHAR16* str) {
   file->Write(file, &size, (void*)str);
 }
 
-EFI_STATUS mkdir_if_not_exists(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name) {
+EFI_STATUS mkdir(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name) {
   const EFI_STATUS dir_status = g_file_prot->Open(
       (EFI_FILE_PROTOCOL*)g_file_prot, dir, dir_name,
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
