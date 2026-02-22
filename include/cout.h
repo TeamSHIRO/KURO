@@ -26,6 +26,7 @@
 #define ERROR_PRINT(str)                                                 \
   g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_RED); \
   g_system_table->ConOut->OutputString(g_system_table->ConOut,           \
-                                       L"[KURO|ERROR] " str)
+                                       L"[KURO|ERROR] " str);            \
+  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);
 
 #endif  // KURO_COUT_H

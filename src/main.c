@@ -60,17 +60,22 @@ EFI_STATUS init() {
                                               g_image_handle, NULL);
 
   EFI_FILE_PROTOCOL* kuro_dir;
-  const EFI_STATUS dir_status = g_file_prot->Open(
-      (EFI_FILE_PROTOCOL*)g_file_prot, &kuro_dir, L"\\KURO",
-      EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
-      EFI_FILE_DIRECTORY);
-  if (dir_status != EFI_SUCCESS) {
-    ERROR_PRINT(L"Failed to open or create KURO directory.\n\r");
-    return dir_status;
-  }
-  kuro_dir->Close(kuro_dir);
+  const EFI_STATUS kuro_dir_status = mkdir(&kuro_dir, L"\\kuro");
+  EFI_FILE_PROTOCOL* temp_config_dir;
+  const EFI_STATUS config_dir_status =
+      mkdir(&temp_config_dir, L"\\kuro\\config");
 
-  const EFI_STATUS config_status = init_config(g_file_prot, 0);
+  if (kuro_dir_status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to create or open KURO directory.\n\r");
+    return kuro_dir_status;
+  }
+
+  if (config_dir_status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to create or open config directory.\n\r");
+    return config_dir_status;
+  }
+
+  const EFI_STATUS config_status = init_config(g_file_prot);
   if (config_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to initialize config.\n\r");
     return config_status;
