@@ -1,6 +1,6 @@
 name: DCO
 on:
-  push:
+  pull_request:
   
 jobs:
   check_dco:
