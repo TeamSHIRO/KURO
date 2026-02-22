@@ -16,6 +16,8 @@ project(KURO
         LANGUAGES C
 )
 
+set(CMAKE_C_STANDARD 17)
+
 include(toolchain/efi.cmake)
 
 # =========================================
