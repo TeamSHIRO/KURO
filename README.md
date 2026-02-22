@@ -1,9 +1,11 @@
-<div style="height: 175px; overflow: hidden;">
+<!-- <div style="height: 175px; overflow: hidden;">
   <img src="https://raw.githubusercontent.com/TeamSHIRO/.github/refs/heads/main/profile/kuro.png" 
        alt="KURO banner" 
        title="KURO banner"
        style="width: 100%; height: 100%; object-fit: cover;">
-</div>
+</div> -->
+
+<img width="1037" height="292" alt="Frame 29 (2)" src="https://github.com/user-attachments/assets/3a3dd655-b7e2-411f-ae45-fc956b2aabba" />
 
 # KURO: An UEFI bootloader
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-0baaaa.svg)](CODE_OF_CONDUCT.md)
@@ -37,13 +39,16 @@ To build the project, follow these steps:
     cmake -S . -B build
     ```
 
-   Pro tip: You can change `build` to your preferred build directory.
+> [!TIP] 
+> You can change `build` to your preferred build directory.
+
 4. Build the project with CMake
     ```bash
     cmake --build build
     ```
-   Pro tip: Replace `build` with your build directory.
-
+    
+> [!TIP] 
+> If you want to debug and preview the project in QEMU to contribute to the project, we highly reccomend running the [build-and-run.sh](/automated/build-and-run.sh) script!
 
 ## Contributing
 Please read the [**CONTRIBUTING**](CONTRIBUTING.md) guide for details on how to contribute to this project.
