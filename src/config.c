@@ -43,7 +43,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
 
   if (read_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to read config file.\n\r");
-    return read_status
+    return read_status;
   }
 
   const char* line = strtok(buffer, "\n");
