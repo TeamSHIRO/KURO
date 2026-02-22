@@ -21,7 +21,7 @@ jobs:
       - name: Install build tools
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: clang cmake ninja-build
+          packages: clang cmake ninja-build lld
 
       - name: Build project
         run: ./automated/build.sh
