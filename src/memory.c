@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "memory.h"
+
 #include <stddef.h>
 
 #include "main.h"
@@ -33,6 +35,16 @@ void* memset(void* s, int c, size_t n) {
 
   for (size_t i = 0; i < n; i++) {
     p[i] = (unsigned char)c;
+  }
+
+  return s;
+}
+
+void* memzero(void* s, size_t n) {
+  unsigned char* p = s;
+
+  for (size_t i = 0; i < n; i++) {
+    p[i] = 0;
   }
 
   return s;
