@@ -92,9 +92,14 @@ EFI_STATUS init() {
   }
 
   char kernel_path[256];
-  get_config_key("kernel_path", kernel_path);
+  const EFI_STATUS kernel_path_status = get_config_key("kernel_path", kernel_path);
+  if (kernel_path_status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to get kernel path from config.\n\r");
+    return kernel_path_status;
+  }
   CHAR16 kernel_path_wide[256];
-  wchar(kernel_path, kernel_path_wide, sizeof(kernel_path_wide));
+  wchar(kernel_path, kernel_path_wide,
+        sizeof(kernel_path_wide) / sizeof(kernel_path_wide[0]));
   const EFI_STATUS loader_status = init_elf(g_file_prot, kernel_path_wide);
   if (loader_status == EFI_NOT_FOUND) {
     ERROR_PRINT(L"Kernel not found.\n\r");
@@ -136,7 +141,7 @@ void fini(EFI_STATUS exit_status) {
     g_file_prot->Close(g_file_prot);
   }
 
-  if (elf_file != NULL) {
+  if (exit_status != EFI_SUCCESS && elf_file != NULL) {
     elf_file->Close(elf_file);
     elf_file = NULL;
   }
@@ -171,6 +176,39 @@ EFI_STATUS main(void) {
   if (status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to read ELF header.\n\r");
     return status;
+  }
+
+  /* Validate ELF header: magic, class, endianness, and program header entry size. */
+  if (app.header.e_ident[0] != 0x7f ||
+      app.header.e_ident[1] != 'E' ||
+      app.header.e_ident[2] != 'L' ||
+      app.header.e_ident[3] != 'F') {
+    ERROR_PRINT(L"Invalid ELF magic.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  /* Only support 64-bit little-endian ELF. */
+  if (app.header.e_ident[4] != 2 || /* ELFCLASS64 */
+      app.header.e_ident[5] != 1) { /* ELFDATA2LSB */
+    ERROR_PRINT(L"Unsupported ELF class or endianness.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  if (app.header.e_phentsize != sizeof(struct elf64_phdr)) {
+    ERROR_PRINT(L"Unexpected ELF program header entry size.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  if (app.header.e_phnum == 0 || app.header.e_phoff == 0) {
+    ERROR_PRINT(L"ELF file has no program headers.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  /* Ensure e_phnum * sizeof(struct elf64_phdr) does not overflow UINTN. */
+  const UINTN max_phnum = ((UINTN)-1) / sizeof(struct elf64_phdr);
+  if ((UINTN)app.header.e_phnum > max_phnum) {
+    ERROR_PRINT(L"Too many ELF program headers.\n\r");
+    return EFI_LOAD_ERROR;
   }
 
   const UINTN phdrs_size =

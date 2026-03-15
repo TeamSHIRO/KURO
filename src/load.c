@@ -41,13 +41,21 @@ EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
   if (status != EFI_SUCCESS) return status;
 
   while (read < size) {
-    UINT64 remains = size - read;
+    UINT64 remaining64 = size - read;
+    UINTN chunk;
 
-    status = file->Read(file, &remains, (void*)(buf + read));
+    /* Clamp to UINTN_MAX in case remaining64 exceeds what Read can take */
+    if (remaining64 > (UINT64)(~(UINTN)0)) {
+      chunk = (UINTN)(~(UINTN)0);
+    } else {
+      chunk = (UINTN)remaining64;
+    }
+
+    status = file->Read(file, &chunk, (void*)(buf + read));
     if (status != EFI_SUCCESS) return status;
-    if (remains == 0) return EFI_END_OF_FILE;
+    if (chunk == 0) return EFI_END_OF_FILE;
 
-    read += remains;
+    read += (size_t)chunk;
   }
 
   return EFI_SUCCESS;
@@ -95,10 +103,48 @@ EFI_STATUS load_elf(struct elf_app* elf) {
 
     if (phdr->p_type != PT_LOAD) continue;
 
-    phdr_addr = elf->image_addr + (phdr->p_vaddr - aligned_begin);
-    status = efi_read_fixed(elf->kernel, phdr->p_offset, phdr->p_filesz,
+    /* Validate segment bounds before loading:
+     * - p_filesz <= p_memsz
+     * - p_vaddr >= image_begin
+     * - (p_vaddr - aligned_begin) + p_filesz <= image_size (with overflow check)
+     */
+    UINT64 p_vaddr = (UINT64)phdr->p_vaddr;
+    UINT64 p_filesz = (UINT64)phdr->p_filesz;
+    UINT64 p_memsz = (UINT64)phdr->p_memsz;
+
+    if (p_filesz > p_memsz) {
+      ERROR_PRINT(L"Malformed ELF segment: p_filesz > p_memsz.\n\r");
+      return EFI_LOAD_ERROR;
+    }
+
+    if (p_vaddr < elf->image_begin) {
+      ERROR_PRINT(L"Malformed ELF segment: p_vaddr before image_begin.\n\r");
+      return EFI_LOAD_ERROR;
+    }
+
+    /* At this point p_vaddr >= image_begin >= aligned_begin, so subtraction is safe. */
+    UINT64 segment_offset = p_vaddr - aligned_begin;
+
+    if (segment_offset > image_size) {
+      ERROR_PRINT(L"Malformed ELF segment: offset beyond image size.\n\r");
+      return EFI_LOAD_ERROR;
+    }
+
+    if (p_filesz > image_size - segment_offset) {
+      ERROR_PRINT(L"Malformed ELF segment: segment exceeds image size.\n\r");
+      return EFI_LOAD_ERROR;
+    }
+
+    phdr_addr = elf->image_addr + segment_offset;
+    status = efi_read_fixed(elf->kernel, phdr->p_offset, p_filesz,
                             (void*)phdr_addr);
-    if (status != EFI_SUCCESS) return status;
+    if (status != EFI_SUCCESS) {
+      elf->system->BootServices->FreePages(elf->image_addr, elf->image_pages);
+      elf->image_pages = 0;
+      elf->image_addr = 0;
+      elf->image_entry = 0;
+      return status;
+    }
   }
 
   return EFI_SUCCESS;
