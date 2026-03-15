@@ -82,15 +82,15 @@ UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
   return size;
 }
 
-EFI_STATUS mkdir(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name) {
+EFI_STATUS mkdir(EFI_FILE_PROTOCOL** efi_fp, CHAR16* dir_name) {
   const EFI_STATUS dir_status = g_file_prot->Open(
-      (EFI_FILE_PROTOCOL*)g_file_prot, dir, dir_name,
+      (EFI_FILE_PROTOCOL*)g_file_prot, efi_fp, dir_name,
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
       EFI_FILE_DIRECTORY);
   if (dir_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to open or create KURO directory.\n\r");
     return dir_status;
   }
-  (*dir)->Close(*dir);
+  (*efi_fp)->Close(*efi_fp);
   return EFI_SUCCESS;
 }

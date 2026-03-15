@@ -15,6 +15,9 @@ LOCAL_OVMF_CODE_PATH="ignore-automated/ovmf/OVMF_CODE.fd"
 REMOTE_OVMF_CODE_PATH="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
 BOOT_DIRECTORY="ignore-automated/esp/EFI/BOOT"
 BUILD_FILE_NAME="KUROX64"
+KERNEL_SOURCE_DIR="test-kernel"
+KERNEL_OUTPUT_FILE="test-kernel/isofiles/boot/kernel.bin"
+KERNEL_ESP_PATH="ignore-automated/esp/shiro.kernel"
 
 RED='\033[0;31m' # Red color for error messages
 YELLOW='\033[1;33m' # Yellow color for warnings
@@ -36,6 +39,19 @@ else
     echo -e "${YELLOW}⚠ Warning: Boot directory not found. Creating required directories...${NC}"
     mkdir -p $BOOT_DIRECTORY
     cp build/$BUILD_FILE_NAME.EFI $BOOT_DIRECTORY/BOOTX64.EFI
+fi
+
+echo "➔ Building test kernel for KURO..."
+cmake -S "$KERNEL_SOURCE_DIR" -B "$KERNEL_SOURCE_DIR/build"
+cmake --build "$KERNEL_SOURCE_DIR/build"
+
+if [ -f "$KERNEL_OUTPUT_FILE" ]; then
+    cp "$KERNEL_OUTPUT_FILE" "$KERNEL_ESP_PATH"
+    cp "$KERNEL_OUTPUT_FILE" "ignore-automated/esp/kernel.bin"
+    echo "➔ Kernel copied to ESP as shiro.kernel"
+else
+    echo -e "${RED}⚠ Error: Kernel output not found at $KERNEL_OUTPUT_FILE${NC}"
+    exit 1
 fi
 
 echo "➔ Build completed. Attempting to launch QEMU..."

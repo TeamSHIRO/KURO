@@ -18,3 +18,7 @@ ignore-*
 
 # QEMU files
 esp/
+
+# ISO files
+test-kernel/isofiles/
+test-kernel/mykernel.iso
