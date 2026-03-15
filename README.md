@@ -43,7 +43,7 @@ To build the project, follow these steps:
     ```
 
 > [!TIP]
-> If you want to debug and preview the project in QEMU to contribute to the project, we highly reccomend running the [build-and-run.sh](/automated/build-and-run.sh) script!
+> If you want to debug and preview the project in QEMU to contribute to the project, we highly recommend running the [build-and-run.sh](/automated/build-and-run.sh) script!
 
 ## Contributing
 

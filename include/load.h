@@ -52,7 +52,7 @@ struct elf_app {
   uint64_t image_end;
   uint64_t page_size;
 
-  // Only populated when image is loaded into mamory
+  // Only populated when image is loaded into memory
   uint64_t image_pages;
   uint64_t image_addr;
   uint64_t image_entry;
