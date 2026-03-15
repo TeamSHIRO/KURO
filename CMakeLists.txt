@@ -28,7 +28,6 @@ set(KURO_SOURCES
         src/file.c
         src/logger.c
         src/config.c
-        src/kernel_helpers.c
         src/load.c
         src/memory.c
         src/string.c
