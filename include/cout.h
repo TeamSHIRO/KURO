@@ -9,6 +9,12 @@
 #ifndef KURO_COUT_H
 #define KURO_COUT_H
 
+#define KURO_PREFIX L"[ KURO ] "
+#define LABEL_SEPARATOR L": "
+#define INFO_LABEL L"INFO "
+#define ERROR_LABEL L"ERROR"
+#define SUCCESS_LABEL L"OK   "
+
 #include <__stddef_wchar_t.h>
 #include <efi.h>
 
@@ -17,16 +23,42 @@
 #ifdef NDEBUG
 #define DEBUG_PRINT(str)
 #else
-#define DEBUG_PRINT(str)                                                   \
-  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE); \
-  g_system_table->ConOut->OutputString(g_system_table->ConOut,             \
-                                       L"[KURO|DEBUG] " str)
+#define DEBUG_PRINT(str)                                                       \
+  do {                                                                         \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, KURO_PREFIX); \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut,               \
+                                         EFI_LIGHTBLUE);                       \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, INFO_LABEL);  \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
+                                         LABEL_SEPARATOR str);                 \
+  } while (0)
 #endif
 
-#define ERROR_PRINT(str)                                                 \
-  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_RED); \
-  g_system_table->ConOut->OutputString(g_system_table->ConOut,           \
-                                       L"[KURO|ERROR] " str);            \
-  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);
+#define ERROR_PRINT(str)                                                       \
+  do {                                                                         \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, KURO_PREFIX); \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut,               \
+                                         EFI_LIGHTRED);                        \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, ERROR_LABEL); \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
+                                         LABEL_SEPARATOR str);                 \
+  } while (0)
+
+#define SUCCESS_PRINT(str)                                                     \
+  do {                                                                         \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, KURO_PREFIX); \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut,               \
+                                         EFI_LIGHTGREEN);                      \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
+                                         SUCCESS_LABEL);                       \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
+                                         LABEL_SEPARATOR str);                 \
+  } while (0)
 
 #endif  // KURO_COUT_H

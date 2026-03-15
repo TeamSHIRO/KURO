@@ -20,19 +20,34 @@
 EFI_FILE_PROTOCOL* config_dir = NULL;
 
 EFI_STATUS read_config(char* buffer, UINT64 buffer_size) {
+  if (!buffer || buffer_size == 0) {
+    return EFI_INVALID_PARAMETER;
+  }
+
   if (!config_dir) {
     ERROR_PRINT(L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
+  if (config_dir->SetPosition(config_dir, 0) != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to rewind config file.\n\r");
+    return EFI_DEVICE_ERROR;
+  }
+
   UINT64 file_size = get_writable_file_size(config_dir);
 
-  if (file_size > buffer_size) {
+  // Reserve one byte for a NUL terminator so callers can safely parse text.
+  if (file_size >= buffer_size) {
     return EFI_BUFFER_TOO_SMALL;
   }
 
+  UINT64 bytes_to_read = file_size;
   const EFI_STATUS read_status =
-      config_dir->Read(config_dir, &file_size, buffer);
+      config_dir->Read(config_dir, &bytes_to_read, buffer);
+
+  if (read_status == EFI_SUCCESS) {
+    buffer[bytes_to_read] = '\0';
+  }
 
   return read_status;
 }
@@ -46,7 +61,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
     return read_status;
   }
 
-  const char* line = strtok(buffer, "\n");
+  char* line = strtok(buffer, "\n");
   while (line != NULL) {
     // Skip lines that start with a hashtag (comments)
     if (line[0] == '#') {
@@ -98,7 +113,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
     return open_status;
   }
 
-  DEBUG_PRINT(L"Config file opened successfully.\n\r");
+  SUCCESS_PRINT(L"Config file opened successfully.\n\r");
 
   // Check if a file is empty (newly created)
   const UINT64 file_size = get_writable_file_size(config_dir);
@@ -110,7 +125,8 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
         "# Default config file for KURO\n"
         "# Please make sure the directory exists!\n"
         "kernel_path=\\shiro.kernel\n"
-        "logger_path=\\kuro\\logs\n";
+        "logger_path=\\kuro\\logs\n"
+        "clear_screen=true\n";
 #else
     const char default_config[] = KURO_DEFAULT_CONFIG;
 #endif
@@ -122,6 +138,14 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
       config_dir = NULL;
       ERROR_PRINT(L"Failed to write default config.\n\r");
       return write_status;
+    }
+
+    const EFI_STATUS flush_status = config_dir->Flush(config_dir);
+    if (flush_status != EFI_SUCCESS) {
+      config_dir->Close(config_dir);
+      config_dir = NULL;
+      ERROR_PRINT(L"Failed to flush default config.\n\r");
+      return flush_status;
     }
 
     // Reset file position to beginning
