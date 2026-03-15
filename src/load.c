@@ -10,18 +10,20 @@
 #include "load.h"
 
 #include <efi.h>
+#include <protocol/efi-gop.h>
 #include <protocol/efi-lip.h>
 #include <protocol/efi-sfsp.h>
 #include <stddef.h>
 
 #include "cout.h"
 #include "file.h"
-#include "kernel_helpers.h"
+#include "logger.h"
 #include "main.h"
 #include "memory.h"
 #include "string.h"
 
 EFI_FILE_PROTOCOL* elf_file = NULL;
+static struct kuro_boot_info g_boot_info;
 
 EFI_STATUS init_elf(EFI_FILE_PROTOCOL* volume_handle, CHAR16* kernel_path) {
   const EFI_STATUS open_status = volume_handle->Open(
@@ -102,19 +104,87 @@ EFI_STATUS load_elf(struct elf_app* elf) {
   return EFI_SUCCESS;
 }
 
+EFI_STATUS prepare_kernel_boot_info(struct elf_app* elf) {
+  EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = NULL;
+  EFI_STATUS status;
+
+  memset(&g_boot_info, 0, sizeof(g_boot_info));
+
+  status =
+      elf->system->BootServices->LocateProtocol(&gop_guid, NULL, (void**)&gop);
+  if (status != EFI_SUCCESS || gop == NULL || gop->Mode == NULL ||
+      gop->Mode->Info == NULL) {
+    ERROR_PRINT(L"Failed to locate GOP protocol.\n\r");
+    return (status != EFI_SUCCESS) ? status : EFI_LOAD_ERROR;
+  }
+
+  g_boot_info.framebuffer.base = (UINT64)gop->Mode->FrameBufferBase;
+  g_boot_info.framebuffer.size = (UINT64)gop->Mode->FrameBufferSize;
+  g_boot_info.framebuffer.width = gop->Mode->Info->HorizontalResolution;
+  g_boot_info.framebuffer.height = gop->Mode->Info->VerticalResolution;
+  g_boot_info.framebuffer.pixels_per_scanline =
+      gop->Mode->Info->PixelsPerScanLine;
+  g_boot_info.framebuffer.pixel_format = (UINT32)gop->Mode->Info->PixelFormat;
+  g_boot_info.framebuffer.red_mask = gop->Mode->Info->PixelInformation.RedMask;
+  g_boot_info.framebuffer.green_mask =
+      gop->Mode->Info->PixelInformation.GreenMask;
+  g_boot_info.framebuffer.blue_mask =
+      gop->Mode->Info->PixelInformation.BlueMask;
+  g_boot_info.framebuffer.reserved_mask =
+      gop->Mode->Info->PixelInformation.ReservedMask;
+
+  return EFI_SUCCESS;
+}
+
 EFI_STATUS boot_elf(struct elf_app* elf) {
-  int(__attribute__((sysv_abi)) * entry)(kuro_kernel_print_fn);
+  int(__attribute__((sysv_abi)) * entry)(const struct kuro_boot_info*);
   int ret = 0;
 
-  entry =
-      (int(__attribute__((sysv_abi))*)(kuro_kernel_print_fn))elf->image_entry;
-  ret = (*entry)(kuro_kernel_print);
+  entry = (int(__attribute__((sysv_abi))*)(
+      const struct kuro_boot_info*))elf->image_entry;
+  ret = (*entry)(&g_boot_info);
 
   if (ret != 42) {
     ERROR_PRINT(L"ELF image returned unexpected value.\n\r");
     return EFI_LOAD_ERROR;
   }
 
-  elf->kernel->Close(elf->kernel);
   return EFI_SUCCESS;
+}
+
+EFI_STATUS exit_boot_services() {
+  EFI_STATUS status;
+  UINTN map_size = 0, map_key, descriptor_size;
+  UINT32 descriptor_version;
+  EFI_MEMORY_DESCRIPTOR* memory_map = NULL;
+
+  // Get the required memory map size
+  status = g_system_table->BootServices->GetMemoryMap(
+      &map_size, memory_map, &map_key, &descriptor_size, &descriptor_version);
+  if (status != (EFI_ERR_MASK | EFI_BUFFER_TOO_SMALL)) {
+    return status;
+  }
+
+  // Allocate enough pool for the memory map (with extra space)
+  map_size += 2 * descriptor_size;
+  status = g_system_table->BootServices->AllocatePool(EfiLoaderData, map_size,
+                                                      (void**)&memory_map);
+  if (status != EFI_SUCCESS) {
+    return status;
+  }
+
+  // Get the actual memory map
+  status = g_system_table->BootServices->GetMemoryMap(
+      &map_size, memory_map, &map_key, &descriptor_size, &descriptor_version);
+  if (status != EFI_SUCCESS) {
+    g_system_table->BootServices->FreePool(memory_map);
+    return status;
+  }
+
+  // Exit boot services
+  status =
+      g_system_table->BootServices->ExitBootServices(g_system_table, map_key);
+
+  return status;
 }

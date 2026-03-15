@@ -39,7 +39,9 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
 
   const EFI_STATUS bootloader_status = main();
 
-  fini(bootloader_status);
+  if (bootloader_status != EFI_SUCCESS) {
+    fini(bootloader_status);
+  }
   return bootloader_status;
 }
 
@@ -223,13 +225,23 @@ EFI_STATUS main(void) {
 
   SUCCESS_PRINT(L"ELF image loaded successfully.\n\r");
 
-  char clearScreen[5];
-  get_config_key("clear_screen", clearScreen);
-  CHAR16 clearScreen_wide[5];
-  wchar(clearScreen, clearScreen_wide, sizeof(clearScreen_wide));
+  char clear_screen[16] = {0};
+  get_config_key("clear_screen", clear_screen);
 
-  if (strcmp(clearScreen_wide, L"true") == 0) {
+  if (strcmp(clear_screen, "true") == 0) {
     g_system_table->ConOut->ClearScreen(g_system_table->ConOut);
+  }
+
+  status = prepare_kernel_boot_info(&app);
+  if (status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to prepare kernel boot info.\n\r");
+    return status;
+  }
+
+  EFI_STATUS exit_status = exit_boot_services();
+  if (exit_status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to exit boot services.\n\r");
+    return exit_status;
   }
 
   EFI_STATUS boot_status = boot_elf(&app);

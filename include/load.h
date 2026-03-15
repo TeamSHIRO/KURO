@@ -58,6 +58,23 @@ struct elf_app {
   uint64_t image_entry;
 };
 
+struct kuro_framebuffer {
+  uint64_t base;
+  uint64_t size;
+  uint32_t width;
+  uint32_t height;
+  uint32_t pixels_per_scanline;
+  uint32_t pixel_format;
+  uint32_t red_mask;
+  uint32_t green_mask;
+  uint32_t blue_mask;
+  uint32_t reserved_mask;
+};
+
+struct kuro_boot_info {
+  struct kuro_framebuffer framebuffer;
+};
+
 #define PT_LOAD 1
 
 extern EFI_FILE_PROTOCOL* elf_file;
@@ -66,6 +83,9 @@ EFI_STATUS init_elf(EFI_FILE_PROTOCOL* volume_handle, CHAR16* kernel_path);
 EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
                           size_t size, void* dst);
 EFI_STATUS load_elf(struct elf_app* app);
+EFI_STATUS prepare_kernel_boot_info(struct elf_app* app);
 EFI_STATUS boot_elf(struct elf_app* app);
+
+EFI_STATUS exit_boot_services();
 
 #endif
