@@ -24,6 +24,113 @@
 
 EFI_FILE_PROTOCOL* elf_file = NULL;
 static struct kuro_boot_info g_boot_info;
+static EFI_MEMORY_DESCRIPTOR* g_efi_memory_map = NULL;
+static UINTN g_efi_memory_map_capacity = 0;
+static struct kuro_memory_descriptor* g_kuro_memory_map = NULL;
+static UINTN g_kuro_memory_map_capacity = 0;
+
+static void free_boot_memory_map_buffers() {
+  if (g_efi_memory_map != NULL) {
+    g_system_table->BootServices->FreePool(g_efi_memory_map);
+    g_efi_memory_map = NULL;
+    g_efi_memory_map_capacity = 0;
+  }
+
+  if (g_kuro_memory_map != NULL) {
+    g_system_table->BootServices->FreePool(g_kuro_memory_map);
+    g_kuro_memory_map = NULL;
+    g_kuro_memory_map_capacity = 0;
+  }
+}
+
+static EFI_STATUS ensure_boot_memory_map_buffers(UINTN required_map_size,
+                                                 UINTN descriptor_size) {
+  EFI_STATUS status;
+  UINTN descriptor_count;
+  UINTN kuro_map_size;
+
+  if (descriptor_size == 0) {
+    return EFI_LOAD_ERROR;
+  }
+
+  if (required_map_size > g_efi_memory_map_capacity) {
+    if (g_efi_memory_map != NULL) {
+      g_system_table->BootServices->FreePool(g_efi_memory_map);
+      g_efi_memory_map = NULL;
+      g_efi_memory_map_capacity = 0;
+    }
+
+    status = g_system_table->BootServices->AllocatePool(
+        EfiLoaderData, required_map_size, (void**)&g_efi_memory_map);
+    if (status != EFI_SUCCESS) {
+      return status;
+    }
+
+    g_efi_memory_map_capacity = required_map_size;
+  }
+
+  descriptor_count = required_map_size / descriptor_size;
+  if ((required_map_size % descriptor_size) != 0) {
+    ++descriptor_count;
+  }
+
+  if (descriptor_count > ((UINTN)-1) / sizeof(struct kuro_memory_descriptor)) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  kuro_map_size = descriptor_count * sizeof(struct kuro_memory_descriptor);
+  if (kuro_map_size > g_kuro_memory_map_capacity) {
+    if (g_kuro_memory_map != NULL) {
+      g_system_table->BootServices->FreePool(g_kuro_memory_map);
+      g_kuro_memory_map = NULL;
+      g_kuro_memory_map_capacity = 0;
+    }
+
+    status = g_system_table->BootServices->AllocatePool(
+        EfiLoaderData, kuro_map_size, (void**)&g_kuro_memory_map);
+    if (status != EFI_SUCCESS) {
+      return status;
+    }
+
+    g_kuro_memory_map_capacity = kuro_map_size;
+  }
+
+  return EFI_SUCCESS;
+}
+
+static EFI_STATUS store_boot_memory_map(UINTN map_size, UINTN descriptor_size) {
+  UINTN descriptor_count;
+  unsigned char* current;
+
+  if (descriptor_size == 0 || map_size < descriptor_size) {
+    return EFI_LOAD_ERROR;
+  }
+
+  descriptor_count = map_size / descriptor_size;
+  current = (unsigned char*)g_efi_memory_map;
+
+  for (UINTN i = 0; i < descriptor_count; ++i) {
+    const EFI_MEMORY_DESCRIPTOR* source =
+        (const EFI_MEMORY_DESCRIPTOR*)(current + (i * descriptor_size));
+    struct kuro_memory_descriptor* dest = &g_kuro_memory_map[i];
+
+    dest->type = source->Type;
+    dest->reserved = 0;
+    dest->physical_start = source->PhysicalStart;
+    dest->virtual_start = source->VirtualStart;
+    dest->number_of_pages = source->NumberOfPages;
+    dest->attribute = source->Attribute;
+  }
+
+  g_boot_info.memory_map.descriptors = (UINT64)(UINTN)g_kuro_memory_map;
+  g_boot_info.memory_map.size =
+      (UINT64)(descriptor_count * sizeof(struct kuro_memory_descriptor));
+  g_boot_info.memory_map.descriptor_size =
+      sizeof(struct kuro_memory_descriptor);
+  g_boot_info.memory_map.descriptor_count = (UINT32)descriptor_count;
+
+  return EFI_SUCCESS;
+}
 
 EFI_STATUS init_elf(EFI_FILE_PROTOCOL* volume_handle, CHAR16* kernel_path) {
   const EFI_STATUS open_status = volume_handle->Open(
@@ -63,6 +170,7 @@ EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
 
 EFI_STATUS load_elf(struct elf_app* elf) {
   if (elf->image_end <= elf->image_begin) {
+    ERROR_PRINT(L"Invalid or corrupted ELF image!\n\r");
     return EFI_LOAD_ERROR;
   }
 
@@ -106,7 +214,8 @@ EFI_STATUS load_elf(struct elf_app* elf) {
     /* Validate segment bounds before loading:
      * - p_filesz <= p_memsz
      * - p_vaddr >= image_begin
-     * - (p_vaddr - aligned_begin) + p_filesz <= image_size (with overflow check)
+     * - (p_vaddr - aligned_begin) + p_filesz <= image_size (with overflow
+     * check)
      */
     UINT64 p_vaddr = (UINT64)phdr->p_vaddr;
     UINT64 p_filesz = (UINT64)phdr->p_filesz;
@@ -122,7 +231,8 @@ EFI_STATUS load_elf(struct elf_app* elf) {
       return EFI_LOAD_ERROR;
     }
 
-    /* At this point p_vaddr >= image_begin >= aligned_begin, so subtraction is safe. */
+    /* At this point p_vaddr >= image_begin >= aligned_begin, so subtraction is
+     * safe. */
     UINT64 segment_offset = p_vaddr - aligned_begin;
 
     if (segment_offset > image_size) {
@@ -136,8 +246,8 @@ EFI_STATUS load_elf(struct elf_app* elf) {
     }
 
     phdr_addr = elf->image_addr + segment_offset;
-    status = efi_read_fixed(elf->kernel, phdr->p_offset, p_filesz,
-                            (void*)phdr_addr);
+    status =
+        efi_read_fixed(elf->kernel, phdr->p_offset, p_filesz, (void*)phdr_addr);
     if (status != EFI_SUCCESS) {
       elf->system->BootServices->FreePages(elf->image_addr, elf->image_pages);
       elf->image_pages = 0;
@@ -150,12 +260,72 @@ EFI_STATUS load_elf(struct elf_app* elf) {
   return EFI_SUCCESS;
 }
 
+void gop_highest_mode(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop, UINTN* mode_buffer) {
+  UINTN max_width = 0, max_height = 0;
+  for (UINTN i = 0; i < gop->Mode->MaxMode; ++i) {
+    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* info;
+    UINTN info_size;
+    if (gop->QueryMode(gop, i, &info_size, &info) == EFI_SUCCESS) {
+      if (info->HorizontalResolution * info->VerticalResolution >
+          max_width * max_height) {
+        max_width = info->HorizontalResolution;
+        max_height = info->VerticalResolution;
+        *mode_buffer = i;
+      }
+    }
+  }
+}
+
+EFI_STATUS validate_elf_headers(struct elf_app app) {
+  /* Validate ELF header: magic, class, endianness, and program header entry
+   * size. */
+  if (app.header.e_ident[0] != 0x7f || app.header.e_ident[1] != 'E' ||
+      app.header.e_ident[2] != 'L' || app.header.e_ident[3] != 'F') {
+    ERROR_PRINT(L"Invalid ELF magic.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  /* Only support 64-bit little-endian ELF. */
+  if (app.header.e_ident[4] != 2 || /* ELFCLASS64 */
+      app.header.e_ident[5] != 1) { /* ELFDATA2LSB */
+    ERROR_PRINT(L"Unsupported ELF class or endianness.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  if (app.header.e_phentsize != sizeof(struct elf64_phdr)) {
+    ERROR_PRINT(L"Unexpected ELF program header entry size.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  if (app.header.e_phnum == 0 || app.header.e_phoff == 0) {
+    ERROR_PRINT(L"ELF file has no program headers.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  /* Ensure e_phnum * sizeof(struct elf64_phdr) does not overflow UINTN. */
+  const UINTN max_phnum = ((UINTN)-1) / sizeof(struct elf64_phdr);
+  if ((UINTN)app.header.e_phnum > max_phnum) {
+    ERROR_PRINT(L"Too many ELF program headers.\n\r");
+    return EFI_LOAD_ERROR;
+  }
+
+  return EFI_SUCCESS;
+}
+
 EFI_STATUS prepare_kernel_boot_info(struct elf_app* elf) {
   EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
   EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = NULL;
   EFI_STATUS status;
 
   memset(&g_boot_info, 0, sizeof(g_boot_info));
+
+  // Some basic verification information and shii.
+
+  g_boot_info.magic = KURO_BOOT_INFO_MAGIC;
+  g_boot_info.version = KURO_BOOT_INFO_VERSION;
+  g_boot_info.size = sizeof(struct kuro_boot_info);
+
+  // Find the GOP (Graphics Output Protocol)
 
   status =
       elf->system->BootServices->LocateProtocol(&gop_guid, NULL, (void**)&gop);
@@ -164,6 +334,12 @@ EFI_STATUS prepare_kernel_boot_info(struct elf_app* elf) {
     ERROR_PRINT(L"Failed to locate GOP protocol.\n\r");
     return (status != EFI_SUCCESS) ? status : EFI_LOAD_ERROR;
   }
+
+  // Finds the highest supported graphic mode and switches to it.
+
+  UINTN graphic_mode = 0;
+  gop_highest_mode(gop, &graphic_mode);
+  gop->SetMode(gop, graphic_mode);
 
   g_boot_info.framebuffer.base = (UINT64)gop->Mode->FrameBufferBase;
   g_boot_info.framebuffer.size = (UINT64)gop->Mode->FrameBufferSize;
@@ -200,37 +376,70 @@ EFI_STATUS boot_elf(struct elf_app* elf) {
 }
 
 EFI_STATUS exit_boot_services() {
-  EFI_STATUS status;
-  UINTN map_size = 0, map_key, descriptor_size;
-  UINT32 descriptor_version;
-  EFI_MEMORY_DESCRIPTOR* memory_map = NULL;
+  EFI_STATUS status = EFI_LOAD_ERROR;
+  UINTN map_size = 0;
+  UINTN map_key = 0;
+  UINTN descriptor_size = 0;
+  UINT32 descriptor_version = 0;
 
-  // Get the required memory map size
-  status = g_system_table->BootServices->GetMemoryMap(
-      &map_size, memory_map, &map_key, &descriptor_size, &descriptor_version);
-  if (status != (EFI_ERR_MASK | EFI_BUFFER_TOO_SMALL)) {
-    return status;
+  const UINTN max_attempts = 8;
+
+  // The function has 8 attempts to get the memory map. If it still fails, the
+  // bootloader will throw an error
+
+  for (UINTN attempt = 0; attempt < max_attempts; ++attempt) {
+    map_size = 0;
+    status = g_system_table->BootServices->GetMemoryMap(
+        &map_size, NULL, &map_key, &descriptor_size, &descriptor_version);
+    if (status != (EFI_ERR_MASK | EFI_BUFFER_TOO_SMALL)) {  // Thanks, Mono!
+      ERROR_PRINT(L"Failed to get memory map.\n\r");
+      break;
+    }
+
+    if (map_size > ~(UINTN)0 - 2 * descriptor_size) {
+      status = EFI_OUT_OF_RESOURCES;
+      break;
+    }
+
+    map_size += 2 * descriptor_size;
+    status = ensure_boot_memory_map_buffers(map_size, descriptor_size);
+    if (status != EFI_SUCCESS) {
+      ERROR_PRINT(L"Failed to ensure boot memory map buffers.\n\r");
+      break;
+    }
+
+    status = g_system_table->BootServices->GetMemoryMap(
+        &map_size, g_efi_memory_map, &map_key, &descriptor_size,
+        &descriptor_version);
+    if (status == EFI_BUFFER_TOO_SMALL) {
+      WARNING_PRINT(L"Memory map buffer too small, retrying...\n\r");
+      continue;
+    }
+
+    if (status != EFI_SUCCESS) {
+      ERROR_PRINT(L"Failed to get memory map.\n\r");
+      break;
+    }
+
+    status = store_boot_memory_map(map_size, descriptor_size);
+    if (status != EFI_SUCCESS) {
+      ERROR_PRINT(L"Failed to store boot memory map.\n\r");
+      break;
+    }
+
+    status =
+        g_system_table->BootServices->ExitBootServices(g_system_table, map_key);
+
+    if (status == EFI_SUCCESS) {
+      return EFI_SUCCESS;
+    }
+
+    if (status != EFI_INVALID_PARAMETER) {
+      ERROR_PRINT(L"Failed to exit boot services.\n\r");
+      break;
+    }
   }
 
-  // Allocate enough pool for the memory map (with extra space)
-  map_size += 2 * descriptor_size;
-  status = g_system_table->BootServices->AllocatePool(EfiLoaderData, map_size,
-                                                      (void**)&memory_map);
-  if (status != EFI_SUCCESS) {
-    return status;
-  }
-
-  // Get the actual memory map
-  status = g_system_table->BootServices->GetMemoryMap(
-      &map_size, memory_map, &map_key, &descriptor_size, &descriptor_version);
-  if (status != EFI_SUCCESS) {
-    g_system_table->BootServices->FreePool(memory_map);
-    return status;
-  }
-
-  // Exit boot services
-  status =
-      g_system_table->BootServices->ExitBootServices(g_system_table, map_key);
-
+  free_boot_memory_map_buffers();
   return status;
 }

@@ -9,14 +9,14 @@
 # It assumes that the project is set up to build an EFI application and that QEMU is installed on the system.
 set -e
 
-ALLOCATED_MEMORY=512M
+ALLOCATED_MEMORY=256M
 EXTRA_QEMU_ARGS="" # You can add extra arguments for QEMU here if needed
 LOCAL_OVMF_CODE_PATH="ignore-automated/ovmf/OVMF_CODE.fd"
 REMOTE_OVMF_CODE_PATH="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
 BOOT_DIRECTORY="ignore-automated/esp/EFI/BOOT"
 BUILD_FILE_NAME="KUROX64"
 KERNEL_SOURCE_DIR="test-kernel"
-KERNEL_OUTPUT_FILE="test-kernel/isofiles/boot/kernel.bin"
+KERNEL_OUTPUT_FILE="test-kernel/build/kernel.bin"
 KERNEL_ESP_PATH="ignore-automated/esp/shiro.kernel"
 
 RED='\033[0;31m' # Red color for error messages
@@ -47,7 +47,7 @@ cmake --build "$KERNEL_SOURCE_DIR/build"
 
 if [ -f "$KERNEL_OUTPUT_FILE" ]; then
     cp "$KERNEL_OUTPUT_FILE" "$KERNEL_ESP_PATH"
-    cp "$KERNEL_OUTPUT_FILE" "ignore-automated/esp/kernel.bin"
+    # cp "$KERNEL_OUTPUT_FILE" "ignore-automated/esp/kernel.bin"
     echo "➔ Kernel copied to ESP as shiro.kernel"
 else
     echo -e "${RED}⚠ Error: Kernel output not found at $KERNEL_OUTPUT_FILE${NC}"
@@ -72,4 +72,5 @@ qemu-system-x86_64 \
     -drive if=pflash,format=raw,readonly=on,file=$LOCAL_OVMF_CODE_PATH \
     -drive if=ide,format=raw,file=fat:rw:ignore-automated/esp \
     -net none \
+    -serial stdio \
     $EXTRA_QEMU_ARGS

@@ -1,11 +1,31 @@
-<img width="1037"  alt="Kuro Social logo" src="https://github.com/user-attachments/assets/3a3dd655-b7e2-411f-ae45-fc956b2aabba" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/kuro-banner-dark.png">
+  <img src="images/kuro-banner.png" alt="Light mode version of the kuro logo">
+</picture>
+
+<center>
 
 # KURO: An UEFI bootloader
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-0baaaa.svg)](CODE_OF_CONDUCT.md)
 [![GitHub license](https://img.shields.io/github/license/TeamSHIRO/KURO.svg)](LICENSE)
+![Build](https://github.com/teamSHIRO/KURO/actions/workflows/build.yml/badge.svg)
 
-A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention.
+A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. It is notably used to load NijiOS, based on the SHIRO kernel (work in progress).
+
+</center>
+
+## Features
+
+- Loads ELF executables using the KURO booting convention
+- Minimal and secure codebase
+- Written in modern C
+- UEFI specification compliant
+- Modular, customizable and extensible design
+
+## Getting Started
+
+To get started quickly, see the [`Quick Start Guide`](docs/QUICK_START.md) for step-by-step instructions on setting up and running KURO.
 
 ## Building
 

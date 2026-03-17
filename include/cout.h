@@ -14,6 +14,7 @@
 #define INFO_LABEL L"INFO "
 #define ERROR_LABEL L"ERROR"
 #define SUCCESS_LABEL L"OK   "
+#define WARNING_LABEL L"WARN "
 
 #include <__stddef_wchar_t.h>
 #include <efi.h>
@@ -56,6 +57,18 @@
                                          EFI_LIGHTGREEN);                      \
     g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
                                          SUCCESS_LABEL);                       \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
+                                         LABEL_SEPARATOR str);                 \
+  } while (0)
+
+#define WARNING_PRINT(str)                                                     \
+  do {                                                                         \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut, KURO_PREFIX); \
+    g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_YELLOW);  \
+    g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
+                                         WARNING_LABEL);                       \
     g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);   \
     g_system_table->ConOut->OutputString(g_system_table->ConOut,               \
                                          LABEL_SEPARATOR str);                 \

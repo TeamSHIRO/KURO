@@ -53,6 +53,8 @@ EFI_STATUS init() {
     return EFI_LOAD_ERROR;
   }
 
+  // Get the volume handle
+
   g_file_prot = get_volume_handle(loaded_image_handle);
   if (g_file_prot == NULL) {
     ERROR_PRINT(L"Failed to get volume handle.\n\r");
@@ -79,11 +81,15 @@ EFI_STATUS init() {
     return config_dir_status;
   }
 
+  // Initialize configuration file
+
   const EFI_STATUS config_status = init_config(g_file_prot);
   if (config_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to initialize config.\n\r");
     return config_status;
   }
+
+  // Initialize the logger system
 
   const EFI_STATUS logger_status = init_logger(g_file_prot);
   if (logger_status != EFI_SUCCESS) {
@@ -92,7 +98,8 @@ EFI_STATUS init() {
   }
 
   char kernel_path[256];
-  const EFI_STATUS kernel_path_status = get_config_key("kernel_path", kernel_path);
+  const EFI_STATUS kernel_path_status =
+      get_config_key("kernel_path", kernel_path);
   if (kernel_path_status != EFI_SUCCESS) {
     ERROR_PRINT(L"Failed to get kernel path from config.\n\r");
     return kernel_path_status;
@@ -100,6 +107,9 @@ EFI_STATUS init() {
   CHAR16 kernel_path_wide[256];
   wchar(kernel_path, kernel_path_wide,
         sizeof(kernel_path_wide) / sizeof(kernel_path_wide[0]));
+
+  // Initialize bootloader
+
   const EFI_STATUS loader_status = init_elf(g_file_prot, kernel_path_wide);
   if (loader_status == EFI_NOT_FOUND) {
     ERROR_PRINT(L"Kernel not found.\n\r");
@@ -113,6 +123,8 @@ EFI_STATUS init() {
                                        kernel_path_wide);
   g_system_table->ConOut->OutputString(g_system_table->ConOut, L"\n\r");
 
+  // Disable watchdog timer
+
   log("Disabling watchdog timer...\n");
   const EFI_STATUS disable_wd =
       g_system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
@@ -122,6 +134,7 @@ EFI_STATUS init() {
     return disable_wd;
   }
   log("Watchdog timer disabled successfully.\n");
+  SUCCESS_PRINT(L"Successfully disabled watchdog timer.\n\r");
 
   return EFI_SUCCESS;
 }
@@ -178,41 +191,15 @@ EFI_STATUS main(void) {
     return status;
   }
 
-  /* Validate ELF header: magic, class, endianness, and program header entry size. */
-  if (app.header.e_ident[0] != 0x7f ||
-      app.header.e_ident[1] != 'E' ||
-      app.header.e_ident[2] != 'L' ||
-      app.header.e_ident[3] != 'F') {
-    ERROR_PRINT(L"Invalid ELF magic.\n\r");
-    return EFI_LOAD_ERROR;
-  }
-
-  /* Only support 64-bit little-endian ELF. */
-  if (app.header.e_ident[4] != 2 || /* ELFCLASS64 */
-      app.header.e_ident[5] != 1) { /* ELFDATA2LSB */
-    ERROR_PRINT(L"Unsupported ELF class or endianness.\n\r");
-    return EFI_LOAD_ERROR;
-  }
-
-  if (app.header.e_phentsize != sizeof(struct elf64_phdr)) {
-    ERROR_PRINT(L"Unexpected ELF program header entry size.\n\r");
-    return EFI_LOAD_ERROR;
-  }
-
-  if (app.header.e_phnum == 0 || app.header.e_phoff == 0) {
-    ERROR_PRINT(L"ELF file has no program headers.\n\r");
-    return EFI_LOAD_ERROR;
-  }
-
-  /* Ensure e_phnum * sizeof(struct elf64_phdr) does not overflow UINTN. */
-  const UINTN max_phnum = ((UINTN)-1) / sizeof(struct elf64_phdr);
-  if ((UINTN)app.header.e_phnum > max_phnum) {
-    ERROR_PRINT(L"Too many ELF program headers.\n\r");
-    return EFI_LOAD_ERROR;
-  }
+  status = validate_elf_headers(app);
+  if (status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Invalid ELF headers.\n\r");
+    return status;
+  };
 
   const UINTN phdrs_size =
       (UINTN)app.header.e_phnum * sizeof(struct elf64_phdr);
+
   status = g_system_table->BootServices->AllocatePool(
       EfiLoaderData, phdrs_size, (void**)&app.program_headers);
   if (status != EFI_SUCCESS) {
@@ -263,17 +250,20 @@ EFI_STATUS main(void) {
 
   SUCCESS_PRINT(L"ELF image loaded successfully.\n\r");
 
+  status = prepare_kernel_boot_info(&app);
+  if (status != EFI_SUCCESS) {
+    ERROR_PRINT(L"Failed to prepare kernel boot info.\n\r");
+    return status;
+  }
+
+  SUCCESS_PRINT(
+      L"Successfully prepared kernel boot info. Exiting boot services...\n\r");
+
   char clear_screen[16] = {0};
   get_config_key("clear_screen", clear_screen);
 
   if (strcmp(clear_screen, "true") == 0) {
     g_system_table->ConOut->ClearScreen(g_system_table->ConOut);
-  }
-
-  status = prepare_kernel_boot_info(&app);
-  if (status != EFI_SUCCESS) {
-    ERROR_PRINT(L"Failed to prepare kernel boot info.\n\r");
-    return status;
   }
 
   EFI_STATUS exit_status = exit_boot_services();
