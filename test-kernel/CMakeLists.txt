@@ -31,6 +31,11 @@ target_compile_options(kernel PRIVATE
         -Wextra
 )
 
+target_include_directories(kernel PRIVATE
+        include
+        ../include
+)
+
 target_link_options(kernel PRIVATE
         -m64
         -pie
@@ -44,5 +49,4 @@ target_link_options(kernel PRIVATE
 
 set_target_properties(kernel PROPERTIES
         OUTPUT_NAME "kernel.bin"
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/isofiles/boot"
 )

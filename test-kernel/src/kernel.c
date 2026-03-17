@@ -9,28 +9,18 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
-struct kuro_framebuffer {
-  uint64_t base;
-  uint64_t size;
-  uint32_t width;
-  uint32_t height;
-  uint32_t pixels_per_scanline;
-  uint32_t pixel_format;
-  uint32_t red_mask;
-  uint32_t green_mask;
-  uint32_t blue_mask;
-  uint32_t reserved_mask;
-};
+#include "boot_info.h"
+#include "font.h"
 
-struct kuro_boot_info {
-  struct kuro_framebuffer framebuffer;
-};
+uint64_t cursor_y = 0;
 
 enum {
   KURO_PIXEL_RGBR_8 = 0,
   KURO_PIXEL_BGRR_8 = 1,
   KURO_PIXEL_BITMASK = 2,
+  KURO_MEMORY_PAGE_SIZE = 4096,
 };
 
 static uint32_t lsb_index(uint32_t mask) {
@@ -81,54 +71,31 @@ static void fill_rect(const struct kuro_framebuffer* fb, uint32_t x, uint32_t y,
   }
 }
 
-static const uint8_t* glyph_for(char c) {
-  static const uint8_t H[8] = {0x42, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x42, 0x00};
-  static const uint8_t E[8] = {0x7E, 0x40, 0x40, 0x7C, 0x40, 0x40, 0x7E, 0x00};
-  static const uint8_t L[8] = {0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x7E, 0x00};
-  static const uint8_t O[8] = {0x3C, 0x42, 0x42, 0x42, 0x42, 0x42, 0x3C, 0x00};
-  static const uint8_t F[8] = {0x7E, 0x40, 0x40, 0x7C, 0x40, 0x40, 0x40, 0x00};
-  static const uint8_t R[8] = {0x7C, 0x42, 0x42, 0x7C, 0x48, 0x44, 0x42, 0x00};
-  static const uint8_t M[8] = {0x42, 0x66, 0x5A, 0x42, 0x42, 0x42, 0x42, 0x00};
-  static const uint8_t K[8] = {0x42, 0x44, 0x48, 0x70, 0x48, 0x44, 0x42, 0x00};
-  static const uint8_t N[8] = {0x42, 0x62, 0x52, 0x4A, 0x46, 0x42, 0x42, 0x00};
-  static const uint8_t EX[8] = {0x18, 0x18, 0x18, 0x18, 0x18, 0x00, 0x18, 0x00};
-  static const uint8_t SPACE[8] = {0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00};
+enum {
+  FONT_GLYPH_COLS = 8,
+  FONT_GLYPH_ROWS = 13,
+  FONT_ADVANCE_X = 10,
+  FONT_FIRST_CHAR = 32,
+};
 
-  switch (c) {
-    case 'H':
-      return H;
-    case 'E':
-      return E;
-    case 'L':
-      return L;
-    case 'O':
-      return O;
-    case 'F':
-      return F;
-    case 'R':
-      return R;
-    case 'M':
-      return M;
-    case 'K':
-      return K;
-    case 'N':
-      return N;
-    case '!':
-      return EX;
-    case ' ':
-    default:
-      return SPACE;
+static const uint8_t* glyph_for(char c) {
+  const size_t glyph_count = sizeof(font) / sizeof(font[0]);
+  const unsigned char uc = (unsigned char)c;
+
+  if (uc >= FONT_FIRST_CHAR && (size_t)(uc - FONT_FIRST_CHAR) < glyph_count) {
+    return font[uc - FONT_FIRST_CHAR];
   }
+
+  return font[0];
 }
 
 static void draw_char(const struct kuro_framebuffer* fb, uint32_t x, uint32_t y,
                       char c, uint8_t r, uint8_t g, uint8_t b) {
   const uint8_t* glyph = glyph_for(c);
-  for (uint32_t row = 0; row < 8; ++row) {
-    for (uint32_t col = 0; col < 8; ++col) {
+  for (uint32_t row = 0; row < FONT_GLYPH_ROWS; ++row) {
+    for (uint32_t col = 0; col < FONT_GLYPH_COLS; ++col) {
       if (glyph[row] & (uint8_t)(1U << (7U - col))) {
-        put_pixel(fb, x + col, y + row, r, g, b);
+        put_pixel(fb, x + col, y + (FONT_GLYPH_ROWS - 1U - row), r, g, b);
       }
     }
   }
@@ -139,18 +106,140 @@ static void draw_text(const struct kuro_framebuffer* fb, uint32_t x, uint32_t y,
   uint32_t pen_x = x;
   for (size_t i = 0; text[i] != '\0'; ++i) {
     draw_char(fb, pen_x, y, text[i], r, g, b);
-    pen_x += 8;
+    pen_x += FONT_ADVANCE_X;
   }
+}
+
+static void printLn(const struct kuro_framebuffer* fb, const char* text,
+                    uint8_t r, uint8_t g, uint8_t b) {
+  draw_text(fb, 0, cursor_y, text, r, g, b);
+  cursor_y += FONT_GLYPH_ROWS;
+}
+
+static size_t str_len(const char* text) {
+  size_t len = 0;
+
+  while (text[len] != '\0') {
+    ++len;
+  }
+
+  return len;
+}
+
+static void reverse_range(char* text, size_t len) {
+  for (size_t i = 0; i < len / 2; ++i) {
+    char tmp = text[i];
+    text[i] = text[len - 1 - i];
+    text[len - 1 - i] = tmp;
+  }
+}
+
+static size_t u64_to_dec(char* buffer, size_t capacity, uint64_t value) {
+  size_t len = 0;
+
+  if (capacity == 0) return 0;
+
+  if (value == 0) {
+    if (capacity < 2) {
+      buffer[0] = '\0';
+      return 0;
+    }
+
+    buffer[0] = '0';
+    buffer[1] = '\0';
+    return 1;
+  }
+
+  while (value != 0 && len + 1 < capacity) {
+    buffer[len++] = (char)('0' + (value % 10));
+    value /= 10;
+  }
+
+  buffer[len] = '\0';
+  reverse_range(buffer, len);
+  return len;
+}
+
+static void print_label_u64(const struct kuro_framebuffer* fb,
+                            const char* label, uint64_t value, uint8_t r,
+                            uint8_t g, uint8_t b) {
+  char digits[21];
+  uint32_t label_x;
+
+  u64_to_dec(digits, sizeof(digits), value);
+  draw_text(fb, 0, cursor_y, label, r, g, b);
+
+  label_x = (uint32_t)(str_len(label) * FONT_ADVANCE_X);
+  draw_text(fb, label_x, cursor_y, digits, r, g, b);
+  cursor_y += FONT_GLYPH_ROWS;
+}
+
+static const struct kuro_memory_descriptor* memory_descriptor_at(
+    const struct kuro_memory_map* memory_map, uint32_t index) {
+  const uint8_t* descriptors =
+      (const uint8_t*)(uintptr_t)memory_map->descriptors;
+
+  return (const struct kuro_memory_descriptor*)(descriptors +
+                                                ((size_t)index *
+                                                 memory_map->descriptor_size));
 }
 
 int _start(const struct kuro_boot_info* boot_info) {
   const struct kuro_framebuffer* fb = &boot_info->framebuffer;
+  const struct kuro_memory_map* memory_map = &boot_info->memory_map;
+  uint64_t total_usable_memory = 0;
+  uint64_t first_usable_base = 0;
+  uint64_t first_usable_size = 0;
 
   if (fb->base != 0 && fb->width != 0 && fb->height != 0) {
     // fill_rect(fb, 0, 0, fb->width, fb->height, 0, 0, 0);
-    draw_text(fb, 32, 32, "HELLO FROM KERNEL!", 255, 255, 255);
+    printLn(fb, "HELLO FROM KERNEL! KURO IS WORKING SUCCESSFULLY!", 255, 255,
+            0);
+    printLn(fb, "Framebuffer Information:", 255, 255, 255);
+    print_label_u64(fb, "  Framebuffer base: ", fb->base, 200, 200, 200);
+    print_label_u64(fb, "  Framebuffer width: ", fb->width, 200, 200, 200);
+    print_label_u64(fb, "  Framebuffer height: ", fb->height, 200, 200, 200);
+    printLn(fb, "Memory Information:", 255, 255, 255);
 
-    fill_rect(fb, 100, 100, 100, 100, 255, 0, 0);
+    if (boot_info->magic == KURO_BOOT_INFO_MAGIC &&
+        boot_info->version == KURO_BOOT_INFO_VERSION &&
+        memory_map->descriptors != 0 && memory_map->descriptor_size != 0) {
+      for (uint32_t i = 0; i < memory_map->descriptor_count; ++i) {
+        const struct kuro_memory_descriptor* descriptor =
+            memory_descriptor_at(memory_map, i);
+        const uint64_t region_size =
+            descriptor->number_of_pages * KURO_MEMORY_PAGE_SIZE;
+
+        if (descriptor->type != KURO_MEMORY_CONVENTIONAL) {
+          continue;
+        }
+
+        total_usable_memory += region_size;
+        if (first_usable_size == 0) {
+          first_usable_base = descriptor->physical_start;
+          first_usable_size = region_size;
+        }
+      }
+
+      print_label_u64(fb, "  Map entries: ", memory_map->descriptor_count, 200,
+                      200, 200);
+      print_label_u64(fb, "  First usable base: ", first_usable_base, 200, 200,
+                      200);
+      print_label_u64(fb,
+                      "  First usable size (MB): ", first_usable_size / 1000000,
+                      200, 200, 200);
+      print_label_u64(fb, "  Total usable memory (MB): ",
+                      total_usable_memory / 1000000, 200, 200, 200);
+
+      for (uint64_t i = 0; i < sizeof(font) / sizeof(font[0]); ++i) {
+        draw_char(fb, i * FONT_ADVANCE_X, cursor_y + 10,
+                  (char)(i + FONT_FIRST_CHAR), 255, 255, 255);
+      }
+
+      fill_rect(fb, fb->width - 100, fb->height - 100, 100, 100, 255, 255, 255);
+    } else {
+      printLn(fb, "No valid memory map from bootloader.", 255, 120, 120);
+    }
   }
 
   while (1) {

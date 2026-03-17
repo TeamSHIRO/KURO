@@ -15,6 +15,8 @@
 #include <protocol/efi-fp.h>
 #include <stdint.h>
 
+#include "boot_info.h"
+
 struct elf64_ehdr {
   unsigned char e_ident[16];
   uint16_t e_type;
@@ -58,23 +60,6 @@ struct elf_app {
   uint64_t image_entry;
 };
 
-struct kuro_framebuffer {
-  uint64_t base;
-  uint64_t size;
-  uint32_t width;
-  uint32_t height;
-  uint32_t pixels_per_scanline;
-  uint32_t pixel_format;
-  uint32_t red_mask;
-  uint32_t green_mask;
-  uint32_t blue_mask;
-  uint32_t reserved_mask;
-};
-
-struct kuro_boot_info {
-  struct kuro_framebuffer framebuffer;
-};
-
 #define PT_LOAD 1
 
 extern EFI_FILE_PROTOCOL* elf_file;
@@ -85,6 +70,7 @@ EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
 EFI_STATUS load_elf(struct elf_app* app);
 EFI_STATUS prepare_kernel_boot_info(struct elf_app* app);
 EFI_STATUS boot_elf(struct elf_app* app);
+EFI_STATUS validate_elf_headers(struct elf_app app);
 
 EFI_STATUS exit_boot_services();
 
