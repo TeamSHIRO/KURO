@@ -20,9 +20,9 @@ EFI_FILE_PROTOCOL* log_dir = NULL;
 EFI_FILE_PROTOCOL* log_file = NULL;
 
 EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
-  char logger_path[256];
+  char logger_path[LOGGER_PATH_BUFFER_SIZE];
   get_config_key("logger_path", logger_path);
-  CHAR16 logger_path_wide[256];
+  CHAR16 logger_path_wide[LOGGER_PATH_BUFFER_SIZE];
   wchar(logger_path, logger_path_wide, sizeof(logger_path_wide));
   const EFI_STATUS dir_status = volume_handle->Open(
       (EFI_FILE_PROTOCOL*)volume_handle, &log_dir, logger_path_wide,
@@ -34,21 +34,21 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
     return dir_status;
   }
 
-  const EFI_STATUS exist =
-      log_dir->Open(log_dir, &log_file, L".\\log", EFI_FILE_MODE_READ, 0);
+  const EFI_STATUS exist = log_dir->Open(log_dir, &log_file, (CHAR16*)".\\log",
+                                         EFI_FILE_MODE_READ, 0);
   if (exist == EFI_SUCCESS) {
     log_file->Delete(log_file);
-  } else if (exist != 0x800000000000000E) {
-    ERROR_PRINT(L"Failed to check log file existence.\n\r");
+  } else if (exist != EFI_NOT_FOUND) {
+    ERROR_PRINT((CHAR16*)"Failed to check log file existence.\n\r");
     return exist;
   }
 
   const EFI_STATUS file_status = log_dir->Open(
-      log_dir, &log_file, L".\\log",
+      log_dir, &log_file, (CHAR16*)".\\log",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
   if (file_status != EFI_SUCCESS) {
     log_file = NULL;
-    ERROR_PRINT(L"Failed to open log file.\n\r");
+    ERROR_PRINT((CHAR16*)"Failed to open log file.\n\r");
     log_dir->Close(log_dir);
     log_dir = NULL;
     return file_status;
@@ -67,7 +67,7 @@ EFI_STATUS log(const char* buffer) {
   const EFI_STATUS write_status =
       log_file->Write(log_file, &buffer_size, (void*)buffer);
   if (write_status != EFI_SUCCESS) {
-    ERROR_PRINT(L"Failed to write to log file.\n\r");
+    ERROR_PRINT((CHAR16*)"Failed to write to log file.\n\r");
   }
 
   return write_status;

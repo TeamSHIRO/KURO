@@ -14,6 +14,10 @@
 #include <efi.h>
 #include <stddef.h>
 
+#define U64_TO_STR_BUFFER_SIZE 20
+#define U16_TO_STR_BUFFER_SIZE 5
+#define DECIMAL_BASE 10
+
 char* strtok(char* str, const char* delim);
 char* strchr(const char* str, int c);
 void strcat(char* dest, const char* src);
