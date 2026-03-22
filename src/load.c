@@ -147,7 +147,7 @@ EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
   status = file->SetPosition(file, offset);
 
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to set file position.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to set file position.\n\r");
     return status;
   }
 
@@ -165,12 +165,12 @@ EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
     status = file->Read(file, &chunk, (void*)(buf + read));
 
     if (status != EFI_SUCCESS) {
-      ERROR_PRINT((CHAR16*)"Failed to read file.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to read file.\n\r");
       return status;
     }
 
     if (chunk == 0) {
-      ERROR_PRINT((CHAR16*)"Unexpected end of file.\n\r");
+      ERROR_PRINT((CHAR16*)L"Unexpected end of file.\n\r");
       return EFI_END_OF_FILE;
     }
 
@@ -182,12 +182,12 @@ EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
 
 EFI_STATUS load_elf(struct elf_app* elf) {
   if (elf->image_end <= elf->image_begin) {
-    ERROR_PRINT((CHAR16*)"Invalid or corrupted ELF image!\n\r");
+    ERROR_PRINT((CHAR16*)L"Invalid or corrupted ELF image!\n\r");
     return EFI_LOAD_ERROR;
   }
 
   if (elf->page_size == 0) {
-    ERROR_PRINT((CHAR16*)"Invalid ELF page size!\n\r");
+    ERROR_PRINT((CHAR16*)L"Invalid ELF page size!\n\r");
     return EFI_LOAD_ERROR;
   }
 
@@ -195,7 +195,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
   const UINT64 page_mask = (UINT64)(elf->page_size - 1);
   /* Check for overflow in elf->image_end + page_mask */
   if (elf->image_end > (~(UINT64)0 - page_mask)) {
-    ERROR_PRINT((CHAR16*)"ELF image range overflows address space!\n\r");
+    ERROR_PRINT((CHAR16*)L"ELF image range overflows address space!\n\r");
     return EFI_LOAD_ERROR;
   }
   const UINT64 aligned_begin = linked_begin & ~page_mask;
@@ -203,7 +203,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
   const UINT64 aligned_end = rounded_end & ~page_mask;
   /* Validate the aligned range */
   if (aligned_end <= aligned_begin || aligned_end < elf->image_end) {
-    ERROR_PRINT((CHAR16*)"Aligned ELF image range is invalid!\n\r");
+    ERROR_PRINT((CHAR16*)L"Aligned ELF image range is invalid!\n\r");
     return EFI_LOAD_ERROR;
   }
   const UINT64 image_size = aligned_end - aligned_begin;
@@ -221,7 +221,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
     status = elf->system->BootServices->AllocatePages(
         AllocateAnyPages, EfiLoaderData, pages, &alloc_base);
     if (status != EFI_SUCCESS) {
-      ERROR_PRINT((CHAR16*)"Failed to allocate pages for kernel\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to allocate pages for kernel\n\r");
       return status;
     }
   }
@@ -234,7 +234,8 @@ EFI_STATUS load_elf(struct elf_app* elf) {
    */
   UINT64 e_entry = (UINT64)elf->header.e_entry;
   if (e_entry < elf->image_begin || e_entry >= elf->image_end) {
-    ERROR_PRINT((CHAR16*)"Malformed ELF: entry point outside image range.\n\r");
+    ERROR_PRINT(
+        (CHAR16*)L"Malformed ELF: entry point outside image range.\n\r");
     elf->system->BootServices->FreePages(alloc_base, pages);
     elf->image_pages = 0;
     elf->image_addr = 0;
@@ -272,7 +273,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
     UINT64 p_memsz = (UINT64)phdr->p_memsz;
 
     if (p_filesz > p_memsz) {
-      ERROR_PRINT((CHAR16*)"Malformed ELF segment: p_filesz > p_memsz.\n\r");
+      ERROR_PRINT((CHAR16*)L"Malformed ELF segment: p_filesz > p_memsz.\n\r");
       elf->system->BootServices->FreePages(elf->image_addr, elf->image_pages);
       elf->image_pages = 0;
       elf->image_addr = 0;
@@ -282,7 +283,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
 
     if (p_vaddr < elf->image_begin) {
       ERROR_PRINT(
-          (CHAR16*)"Malformed ELF segment: p_vaddr before image_begin.\n\r");
+          (CHAR16*)L"Malformed ELF segment: p_vaddr before image_begin.\n\r");
       elf->system->BootServices->FreePages(elf->image_addr, elf->image_pages);
       elf->image_pages = 0;
       elf->image_addr = 0;
@@ -296,7 +297,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
 
     if (segment_offset > image_size) {
       ERROR_PRINT(
-          (CHAR16*)"Malformed ELF segment: offset beyond image size.\n\r");
+          (CHAR16*)L"Malformed ELF segment: offset beyond image size.\n\r");
       elf->system->BootServices->FreePages(elf->image_addr, elf->image_pages);
       elf->image_pages = 0;
       elf->image_addr = 0;
@@ -306,7 +307,7 @@ EFI_STATUS load_elf(struct elf_app* elf) {
 
     if (p_filesz > image_size - segment_offset) {
       ERROR_PRINT(
-          (CHAR16*)"Malformed ELF segment: segment exceeds image size.\n\r");
+          (CHAR16*)L"Malformed ELF segment: segment exceeds image size.\n\r");
       elf->system->BootServices->FreePages(elf->image_addr, elf->image_pages);
       elf->image_pages = 0;
       elf->image_addr = 0;
@@ -354,47 +355,48 @@ EFI_STATUS validate_elf_headers(struct elf_app* elf) {
 
   if (elf->header.e_ident[0] != ELF_MAGIC || elf->header.e_ident[1] != 'E' ||
       elf->header.e_ident[2] != 'L' || elf->header.e_ident[3] != 'F') {
-    ERROR_PRINT((CHAR16*)"Invalid ELF magic.\n\r");
+    ERROR_PRINT((CHAR16*)L"Invalid ELF magic.\n\r");
     return EFI_LOAD_ERROR;
   }
 
   /* Only support 64-bit little-endian ELF. */
   if (elf->header.e_ident[4] != 2 || /* ELFCLASS64 */
       elf->header.e_ident[5] != 1) { /* ELFDATA2LSB NOLINT */
-    ERROR_PRINT((CHAR16*)"Unsupported ELF class or endianness.\n\r");
+    ERROR_PRINT((CHAR16*)L"Unsupported ELF class or endianness.\n\r");
     return EFI_LOAD_ERROR;
   }
 
   if (elf->header.e_phentsize != sizeof(struct elf64_phdr)) {
-    ERROR_PRINT((CHAR16*)"Unexpected ELF program header entry size.\n\r");
+    ERROR_PRINT((CHAR16*)L"Unexpected ELF program header entry size.\n\r");
     return EFI_LOAD_ERROR;
   }
 
   if (elf->header.e_phnum == 0 || elf->header.e_phoff == 0) {
-    ERROR_PRINT((CHAR16*)"ELF file has no program headers.\n\r");
+    ERROR_PRINT((CHAR16*)L"ELF file has no program headers.\n\r");
     return EFI_LOAD_ERROR;
   }
 
   /* Ensure e_phnum * sizeof(struct elf64_phdr) does not overflow UINTN. */
   const UINTN max_phnum = ((UINTN)-1) / sizeof(struct elf64_phdr);
   if ((UINTN)elf->header.e_phnum > max_phnum) {
-    ERROR_PRINT((CHAR16*)"Too many ELF program headers.\n\r");
+    ERROR_PRINT((CHAR16*)L"Too many ELF program headers.\n\r");
     return EFI_LOAD_ERROR;
   }
 
   /* Validate machine, version, and type. */
   if (elf->header.e_machine != EM_X86_64) {
-    ERROR_PRINT((CHAR16*)"Unsupported ELF machine type (expected x86_64).\n\r");
+    ERROR_PRINT(
+        (CHAR16*)L"Unsupported ELF machine type (expected x86_64).\n\r");
     return EFI_LOAD_ERROR;
   }
   /* e_version == 1: EV_CURRENT */
   if (elf->header.e_version != 1) {
-    ERROR_PRINT((CHAR16*)"Unsupported ELF version.\n\r");
+    ERROR_PRINT((CHAR16*)L"Unsupported ELF version.\n\r");
     return EFI_LOAD_ERROR;
   }
   /* e_type: allow ET_EXEC (2) and ET_DYN (3) */
   if (elf->header.e_type != 2 && elf->header.e_type != 3) {
-    ERROR_PRINT((CHAR16*)"Unsupported ELF file type.\n\r");
+    ERROR_PRINT((CHAR16*)L"Unsupported ELF file type.\n\r");
     return EFI_LOAD_ERROR;
   }
 
@@ -420,7 +422,7 @@ EFI_STATUS prepare_kernel_boot_info(struct elf_app* elf) {
       elf->system->BootServices->LocateProtocol(&gop_guid, NULL, (void**)&gop);
   if (status != EFI_SUCCESS || gop == NULL || gop->Mode == NULL ||
       gop->Mode->Info == NULL) {
-    ERROR_PRINT((CHAR16*)"Failed to locate GOP protocol.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to locate GOP protocol.\n\r");
     return (status != EFI_SUCCESS) ? status : EFI_LOAD_ERROR;
   }
 
@@ -430,7 +432,7 @@ EFI_STATUS prepare_kernel_boot_info(struct elf_app* elf) {
   gop_highest_mode(gop, &graphic_mode);
   status = gop->SetMode(gop, graphic_mode);
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to set GOP mode\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to set GOP mode\n\r");
   }
 
   g_boot_info.framebuffer.base = (UINT64)gop->Mode->FrameBufferBase;
@@ -460,7 +462,7 @@ EFI_STATUS boot_elf(struct elf_app* elf) {
   ret = (*entry)(&g_boot_info);
 
   if (ret != KURO_RETURN_MAGIC_NUMBER) {
-    ERROR_PRINT((CHAR16*)"ELF image returned unexpected value.\n\r");
+    ERROR_PRINT((CHAR16*)L"ELF image returned unexpected value.\n\r");
     return EFI_LOAD_ERROR;
   }
 
@@ -484,7 +486,7 @@ EFI_STATUS exit_boot_services() {
     status = g_system_table->BootServices->GetMemoryMap(
         &map_size, NULL, &map_key, &descriptor_size, &descriptor_version);
     if (status != (EFI_ERR_MASK | EFI_BUFFER_TOO_SMALL)) {  // Thanks, Mono!
-      ERROR_PRINT((CHAR16*)"Failed to get memory map.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to get memory map.\n\r");
       break;
     }
 
@@ -496,7 +498,7 @@ EFI_STATUS exit_boot_services() {
     map_size += 2 * descriptor_size;
     status = ensure_boot_memory_map_buffers(map_size, descriptor_size);
     if (status != EFI_SUCCESS) {
-      ERROR_PRINT((CHAR16*)"Failed to ensure boot memory map buffers.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to ensure boot memory map buffers.\n\r");
       break;
     }
 
@@ -504,18 +506,18 @@ EFI_STATUS exit_boot_services() {
         &map_size, g_efi_memory_map, &map_key, &descriptor_size,
         &descriptor_version);
     if (status == EFI_BUFFER_TOO_SMALL) {
-      WARNING_PRINT((CHAR16*)"Memory map buffer too small, retrying...\n\r");
+      WARNING_PRINT((CHAR16*)L"Memory map buffer too small, retrying...\n\r");
       continue;
     }
 
     if (status != EFI_SUCCESS) {
-      ERROR_PRINT((CHAR16*)"Failed to get memory map.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to get memory map.\n\r");
       break;
     }
 
     status = store_boot_memory_map(map_size, descriptor_size);
     if (status != EFI_SUCCESS) {
-      ERROR_PRINT((CHAR16*)"Failed to store boot memory map.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to store boot memory map.\n\r");
       break;
     }
 
@@ -527,7 +529,7 @@ EFI_STATUS exit_boot_services() {
     }
 
     if (status != EFI_INVALID_PARAMETER) {
-      ERROR_PRINT((CHAR16*)"Failed to exit boot services.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to exit boot services.\n\r");
       break;
     }
   }

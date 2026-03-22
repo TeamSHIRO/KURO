@@ -34,21 +34,21 @@ EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle) {
     return dir_status;
   }
 
-  const EFI_STATUS exist = log_dir->Open(log_dir, &log_file, (CHAR16*)".\\log",
+  const EFI_STATUS exist = log_dir->Open(log_dir, &log_file, (CHAR16*)L".\\log",
                                          EFI_FILE_MODE_READ, 0);
   if (exist == EFI_SUCCESS) {
     log_file->Delete(log_file);
   } else if (exist != EFI_NOT_FOUND) {
-    ERROR_PRINT((CHAR16*)"Failed to check log file existence.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to check log file existence.\n\r");
     return exist;
   }
 
   const EFI_STATUS file_status = log_dir->Open(
-      log_dir, &log_file, (CHAR16*)".\\log",
+      log_dir, &log_file, (CHAR16*)L".\\log",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
   if (file_status != EFI_SUCCESS) {
     log_file = NULL;
-    ERROR_PRINT((CHAR16*)"Failed to open log file.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to open log file.\n\r");
     log_dir->Close(log_dir);
     log_dir = NULL;
     return file_status;
@@ -67,7 +67,7 @@ EFI_STATUS log(const char* buffer) {
   const EFI_STATUS write_status =
       log_file->Write(log_file, &buffer_size, (void*)buffer);
   if (write_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to write to log file.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to write to log file.\n\r");
   }
 
   return write_status;
