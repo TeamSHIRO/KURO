@@ -49,7 +49,7 @@ EFI_STATUS init() {
   const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_handle =
       get_loaded_image_protocol(g_image_handle);
   if (loaded_image_handle == NULL) {
-    ERROR_PRINT((CHAR16*)"Failed to get loaded image protocol.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to get loaded image protocol.\n\r");
     return EFI_LOAD_ERROR;
   }
 
@@ -57,7 +57,7 @@ EFI_STATUS init() {
 
   g_file_prot = get_volume_handle(loaded_image_handle);
   if (g_file_prot == NULL) {
-    ERROR_PRINT((CHAR16*)"Failed to get volume handle.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to get volume handle.\n\r");
     g_system_table->BootServices->CloseProtocol(g_image_handle, &g_lip_guid,
                                                 g_image_handle, NULL);
     return EFI_LOAD_ERROR;
@@ -66,18 +66,18 @@ EFI_STATUS init() {
                                               g_image_handle, NULL);
 
   EFI_FILE_PROTOCOL* kuro_dir;
-  const EFI_STATUS kuro_dir_status = mkdir(&kuro_dir, (CHAR16*)"\\kuro");
+  const EFI_STATUS kuro_dir_status = mkdir(&kuro_dir, (CHAR16*)L"\\kuro");
   EFI_FILE_PROTOCOL* temp_config_dir;
   const EFI_STATUS config_dir_status =
-      mkdir(&temp_config_dir, (CHAR16*)"\\kuro\\config");
+      mkdir(&temp_config_dir, (CHAR16*)L"\\kuro\\config");
 
   if (kuro_dir_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to create or open KURO directory.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to create or open KURO directory.\n\r");
     return kuro_dir_status;
   }
 
   if (config_dir_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to create or open config directory.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to create or open config directory.\n\r");
     return config_dir_status;
   }
 
@@ -85,7 +85,7 @@ EFI_STATUS init() {
 
   const EFI_STATUS config_status = init_config(g_file_prot);
   if (config_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to initialize config.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to initialize config.\n\r");
     return config_status;
   }
 
@@ -93,7 +93,7 @@ EFI_STATUS init() {
 
   const EFI_STATUS logger_status = init_logger(g_file_prot);
   if (logger_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to initialize logger.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to initialize logger.\n\r");
     return logger_status;
   }
 
@@ -101,7 +101,7 @@ EFI_STATUS init() {
   const EFI_STATUS kernel_path_status =
       get_config_key("kernel_path", kernel_path);
   if (kernel_path_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to get kernel path from config.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to get kernel path from config.\n\r");
     return kernel_path_status;
   }
   CHAR16 kernel_path_wide[KERNEL_PATH_BUFFER_SIZE];
@@ -112,17 +112,18 @@ EFI_STATUS init() {
 
   const EFI_STATUS loader_status = init_elf(g_file_prot, kernel_path_wide);
   if (loader_status == EFI_NOT_FOUND) {
-    ERROR_PRINT((CHAR16*)"Kernel not found.\n\r");
+    ERROR_PRINT((CHAR16*)L"Kernel not found.\n\r");
     return loader_status;
   }
   if (loader_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to initialize ELF loader.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to initialize ELF loader.\n\r");
     return loader_status;
   }
-  SUCCESS_PRINT((CHAR16*)"Kernel found at ");
+  SUCCESS_PRINT((CHAR16*)L"Kernel found at ");
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        kernel_path_wide);
-  g_system_table->ConOut->OutputString(g_system_table->ConOut, (CHAR16*)"\n\r");
+  g_system_table->ConOut->OutputString(g_system_table->ConOut,
+                                       (CHAR16*)L"\n\r");
 
   // Disable watchdog timer
 
@@ -131,11 +132,11 @@ EFI_STATUS init() {
       g_system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
 
   if (disable_wd != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to disable watchdog timer.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to disable watchdog timer.\n\r");
     return disable_wd;
   }
   log("Watchdog timer disabled successfully.\n");
-  SUCCESS_PRINT((CHAR16*)"Successfully disabled watchdog timer.\n\r");
+  SUCCESS_PRINT((CHAR16*)L"Successfully disabled watchdog timer.\n\r");
 
   return EFI_SUCCESS;
 }
@@ -168,7 +169,7 @@ void fini(EFI_STATUS exit_status) {
   }
   log("Closing logger...\n");
   if (close_logger() != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to close logger.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to close logger.\n\r");
   }
 }
 
@@ -188,13 +189,13 @@ EFI_STATUS kuro_main(void) {
   EFI_STATUS status =
       efi_read_fixed(app.kernel, 0, sizeof(struct elf64_ehdr), &app.header);
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to read ELF header.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to read ELF header.\n\r");
     return status;
   }
 
   status = validate_elf_headers(&app);
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Invalid ELF headers.\n\r");
+    ERROR_PRINT((CHAR16*)L"Invalid ELF headers.\n\r");
     return status;
   };
 
@@ -204,14 +205,14 @@ EFI_STATUS kuro_main(void) {
   status = g_system_table->BootServices->AllocatePool(
       EfiLoaderData, phdrs_size, (void**)&app.program_headers);
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to allocate ELF program headers.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to allocate ELF program headers.\n\r");
     return status;
   }
 
   status = efi_read_fixed(app.kernel, app.header.e_phoff, phdrs_size,
                           app.program_headers);
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to read ELF program headers.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to read ELF program headers.\n\r");
     g_system_table->BootServices->FreePool(app.program_headers);
     app.program_headers = NULL;
     return status;
@@ -232,7 +233,7 @@ EFI_STATUS kuro_main(void) {
     const UINT64 p_memsz = (UINT64)phdr->p_memsz;
     if (p_memsz > UINT64_MAX - p_vaddr) {
       ERROR_PRINT((
-          CHAR16*)"Invalid ELF segment: virtual address and size "
+          CHAR16*)L"Invalid ELF segment: virtual address and size "
                   "overflow.\n\r");
       g_system_table->BootServices->FreePool(app.program_headers);
       app.program_headers = NULL;
@@ -246,7 +247,7 @@ EFI_STATUS kuro_main(void) {
   }
 
   if (app.image_begin == UINT64_MAX || app.image_end <= app.image_begin) {
-    ERROR_PRINT((CHAR16*)"Invalid ELF loadable segments.\n\r");
+    ERROR_PRINT((CHAR16*)L"Invalid ELF loadable segments.\n\r");
     g_system_table->BootServices->FreePool(app.program_headers);
     app.program_headers = NULL;
     return EFI_LOAD_ERROR;
@@ -256,20 +257,20 @@ EFI_STATUS kuro_main(void) {
   app.program_headers = NULL;
 
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to load ELF image.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to load ELF image.\n\r");
     return status;
   }
 
-  SUCCESS_PRINT((CHAR16*)"ELF image loaded successfully.\n\r");
+  SUCCESS_PRINT((CHAR16*)L"ELF image loaded successfully.\n\r");
 
   status = prepare_kernel_boot_info(&app);
   if (status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to prepare kernel boot info.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to prepare kernel boot info.\n\r");
     return status;
   }
 
   SUCCESS_PRINT((
-      CHAR16*)"Successfully prepared kernel boot info. Exiting boot "
+      CHAR16*)L"Successfully prepared kernel boot info. Exiting boot "
               "services...\n\r");
 
   char clear_screen[CLEAR_SCREEN_BUFFER_SIZE] = {0};
@@ -286,13 +287,13 @@ EFI_STATUS kuro_main(void) {
 
   EFI_STATUS exit_status = exit_boot_services();
   if (exit_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to exit boot services.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to exit boot services.\n\r");
     return exit_status;
   }
 
   EFI_STATUS boot_status = boot_elf(&app);
   if (boot_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to boot ELF image.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to boot ELF image.\n\r");
     return boot_status;
   }
 

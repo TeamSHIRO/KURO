@@ -89,7 +89,7 @@ EFI_STATUS mkdir(EFI_FILE_PROTOCOL** efi_fp, CHAR16* dir_name) {
       EFI_FILE_DIRECTORY);
 
   if (dir_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to open or create KURO directory.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to open or create KURO directory.\n\r");
     return dir_status;
   }
   (*efi_fp)->Close(*efi_fp);

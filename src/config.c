@@ -25,12 +25,12 @@ EFI_STATUS read_config(char* buffer, UINT64 buffer_size) {
   }
 
   if (!config_dir) {
-    ERROR_PRINT((CHAR16*)"Config directory is not initialized.\n\r");
+    ERROR_PRINT((CHAR16*)L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
   if (config_dir->SetPosition(config_dir, 0) != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to rewind config file.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to rewind config file.\n\r");
     return EFI_DEVICE_ERROR;
   }
 
@@ -57,7 +57,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
   const EFI_STATUS read_status = read_config(buffer, sizeof(buffer));
 
   if (read_status != EFI_SUCCESS) {
-    ERROR_PRINT((CHAR16*)"Failed to read config file.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to read config file.\n\r");
     return read_status;
   }
 
@@ -83,7 +83,7 @@ EFI_STATUS get_config_key(const char* key, char* value) {
     line = strtok(NULL, "\n");
   }
 
-  ERROR_PRINT((CHAR16*)"Key not found in config file.\n\r");
+  ERROR_PRINT((CHAR16*)L"Key not found in config file.\n\r");
   return EFI_NOT_FOUND;
 }
 
@@ -91,7 +91,7 @@ EFI_STATUS write_config(const char* buffer) {
   UINT64 buffer_size = strlen(buffer);
 
   if (!config_dir) {
-    ERROR_PRINT((CHAR16*)"Config directory is not initialized.\n\r");
+    ERROR_PRINT((CHAR16*)L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
@@ -104,16 +104,16 @@ EFI_STATUS write_config(const char* buffer) {
 EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
   const EFI_STATUS open_status = volume_handle->Open(
       (EFI_FILE_PROTOCOL*)volume_handle, &config_dir,
-      (CHAR16*)"\\kuro\\config\\kuro.conf",
+      (CHAR16*)L"\\kuro\\config\\kuro.conf",
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
 
   if (open_status != EFI_SUCCESS) {
     config_dir = NULL;
-    ERROR_PRINT((CHAR16*)"Failed to open or create config file.\n\r");
+    ERROR_PRINT((CHAR16*)L"Failed to open or create config file.\n\r");
     return open_status;
   }
 
-  SUCCESS_PRINT((CHAR16*)"Config file opened successfully.\n\r");
+  SUCCESS_PRINT((CHAR16*)L"Config file opened successfully.\n\r");
   // Check if a file is empty (newly created)
   const UINT64 file_size = get_writable_file_size(config_dir);
 
@@ -135,7 +135,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
     if (write_status != EFI_SUCCESS) {
       config_dir->Close(config_dir);
       config_dir = NULL;
-      ERROR_PRINT((CHAR16*)"Failed to write default config.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to write default config.\n\r");
       return write_status;
     }
 
@@ -143,7 +143,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
     if (flush_status != EFI_SUCCESS) {
       config_dir->Close(config_dir);
       config_dir = NULL;
-      ERROR_PRINT((CHAR16*)"Failed to flush default config.\n\r");
+      ERROR_PRINT((CHAR16*)L"Failed to flush default config.\n\r");
       return flush_status;
     }
 
@@ -151,7 +151,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
     config_dir->SetPosition(config_dir, 0);
   } else {
     DEBUG_PRINT((
-        CHAR16*)"Config file already exists, skipping default config "
+        CHAR16*)L"Config file already exists, skipping default config "
                 "write.\n\r");
   }
 
@@ -160,7 +160,7 @@ EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle) {
 
 EFI_STATUS close_config() {
   if (!config_dir) {
-    ERROR_PRINT((CHAR16*)"Config directory is not initialized.\n\r");
+    ERROR_PRINT((CHAR16*)L"Config directory is not initialized.\n\r");
     return EFI_NOT_READY;
   }
 
