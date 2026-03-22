@@ -15,6 +15,8 @@
 #include <protocol/efi-fp.h>
 #include <protocol/efi-lip.h>
 
+#define EFI_FILE_POSITION_END 0xFFFFFFFFFFFFFFFFULL
+
 extern EFI_GUID g_lip_guid;
 extern EFI_GUID g_sfsp_guid;
 

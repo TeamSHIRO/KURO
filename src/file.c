@@ -74,7 +74,7 @@ EFI_STATUS get_file_info(EFI_FILE_PROTOCOL* file, EFI_FILE_INFO** file_info) {
 
 UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
   UINT64 size = 0;
-  if (file->SetPosition(file, 0xFFFFFFFFFFFFFFFF) != EFI_SUCCESS) {
+  if (file->SetPosition(file, EFI_FILE_POSITION_END) != EFI_SUCCESS) {
     return 0;
   }
   file->GetPosition(file, &size);
@@ -84,11 +84,12 @@ UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file) {
 
 EFI_STATUS mkdir(EFI_FILE_PROTOCOL** efi_fp, CHAR16* dir_name) {
   const EFI_STATUS dir_status = g_file_prot->Open(
-      (EFI_FILE_PROTOCOL*)g_file_prot, efi_fp, dir_name,
+      g_file_prot, efi_fp, dir_name,
       EFI_FILE_MODE_CREATE | EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE,
       EFI_FILE_DIRECTORY);
+
   if (dir_status != EFI_SUCCESS) {
-    ERROR_PRINT(L"Failed to open or create KURO directory.\n\r");
+    ERROR_PRINT((CHAR16*)"Failed to open or create KURO directory.\n\r");
     return dir_status;
   }
   (*efi_fp)->Close(*efi_fp);

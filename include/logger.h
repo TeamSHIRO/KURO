@@ -13,6 +13,8 @@
 
 extern EFI_FILE_PROTOCOL* log_dir;
 
+#define LOGGER_PATH_BUFFER_SIZE 256
+
 EFI_STATUS init_logger(const EFI_FILE_PROTOCOL* volume_handle);
 EFI_STATUS log(const char* buffer);
 EFI_STATUS close_logger(void);

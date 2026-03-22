@@ -1,0 +1,8 @@
+-target
+x86_64-pc-win32-coff
+-ffreestanding
+-fno-stack-protector
+-fshort-wchar
+-mno-red-zone
+-I./build/_deps/efi-clang-fetch-src
+-I./include

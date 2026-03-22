@@ -25,6 +25,7 @@ include(toolchain/efi.cmake)
 
 set(KURO_SOURCES
         src/main.c
+        src/cout.c
         src/file.c
         src/logger.c
         src/config.c

@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 #define KURO_BOOT_INFO_MAGIC 0x4b55524full
-#define KURO_BOOT_INFO_VERSION 1u
+enum { KURO_BOOT_INFO_VERSION = 1U };
 
 enum kuro_memory_type {
   KURO_MEMORY_RESERVED = 0,

@@ -9,9 +9,12 @@
 
 #ifndef KURO_BOOTLOADER_CONFIG_H
 #define KURO_BOOTLOADER_CONFIG_H
+
 #include <protocol/efi-fp.h>
 
 extern EFI_FILE_PROTOCOL* config_dir;
+
+#define CONFIG_BUFFER_SIZE 1024
 
 EFI_STATUS init_config(const EFI_FILE_PROTOCOL* volume_handle);
 EFI_STATUS read_config(char* buffer, UINT64 buffer_size);

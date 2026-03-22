@@ -132,7 +132,7 @@ void wchar(const char* src, CHAR16* dest, size_t max_len) {
 }
 
 void u64_to_str(uint64_t value, char* buffer) {
-  char temp[20];
+  char temp[U64_TO_STR_BUFFER_SIZE];
   int i = 0;
 
   if (value == 0) {
@@ -142,8 +142,8 @@ void u64_to_str(uint64_t value, char* buffer) {
   }
 
   while (value > 0) {
-    temp[i++] = (char)('0' + (uint8_t)(value % 10));
-    value /= 10;
+    temp[i++] = (char)('0' + (uint8_t)(value % DECIMAL_BASE));
+    value /= DECIMAL_BASE;
   }
 
   int j = 0;
@@ -155,7 +155,7 @@ void u64_to_str(uint64_t value, char* buffer) {
 }
 
 void u16_to_str(uint16_t value, char* buffer) {
-  char temp[5];
+  char temp[U16_TO_STR_BUFFER_SIZE];
   int i = 0;
 
   if (value == 0) {
@@ -165,8 +165,8 @@ void u16_to_str(uint16_t value, char* buffer) {
   }
 
   while (value > 0) {
-    temp[i++] = (char)('0' + (uint8_t)(value % 10));
-    value /= 10;
+    temp[i++] = (char)('0' + (uint8_t)(value % DECIMAL_BASE));
+    value /= DECIMAL_BASE;
   }
 
   int j = 0;

@@ -13,12 +13,16 @@
 
 #include <efi.h>
 #include <protocol/efi-fp.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "boot_info.h"
 
+#define ELF_MAGIC 0x7f
+#define ELF_IDENT_SIZE 16
+#define EM_X86_64 62
 struct elf64_ehdr {
-  unsigned char e_ident[16];
+  unsigned char e_ident[ELF_IDENT_SIZE];
   uint16_t e_type;
   uint16_t e_machine;
   uint32_t e_version;
@@ -61,16 +65,17 @@ struct elf_app {
 };
 
 #define PT_LOAD 1
+#define KURO_RETURN_MAGIC_NUMBER 42
 
 extern EFI_FILE_PROTOCOL* elf_file;
 
 EFI_STATUS init_elf(EFI_FILE_PROTOCOL* volume_handle, CHAR16* kernel_path);
 EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
                           size_t size, void* dst);
-EFI_STATUS load_elf(struct elf_app* app);
-EFI_STATUS prepare_kernel_boot_info(struct elf_app* app);
-EFI_STATUS boot_elf(struct elf_app* app);
-EFI_STATUS validate_elf_headers(struct elf_app app);
+EFI_STATUS load_elf(struct elf_app* elf);
+EFI_STATUS prepare_kernel_boot_info(struct elf_app* elf);
+EFI_STATUS boot_elf(struct elf_app* elf);
+EFI_STATUS validate_elf_headers(struct elf_app* elf);
 
 EFI_STATUS exit_boot_services();
 

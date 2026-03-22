@@ -9,7 +9,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include "boot_info.h"
 #include "font.h"
@@ -21,12 +20,19 @@ enum {
   KURO_PIXEL_BGRR_8 = 1,
   KURO_PIXEL_BITMASK = 2,
   KURO_MEMORY_PAGE_SIZE = 4096,
+  KURO_COLOR_MAX = 255,
+  KURO_MASK_MAX_BIT = 31,
+  KURO_PIXEL_SHIFT_G = 8U,
+  KURO_PIXEL_SHIFT_B = 16U,
+  KURO_RETURN_MAGIC_NUMBER = 42,
 };
 
 static uint32_t lsb_index(uint32_t mask) {
   uint32_t idx = 0;
-  if (mask == 0) return 0;
-  while (((mask >> idx) & 1U) == 0U && idx < 31U) {
+  if (mask == 0) {
+    return 0;
+  }
+  while (((mask >> idx) & 1U) == 0U && idx < (uint32_t)KURO_MASK_MAX_BIT) {
     idx++;
   }
   return idx;
@@ -35,11 +41,13 @@ static uint32_t lsb_index(uint32_t mask) {
 static uint32_t encode_pixel(const struct kuro_framebuffer* fb, uint8_t r,
                              uint8_t g, uint8_t b) {
   if (fb->pixel_format == KURO_PIXEL_RGBR_8) {
-    return ((uint32_t)b) | ((uint32_t)g << 8) | ((uint32_t)r << 16);
+    return ((uint32_t)r) | ((uint32_t)g << KURO_PIXEL_SHIFT_G) |
+           ((uint32_t)b << KURO_PIXEL_SHIFT_B);
   }
 
   if (fb->pixel_format == KURO_PIXEL_BGRR_8) {
-    return ((uint32_t)r) | ((uint32_t)g << 8) | ((uint32_t)b << 16);
+    return ((uint32_t)b) | ((uint32_t)g << KURO_PIXEL_SHIFT_G) |
+           ((uint32_t)r << KURO_PIXEL_SHIFT_B);
   }
 
   if (fb->pixel_format == KURO_PIXEL_BITMASK) {
@@ -50,15 +58,18 @@ static uint32_t encode_pixel(const struct kuro_framebuffer* fb, uint8_t r,
     return out;
   }
 
-  return ((uint32_t)b) | ((uint32_t)g << 8) | ((uint32_t)r << 16);
+  return ((uint32_t)r) | ((uint32_t)g << KURO_PIXEL_SHIFT_G) |
+         ((uint32_t)b << KURO_PIXEL_SHIFT_B);
 }
 
 static void put_pixel(const struct kuro_framebuffer* fb, uint32_t x, uint32_t y,
                       uint8_t r, uint8_t g, uint8_t b) {
-  if (x >= fb->width || y >= fb->height) return;
+  if (x >= fb->width || y >= fb->height) {
+    return;
+  }
   volatile uint32_t* pixels = (volatile uint32_t*)(uintptr_t)fb->base;
   const uint64_t offset =
-      (uint64_t)y * (uint64_t)fb->pixels_per_scanline + (uint64_t)x;
+      ((uint64_t)y * (uint64_t)fb->pixels_per_scanline) + (uint64_t)x;
   pixels[offset] = encode_pixel(fb, r, g, b);
 }
 
@@ -76,6 +87,9 @@ enum {
   FONT_GLYPH_ROWS = 13,
   FONT_ADVANCE_X = 10,
   FONT_FIRST_CHAR = 32,
+  FONT_GLYPH_MSBIT = 7U,
+  DECIMAL_BASE = 10,
+  DIGITS_BUFFER_SIZE = 21
 };
 
 static const uint8_t* glyph_for(char c) {
@@ -94,7 +108,7 @@ static void draw_char(const struct kuro_framebuffer* fb, uint32_t x, uint32_t y,
   const uint8_t* glyph = glyph_for(c);
   for (uint32_t row = 0; row < FONT_GLYPH_ROWS; ++row) {
     for (uint32_t col = 0; col < FONT_GLYPH_COLS; ++col) {
-      if (glyph[row] & (uint8_t)(1U << (7U - col))) {
+      if (glyph[row] & (uint8_t)(1U << (FONT_GLYPH_MSBIT - col))) {
         put_pixel(fb, x + col, y + (FONT_GLYPH_ROWS - 1U - row), r, g, b);
       }
     }
@@ -137,7 +151,9 @@ static void reverse_range(char* text, size_t len) {
 static size_t u64_to_dec(char* buffer, size_t capacity, uint64_t value) {
   size_t len = 0;
 
-  if (capacity == 0) return 0;
+  if (capacity == 0) {
+    return 0;
+  }
 
   if (value == 0) {
     if (capacity < 2) {
@@ -151,8 +167,8 @@ static size_t u64_to_dec(char* buffer, size_t capacity, uint64_t value) {
   }
 
   while (value != 0 && len + 1 < capacity) {
-    buffer[len++] = (char)('0' + (value % 10));
-    value /= 10;
+    buffer[len++] = (char)('0' + (value % DECIMAL_BASE));
+    value /= DECIMAL_BASE;
   }
 
   buffer[len] = '\0';
@@ -163,7 +179,7 @@ static size_t u64_to_dec(char* buffer, size_t capacity, uint64_t value) {
 static void print_label_u64(const struct kuro_framebuffer* fb,
                             const char* label, uint64_t value, uint8_t r,
                             uint8_t g, uint8_t b) {
-  char digits[21];
+  char digits[DIGITS_BUFFER_SIZE];
   uint32_t label_x;
 
   u64_to_dec(digits, sizeof(digits), value);
@@ -184,6 +200,7 @@ static const struct kuro_memory_descriptor* memory_descriptor_at(
                                                  memory_map->descriptor_size));
 }
 
+// NOLINTNEXTLINE
 int _start(const struct kuro_boot_info* boot_info) {
   const struct kuro_framebuffer* fb = &boot_info->framebuffer;
   const struct kuro_memory_map* memory_map = &boot_info->memory_map;
@@ -192,14 +209,17 @@ int _start(const struct kuro_boot_info* boot_info) {
   uint64_t first_usable_size = 0;
 
   if (fb->base != 0 && fb->width != 0 && fb->height != 0) {
-    // fill_rect(fb, 0, 0, fb->width, fb->height, 0, 0, 0);
-    printLn(fb, "HELLO FROM KERNEL! KURO IS WORKING SUCCESSFULLY!", 255, 255,
-            0);
-    printLn(fb, "Framebuffer Information:", 255, 255, 255);
+    // NOLINTBEGIN(readability-magic-numbers)
+    printLn(fb, "HELLO FROM KERNEL! KURO IS WORKING SUCCESSFULLY!", 50,
+            KURO_COLOR_MAX, KURO_COLOR_MAX);
+    printLn(fb, "Framebuffer Information:", KURO_COLOR_MAX, KURO_COLOR_MAX,
+            KURO_COLOR_MAX);
     print_label_u64(fb, "  Framebuffer base: ", fb->base, 200, 200, 200);
     print_label_u64(fb, "  Framebuffer width: ", fb->width, 200, 200, 200);
     print_label_u64(fb, "  Framebuffer height: ", fb->height, 200, 200, 200);
-    printLn(fb, "Memory Information:", 255, 255, 255);
+    printLn(fb, "Memory Information:", KURO_COLOR_MAX, KURO_COLOR_MAX,
+            KURO_COLOR_MAX);
+    // NOLINTEND(readability-magic-numbers)
 
     if (boot_info->magic == KURO_BOOT_INFO_MAGIC &&
         boot_info->version == KURO_BOOT_INFO_VERSION &&
@@ -221,6 +241,8 @@ int _start(const struct kuro_boot_info* boot_info) {
         }
       }
 
+      // NOLINTBEGIN(readability-magic-numbers)
+
       print_label_u64(fb, "  Map entries: ", memory_map->descriptor_count, 200,
                       200, 200);
       print_label_u64(fb, "  First usable base: ", first_usable_base, 200, 200,
@@ -233,12 +255,19 @@ int _start(const struct kuro_boot_info* boot_info) {
 
       for (uint64_t i = 0; i < sizeof(font) / sizeof(font[0]); ++i) {
         draw_char(fb, i * FONT_ADVANCE_X, cursor_y + 10,
-                  (char)(i + FONT_FIRST_CHAR), 255, 255, 255);
+                  (char)(i + FONT_FIRST_CHAR), KURO_COLOR_MAX, KURO_COLOR_MAX,
+                  KURO_COLOR_MAX);
       }
 
-      fill_rect(fb, fb->width - 100, fb->height - 100, 100, 100, 255, 255, 255);
+      fill_rect(fb, fb->width - 100, fb->height - 100, 100, 100, KURO_COLOR_MAX,
+                KURO_COLOR_MAX, KURO_COLOR_MAX);
+
+      // NOLINTEND(readability-magic-numbers)
     } else {
-      printLn(fb, "No valid memory map from bootloader.", 255, 120, 120);
+      // NOLINTBEGIN(readability-magic-numbers)
+      printLn(fb, "No valid memory map from bootloader.", KURO_COLOR_MAX, 120,
+              120);
+      // NOLINTEND(readability-magic-numbers)
     }
   }
 
@@ -246,5 +275,5 @@ int _start(const struct kuro_boot_info* boot_info) {
     __asm__("hlt");
   }
 
-  return 42;
+  return KURO_RETURN_MAGIC_NUMBER;
 }
