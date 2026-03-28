@@ -9,6 +9,7 @@
 
 #include "cout.h"
 
+#include "logger.h"
 #include "main.h"
 
 void DEBUG_PRINT(const CHAR16* str) {
@@ -23,6 +24,7 @@ void DEBUG_PRINT(const CHAR16* str) {
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        (CHAR16*)LABEL_SEPARATOR);
   g_system_table->ConOut->OutputString(g_system_table->ConOut, (CHAR16*)str);
+  log((char*)str);
 #endif
 }
 
@@ -37,6 +39,8 @@ void ERROR_PRINT(const CHAR16* str) {
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        (CHAR16*)LABEL_SEPARATOR);
   g_system_table->ConOut->OutputString(g_system_table->ConOut, (CHAR16*)str);
+
+  log((char*)str);
 }
 
 void SUCCESS_PRINT(const CHAR16* str) {
@@ -50,6 +54,8 @@ void SUCCESS_PRINT(const CHAR16* str) {
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        (CHAR16*)LABEL_SEPARATOR);
   g_system_table->ConOut->OutputString(g_system_table->ConOut, (CHAR16*)str);
+
+  log((char*)str);
 }
 
 void WARNING_PRINT(const CHAR16* str) {
@@ -63,6 +69,8 @@ void WARNING_PRINT(const CHAR16* str) {
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        (CHAR16*)LABEL_SEPARATOR);
   g_system_table->ConOut->OutputString(g_system_table->ConOut, (CHAR16*)str);
+
+  log((char*)str);
 }
 
 void INFO_PRINT(const CHAR16* str) {
@@ -76,4 +84,6 @@ void INFO_PRINT(const CHAR16* str) {
   g_system_table->ConOut->OutputString(g_system_table->ConOut,
                                        (CHAR16*)LABEL_SEPARATOR);
   g_system_table->ConOut->OutputString(g_system_table->ConOut, (CHAR16*)str);
+
+  log((char*)str);
 }

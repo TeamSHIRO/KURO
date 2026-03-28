@@ -17,10 +17,12 @@ extern EFI_HANDLE g_image_handle;
 extern EFI_SYSTEM_TABLE* g_system_table;
 extern EFI_FILE_PROTOCOL* g_file_prot;
 
-#define KERNEL_PATH_BUFFER_SIZE 256
-#define CLEAR_SCREEN_BUFFER_SIZE 16
-#define EXIT_CODE_BUFFER_SIZE 21
-#define PAGE_SIZE 4096
+enum {
+  KERNEL_PATH_BUFFER_SIZE = 256,
+  CLEAR_SCREEN_BUFFER_SIZE = 16,
+  EXIT_CODE_BUFFER_SIZE = 21,
+  PAGE_SIZE = 4096
+};
 
 EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
                     EFI_SYSTEM_TABLE* system_table_p);

@@ -67,6 +67,8 @@ struct elf_app {
 #define PT_LOAD 1
 #define KURO_RETURN_MAGIC_NUMBER 42
 
+#define FALLBACK_KERNEL_PATH (CHAR16*)L"\\shiro.kernel"
+
 extern EFI_FILE_PROTOCOL* elf_file;
 
 EFI_STATUS init_elf(EFI_FILE_PROTOCOL* volume_handle, CHAR16* kernel_path);
