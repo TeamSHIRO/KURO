@@ -135,7 +135,19 @@ static EFI_STATUS store_boot_memory_map(UINTN map_size, UINTN descriptor_size) {
 EFI_STATUS init_elf(EFI_FILE_PROTOCOL* volume_handle, CHAR16* kernel_path) {
   const EFI_STATUS open_status = volume_handle->Open(
       volume_handle, &elf_file, kernel_path, EFI_FILE_MODE_READ, 0);
-  return open_status;
+  if (open_status != EFI_SUCCESS) {
+    WARNING_PRINT((CHAR16*)L"Failed to open ELF file. Trying fallback...\n\r");
+    const EFI_STATUS fallback_status = volume_handle->Open(
+        volume_handle, &elf_file, FALLBACK_KERNEL_PATH, EFI_FILE_MODE_READ, 0);
+    if (fallback_status != EFI_SUCCESS) {
+      ERROR_PRINT((CHAR16*)L"Failed to open fallback ELF file.\n\r");
+      return fallback_status;
+    }
+
+    return EFI_SUCCESS;
+  }
+
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS efi_read_fixed(struct EFI_FILE_PROTOCOL* file, UINT64 offset,
