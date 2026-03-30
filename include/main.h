@@ -15,13 +15,19 @@
 
 extern EFI_HANDLE g_image_handle;
 extern EFI_SYSTEM_TABLE* g_system_table;
-
 extern EFI_FILE_PROTOCOL* g_file_prot;
+
+enum {
+  KERNEL_PATH_BUFFER_SIZE = 256,
+  CLEAR_SCREEN_BUFFER_SIZE = 16,
+  EXIT_CODE_BUFFER_SIZE = 21,
+  PAGE_SIZE = 4096
+};
 
 EFI_STATUS efi_main(EFI_HANDLE image_handle_p,
                     EFI_SYSTEM_TABLE* system_table_p);
 EFI_STATUS init(void);
 void fini(EFI_STATUS exit_status);
-EFI_STATUS main(void);
+EFI_STATUS kuro_main(void);
 
 #endif  // KURO_MAIN_H

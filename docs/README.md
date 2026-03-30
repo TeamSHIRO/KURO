@@ -1,0 +1,38 @@
+# Kuro's official documentation
+
+This documentation is a reference to help developers understand and use the Kuro bootloader's APIs and features.
+
+### TABLE OF CONTENTS
+
+- [Quick Start](QUICK_START.md)
+- [Getting Started](GETTING_STARTED.md)
+    - [Prerequisites](GETTING_STARTED.md#prerequisites)
+    - [Cloning the Repository](GETTING_STARTED.md#cloning-the-repository)
+    - [Building KURO](GETTING_STARTED.md#building-kuro)
+        - [Standard Build](GETTING_STARTED.md#standard-build)
+        - [Build Options](GETTING_STARTED.md#build-options)
+        - [Automated Scripts](GETTING_STARTED.md#automated-scripts)
+    - [Running in QEMU](GETTING_STARTED.md#running-in-qemu)
+        - [OVMF Setup](GETTING_STARTED.md#ovmf-setup)
+        - [ESP Layout](GETTING_STARTED.md#esp-layout)
+        - [Launching QEMU](GETTING_STARTED.md#launching-qemu)
+    - [Installing on Real Hardware](GETTING_STARTED.md#installing-on-real-hardware)
+    - [Next Steps](GETTING_STARTED.md#next-steps)
+- [Kuro Configuration](CONFIGURATION.md)
+- [Writing a Kernel](WRITING_A_KERNEL.md)
+    - [Overview](WRITING_A_KERNEL.md#overview)
+    - [Entry Point](WRITING_A_KERNEL.md#entry-point)
+    - [Build Requirements](WRITING_A_KERNEL.md#build-requirements)
+        - [Compiler Flags](WRITING_A_KERNEL.md#compiler-flags)
+        - [Linker Script](WRITING_A_KERNEL.md#linker-script)
+        - [CMake Example](WRITING_A_KERNEL.md#cmake-example)
+    - [The `boot_info.h` Header](WRITING_A_KERNEL.md#the-boot_infoh-header)
+    - [Using the Boot Info](WRITING_A_KERNEL.md#using-the-boot-info)
+        - [Verifying Integrity](WRITING_A_KERNEL.md#verifying-integrity)
+        - [Accessing the Framebuffer](WRITING_A_KERNEL.md#accessing-the-framebuffer)
+        - [Parsing the Memory Map](WRITING_A_KERNEL.md#parsing-the-memory-map)
+    - [Returning from the Kernel](WRITING_A_KERNEL.md#returning-from-the-kernel)
+    - [Full Minimal Example](WRITING_A_KERNEL.md#full-minimal-example)
+- [`kuro_boot_info`](KURO_BOOT_INFO.md)
+    - [`kuro_memory_map`](KURO_MEMORY_MAP.md)
+    - [`kuro_framebuffer`](KURO_FRAMEBUFFER.md)

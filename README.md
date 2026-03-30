@@ -1,15 +1,31 @@
-<div style="height: 175px; overflow: hidden;">
-  <img src="https://raw.githubusercontent.com/TeamSHIRO/.github/refs/heads/main/profile/kuro.png" 
-       alt="KURO banner" 
-       title="KURO banner"
-       style="width: 100%; height: 100%; object-fit: cover;">
-</div>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/kuro-banner-dark.png">
+  <img src="images/kuro-banner.png" alt="Light mode version of the kuro logo">
+</picture>
+
+<div style="text-align: center;">
 
 # KURO: An UEFI bootloader
+
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-0baaaa.svg)](CODE_OF_CONDUCT.md)
 [![GitHub license](https://img.shields.io/github/license/TeamSHIRO/KURO.svg)](LICENSE)
+![Build](https://github.com/teamSHIRO/KURO/actions/workflows/build.yml/badge.svg)
 
-A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention.
+A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. It is notably used to load NijiOS, based on the SHIRO kernel (work in progress).
+
+</div>
+
+## Features
+
+- Loads ELF executables using the KURO booting convention
+- Minimal and secure codebase
+- Written in modern C
+- UEFI specification compliant
+- Modular, customizable and extensible design
+
+## Getting Started
+
+To get started quickly, see the [`Quick Start Guide`](docs/QUICK_START.md) for step-by-step instructions on setting up and running KURO.
 
 ## Building
 
@@ -19,36 +35,42 @@ A minimal secure UEFI bootloader to load executables in the ELF format using KUR
 - A LLD linker
 - CMake 3.26 or Newer
 - A Git Client
-- Internet Connection (for fetching dependencies duh)
+- An Internet Connection
 
 ### Building in a nutshell
 
 To build the project, follow these steps:
+
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/TeamSHIRO/KURO.git
-   ```
+    ```bash
+    git clone https://github.com/TeamSHIRO/KURO.git
+    ```
 2. CD to repository directory:
-   ```bash
-   cd KURO
-   ```
+    ```bash
+    cd KURO
+    ```
 3. Run CMake to configure the project. You may additionally add build options here (`-D`). You can find available options inside [**CMakeLists.txt**](CMakeLists.txt).
     ```bash
     cmake -S . -B build
     ```
 
-   Pro tip: You can change `build` to your preferred build directory.
-4. Build the project with CMake
+> [!TIP]
+> You can change `build` to your preferred build directory.
+
+1. Build the project with CMake
     ```bash
     cmake --build build
     ```
-   Pro tip: Replace `build` with your build directory.
 
+> [!TIP]
+> If you want to debug and preview the project in QEMU to contribute to the project, we highly recommend running the [build-and-run.sh](/automated/build-and-run.sh) script!
 
 ## Contributing
+
 Please read the [**CONTRIBUTING**](CONTRIBUTING.md) guide for details on how to contribute to this project.
 
 ## License
+
 <a href="https://www.apache.org/">
     <img src="https://www.apache.org/logos/originals/foundation.svg" alt="The Apache Software Foundation" style="float: right; width: 300px;">
 </a>

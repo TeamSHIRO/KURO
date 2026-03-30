@@ -15,6 +15,8 @@
 #include <protocol/efi-fp.h>
 #include <protocol/efi-lip.h>
 
+#define EFI_FILE_POSITION_END 0xFFFFFFFFFFFFFFFFULL
+
 extern EFI_GUID g_lip_guid;
 extern EFI_GUID g_sfsp_guid;
 
@@ -22,6 +24,6 @@ EFI_LOADED_IMAGE_PROTOCOL* get_loaded_image_protocol(EFI_HANDLE image_handle);
 EFI_FILE_PROTOCOL* get_volume_handle(
     const EFI_LOADED_IMAGE_PROTOCOL* loaded_image_protocol);
 UINT64 get_writable_file_size(EFI_FILE_PROTOCOL* file);
-EFI_STATUS mkdir(EFI_FILE_PROTOCOL** dir, CHAR16* dir_name);
+EFI_STATUS mkdir(EFI_FILE_PROTOCOL** efi_fp, CHAR16* dir_name);
 
 #endif  // KURO_DISK_H
