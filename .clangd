@@ -1,3 +1,0 @@
-CompileFlags:
-  CompilationDatabase: build
-  Add: [-Wno-incompatible-pointer-types]

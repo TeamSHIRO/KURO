@@ -1,7 +1,7 @@
 name: DCO
 on:
   pull_request:
-  
+
 jobs:
   check_dco:
     runs-on: ubuntu-latest

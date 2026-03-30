@@ -3,7 +3,7 @@
   <img src="images/kuro-banner.png" alt="Light mode version of the kuro logo">
 </picture>
 
-<center>
+<div style="text-align: center;">
 
 # KURO: An UEFI bootloader
 
@@ -13,7 +13,7 @@
 
 A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. It is notably used to load NijiOS, based on the SHIRO kernel (work in progress).
 
-</center>
+</div>
 
 ## Features
 
@@ -57,7 +57,7 @@ To build the project, follow these steps:
 > [!TIP]
 > You can change `build` to your preferred build directory.
 
-4. Build the project with CMake
+1. Build the project with CMake
     ```bash
     cmake --build build
     ```
