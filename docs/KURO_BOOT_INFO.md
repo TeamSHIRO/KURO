@@ -2,7 +2,7 @@
 
 # kuro_boot_info
 
-KURO is passing to the main entry point of the kernel a `kuro_boot_info` pointer with all of the APIs and data needed for the OS (of course, only at an early stage), such as memory layout, hardware information, and a simple framebuffer.
+KURO is passing to the main entry point of the kernel a `kuro_boot_info` pointer with all the APIs and data needed for the OS (of course, only at an early stage), such as memory layout, hardware information, and a simple framebuffer.
 
 ```c
 struct kuro_boot_info {
