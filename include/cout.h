@@ -1,32 +1,33 @@
 /*
  * File: cout.h
- * Description: Console output related macro.
+ * Description: Console output related helpers.
  *
  * Copyright (C) 2025-2026 TheMonHub
+ * Copyright (C) 2026 Ellicode
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef KURO_COUT_H
 #define KURO_COUT_H
 
+#define KURO_PREFIX L"[ KURO ] "
+#define LABEL_SEPARATOR L": "
+#define INFO_LABEL L"INFO "
+#define DEBUG_LABEL L"DEBUG"
+#define ERROR_LABEL L"ERROR"
+#define SUCCESS_LABEL L"OK   "
+#define WARNING_LABEL L"WARN "
+
 #include <__stddef_wchar_t.h>
 #include <efi.h>
 
 #include "main.h"
 
-#ifdef NDEBUG
-#define DEBUG_PRINT(str)
-#else
-#define DEBUG_PRINT(str)                                                   \
-  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE); \
-  g_system_table->ConOut->OutputString(g_system_table->ConOut,             \
-                                       L"[KURO|DEBUG] " str)
+void DEBUG_PRINT(const CHAR16* str);
+void ERROR_PRINT(const CHAR16* str);
+void SUCCESS_PRINT(const CHAR16* str);
+void WARNING_PRINT(const CHAR16* str);
+void INFO_PRINT(const CHAR16* str);
+
 #endif
-
-#define ERROR_PRINT(str)                                                 \
-  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_RED); \
-  g_system_table->ConOut->OutputString(g_system_table->ConOut,           \
-                                       L"[KURO|ERROR] " str);            \
-  g_system_table->ConOut->SetAttribute(g_system_table->ConOut, EFI_WHITE);
-
-#endif  // KURO_COUT_H
