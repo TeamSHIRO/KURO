@@ -23,5 +23,5 @@ jobs:
           packages: clang cmake ninja-build lld
 
       - name: Build project
-        run: ./automated/build.sh
+        run: ./ci/build.sh
         shell: bash

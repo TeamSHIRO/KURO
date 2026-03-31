@@ -7,42 +7,11 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+**Description:** Describe the bug.
 
-A clear and concise description of what the bug is.
+**To reproduce:**
+1. ...
 
----
+**Expected behavior:** Describe what you expected to happen.
 
-**To Reproduce**
-
-Step-by-Step instructions on how to reproduce the behavior.
-
----
-
-**Expected behavior**
-
-A clear and concise description of what you expected to happen.
-
----
-
-**Actual behavior**
-
-What actually happened.
-
----
-
-**Screenshots**
-
-If applicable, add screenshots to help explain your problem.
-
----
-
-**Build information**
-
-Information about the build environment.
-
----
-
-**Additional context**
-
-Add any other context about the problem here.
+*Did you use the latest version? If not, please try updating to the latest version and see if the issue persists.*
