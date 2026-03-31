@@ -1,4 +1,4 @@
-name: Format
+name: Run linters
 
 on:
   push:
@@ -8,8 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  run-linters:
-    name: Check format
+  run-clang-format:
+    name: Run clang-format
     runs-on: ubuntu-latest
 
     steps:
@@ -47,5 +47,45 @@ jobs:
         run: |
           echo "Running clang-format..."
           echo "---------------------------------------------------"
-          ./automated/clang-format.sh
+          ./ci/clang-format.sh
+        shell: bash
+  run-clang-tidy:
+    name: Run clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Check for cached clang-tidy
+        id: clang-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache
+          key: clang-tidy-cache
+
+      - if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        name: Install clang-tidy
+        run: |
+          echo "Installing clang-tidy..."
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+          echo "Copying binaries to cache..."
+          mkdir -p ~/.cache
+          cp /usr/bin/clang-tidy ~/.cache/clang-tidy
+          echo "Installation complete"
+        shell: bash
+
+      - if: ${{ steps.clang-cache.outputs.cache-hit == 'true' }}
+        name: Restore clang-tidy from cache
+        run: |
+          echo "Restoring clang-tidy from cache..."
+          sudo cp ~/.cache/clang-tidy /usr/bin/clang-tidy
+          sudo chmod +x /usr/bin/clang-tidy
+          echo "Cache restored"
+      - name: Run clang-tidy
+        run: |
+          echo "Running clang-tidy..."
+          echo "---------------------------------------------------"
+          ./ci/clang-tidy.sh
         shell: bash

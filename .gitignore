@@ -5,20 +5,7 @@
 # Build directories
 build/
 cmake-build-*/
-clang_tidy_build/
 
-# macOS files
-.DS_Store
-
-# ignore me pls
-ignore-*
-
-# OVMF installation path
-.ovmf/
-
-# QEMU files
-esp/
-
-# ISO files
-test-kernel/isofiles/
-test-kernel/mykernel.iso
+# Preventing accidental commits of the generated or development files
+ignore_*
+ignore_*/
