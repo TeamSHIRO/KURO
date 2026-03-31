@@ -1,4 +1,7 @@
-<img src="images/kuro_banner.png" alt="KURO Banner">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="res/kuro_banner_dark.png">
+  <img src="res/kuro_banner.png" alt="KURO banner">
+</picture>
 
 # KURO Booting Convention
 

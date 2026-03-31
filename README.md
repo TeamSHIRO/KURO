@@ -1,4 +1,7 @@
-<img src="docs/images/kuro_banner.png" alt="KURO Banner">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/res/kuro_banner_dark.png">
+  <img src="docs/res/kuro_banner.png" alt="KURO banner">
+</picture>
 
 # KURO: An UEFI bootloader
 
@@ -15,7 +18,7 @@ A minimal secure UEFI bootloader to load executables in the ELF format using KUR
 - UEFI specification compliant
 - Monolithic design for simplicity and performance
 - Customizable for kernel developers
-
+  banner
 ## Building
 
 Please read the [**building**](docs/building.md) guide for details on how to build this project.
