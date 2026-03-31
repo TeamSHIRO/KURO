@@ -18,7 +18,12 @@ A minimal secure UEFI bootloader to load executables in the ELF format using KUR
 - UEFI specification compliant
 - Monolithic design for simplicity and performance
 - Customizable for kernel developers
-  banner
+
+## For Developers
+
+Please read the [**KURO booting convention**](docs/kuro_booting_convention.md) for details on how to develop an
+application that uses KURO booting convention.
+
 ## Building
 
 Please read the [**building**](docs/building.md) guide for details on how to build this project.
@@ -35,7 +40,8 @@ Please read the [**CONTRIBUTING**](CONTRIBUTING.md) guide for details on how to 
 
 **KURO** is licensed under **Apache License 2.0**.
 
-The full text of the **Apache License 2.0** can be obtained at: <http://www.apache.org/licenses/LICENSE-2.0>
+The full text of the license can be obtained at
+http://www.apache.org/licenses/LICENSE-2.0
 or in the [**LICENSE**](LICENSE) file included in this repository.
 
 **NOTICE** file included in this repository can be found [**here**](NOTICE).
