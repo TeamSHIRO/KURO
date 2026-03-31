@@ -83,6 +83,12 @@ jobs:
           sudo cp ~/.cache/clang-tidy /usr/bin/clang-tidy
           sudo chmod +x /usr/bin/clang-tidy
           echo "Cache restored"
+
+      - name: Install build tools
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: clang cmake ninja-build lld
+
       - name: Run clang-tidy
         run: |
           echo "Running clang-tidy..."
