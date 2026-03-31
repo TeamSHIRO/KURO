@@ -1,4 +1,5 @@
 # Contributing to KURO
+
 We welcome contributions from the community!
 
 KURO is a community-driven project, and we actively welcome contributions. Your involvement is essential to our success.
@@ -6,6 +7,7 @@ KURO is a community-driven project, and we actively welcome contributions. Your 
 Whether you're fixing a bug, adding a new feature, or improving documentation, your help is appreciated. Here are some guidelines to get you started:
 
 ## Table of Contents
+
 - [**Code of Conduct**](#code-of-conduct)
 - [**Contributing Guide 101**](#contributing-guide-101)
     - [**Prerequisites**](#prerequisites)
@@ -15,11 +17,13 @@ Whether you're fixing a bug, adding a new feature, or improving documentation, y
 - [**Thanks for Contributing!**](#thanks-for-contributing)
 
 ## Code of Conduct
+
 Please note that this project is released with a [**Contributor Code of Conduct**](CODE_OF_CONDUCT.md). By participating in
 this project, you agree to abide by its terms.
 
 
 ## Contributing Guide 101
+
 If you're ready to dive into the codebase and submit new features or bug fixes, this section is for you.
  Build scripts or Shell scripts
 These guides assume that you have a basic understanding of Git, GitHub, and C development tools.
@@ -27,6 +31,7 @@ These guides assume that you have a basic understanding of Git, GitHub, and C de
 ---
 
 ### Prerequisites
+
 Please look at the [**building**](docs/building.md) section of the documentation to ensure that you have installed all
 the necessary tools and dependencies to build the project. To submit a pull request, you must have a **GitHub** account.
 
@@ -41,6 +46,7 @@ Please make sure all the above tools are locatable from your shell for the scrip
 ---
 
 ### Contributing in a Nutshell
+
 Here are the steps to contribute to the project:
 1. If you didn't have write access to the repository, fork the repository to your own account.
 2. Create a new branch from `main`.
@@ -51,11 +57,13 @@ Here are the steps to contribute to the project:
 ---
 
 ### Branching
+
 We recommend naming a branch to be descriptive of the feature or bug fix you are working on, and each branch should have a single purpose.
 
 ---
 
 ### Pull Request Checklist
+
 To ensure that your pull request is pass the checks, please ensure that you have completed the following:
 - [ ] You have signed the Developer Certificate of Origin (DCO) for all your commits.
 - [ ] You have run clang-format and clang-tidy on your code, and it passes all checks.
@@ -63,4 +71,5 @@ To ensure that your pull request is pass the checks, please ensure that you have
 ---
 
 ## Thanks for Contributing!
+
 Thanks for contributing to KURO! We look forward to your contributions.

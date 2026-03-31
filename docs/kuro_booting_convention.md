@@ -70,7 +70,8 @@ ELF file loadable by KURO bootloader.
 
 ### 1.3.6 Kernel
 
-Core operating system component managing system resources and providing services to applications.
+Core operating system component managing system resources and providing services to applications. Typically loaded
+by the bootloader.
 
 ### 1.3.7 Pseudocode
 
