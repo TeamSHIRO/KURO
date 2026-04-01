@@ -267,7 +267,7 @@ Kuro bootloader performs the following steps to load an executable:
 
 The bootloader provides the following interfaces to the loaded executable:
 - Executable information: Provides information about the loaded executable, such as its entry point, segment information, and more.
-- System table: The UEFI system table, which provides access to various UEFI services and information.
+- System table[^3]: The UEFI system table, which provides access to various UEFI services and information.
 
 ### 2.5 Security Considerations
 
