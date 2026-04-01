@@ -177,6 +177,9 @@ boot an executable while leaving the developer with almost full control over the
 > [!NOTE]
 > KURO bootloader is the official reference implementation of the KURO booting convention.
 
+> [!IMPORTANT]
+> KURO can mean different things in different contexts. The bootloader, and the booting convention.
+
 ### 1.3.7 Executable
 
 A file that contains a program that can be executed by the operating system or other software. In this document, the
@@ -221,18 +224,11 @@ Updates to this document are considered either revisions or errata as described 
 
 ## 2. Overview
 
-KURO is a minimal secure bootloader designed for x86\_64 UEFI systems. The bootloader is written in C and uses the UEFI
-specification to communicate with the firmware.
+KURO is a minimal secure booting convention designed for x86\_64 UEFI systems.
 
-The bootloader is designed to be as small as possible and to be self-contained. It loads ELF executables that follow the
+The bootloader loads ELF executables that follow the
 KURO booting convention, which specifies how the executable should be structured and how the bootloader should load it
 into memory.
-
-The bootloader is designed to be secure, with a focus on minimizing the attack surface and preventing common
-vulnerabilities.
-
-The bootloader is designed to be minimal enough to boot an executable while leaving the developer with almost full
-control over the boot process.
 
 ### 2.1 Executable Structure
 
@@ -255,7 +251,7 @@ It is expected that the bootloader will validate the KURO footer before loading 
 
 ### 2.3 Booting Process
 
-Kuro bootloader performs the following steps to load an executable:
+The bootloader should perform the following steps to load an executable:
 
 1. Read the ELF header and check if the executable is a valid ELF file.
 2. Read the KURO footer and check if the executable is a valid KURO executable.
@@ -265,20 +261,20 @@ Kuro bootloader performs the following steps to load an executable:
 
 ### 2.4 Interfaces Provided to the Loaded Executable
 
-The bootloader provides the following interfaces to the loaded executable:
+The bootloader should provide the following interfaces to the loaded executable:
 - Executable information: Provides information about the loaded executable, such as its entry point, segment information, and more.
 - System table[^3]: The UEFI system table, which provides access to various UEFI services and information.
 
 ### 2.5 Security Considerations
 
-The bootloader is designed with security in mind, and the following security features are considered for the bootloader:
+This booting convention is designed with security in mind, and the following security features are considered for the bootloader:
 
 - **Secure boot**: an UEFI feature that verifies the authenticity of the bootloader before loading it.
 - **Code integrity**: the bootloader verifies the integrity of the executable using the signature in the KURO footer.
 
 ### 2.6 Limitations
 
-The bootloader is designed to be as minimal as possible, which imposes the following limitations:
+This booting convention is designed to be as minimal as possible, which imposes the following limitations:
 
 - **Kernel heavy initialization**: The bootloader is designed to be minimal and provides few services or features. This
   means that the kernel or other executable loaded by the bootloader will need to perform more initialization and setup
