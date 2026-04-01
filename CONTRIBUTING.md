@@ -67,6 +67,7 @@ We recommend naming a branch to be descriptive of the feature or bug fix you are
 To ensure that your pull request is pass the checks, please ensure that you have completed the following:
 - [ ] You have signed the Developer Certificate of Origin (DCO) for all your commits.
 - [ ] You have run clang-format and clang-tidy on your code, and it passes all checks.
+- [ ] All files should be in lowercase when applicable. Preferably snake_case. 
 
 ---
 
