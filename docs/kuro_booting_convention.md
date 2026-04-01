@@ -32,8 +32,8 @@
    4. [Interfaces Provided to the Loaded Executable](#24-interfaces-provided-to-the-loaded-executable)
    5. [Security Considerations](#25-security-considerations)
    6. [Limitations](#26-limitations)
-3. [References](#references)
-4. [Copyright](#copyright)
+3. [Copyright](#copyright)
+4. [References](#references)
 
 ## 1. Introduction
 
@@ -289,17 +289,6 @@ The bootloader is designed to be as minimal as possible, which imposes the follo
 - **No support for multiple architectures**: The bootloader is not designed to support multiple architectures. This means
   that the bootloader will only be able to load executables that are designed for the x86\_64 architecture.
 
-## References
-
-The following publications and sources of information may be useful for understanding this document or are referred to
-in this document:
-
-[^1]: **This is an example of a reference.**
-
-[^2]: **ELF Executable and Linkable Format, By Xinuos** – https://gabi.xinuos.com/elf/
-
-[^3]: **Unified Extensible Firmware Interface Specification, Version 2.11 (UEFI 2.11)** – https://uefi.org/specs/UEFI/2.11/
-
 ## Copyright
 
 **Copyright © 2026 TheMonHub**
@@ -510,3 +499,14 @@ in this document:
    See the License for the specific language governing permissions and
    limitations under the License.
 ```
+
+## References
+
+The following publications and sources of information may be useful for understanding this document or are referred to
+in this document:
+
+[^1]: **This is an example of a reference.**
+
+[^2]: **ELF Executable and Linkable Format, By Xinuos** – https://gabi.xinuos.com/elf/
+
+[^3]: **Unified Extensible Firmware Interface Specification, Version 2.11 (UEFI 2.11)** – https://uefi.org/specs/UEFI/2.11/
