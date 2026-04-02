@@ -37,8 +37,11 @@
 3. [Executable Structure](#3-executable-structure)
 4. [KURO Footer](#4-kuro-footer)
 5. [Booting Process](#5-booting-process)
-6. [Copyright](#copyright)
-7. [References](#references)
+6. [Paging](#6-paging)
+7. [Interface Provided to the Loaded Executable](#7-interfaces-provided-to-the-loaded-executable)
+8. [How KURO Bootloader Works](#8-how-kuro-bootloader-works)
+9. [Copyright](#copyright)
+10. [References](#references)
 
 ## 1. Introduction
 
@@ -508,6 +511,7 @@ Any other undefined version number is considered reserved for future use.
 The booting process for the bootloader may look like the following diagram:
 
 ![KURO booting process](res/kuro_booting_process.png)
+<!-- TODO: TheMonHub - Add image -->
 
 At the beginning of the booting process, the bootloader must read the ELF header and check if the executable is a valid
 ELF file. If the ELF header is not valid, the bootloader must reject the executable and not load it.
@@ -544,7 +548,12 @@ as defined below:
 
 DRAFT UNFINISHED
 
-## 7. How KURO Bootloader Works
+## 7. Interfaces Provided to the Loaded Executable
+
+
+
+## 8. How KURO Bootloader Works
+
 
 
 ## Copyright
