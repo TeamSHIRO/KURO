@@ -20,11 +20,13 @@
       3. [Data Structure](#133-data-structure)
       4. [Executable and Linkable Format](#134-executable-and-linkable-format)
       5. [Unified Extensible Firmware Interface](#135-unified-extensible-firmware-interface)
-      6. [Bootloader](#136-bootloader)
-          1. [KURO Bootloader](#1361-kuro-bootloader)
-      7. [Executable](#137-executable)
-      8. [Pseudocode](#138-pseudocode)
-      9. [Revisions](#139-revisions)
+      6. [Digital Signature and Ed25519](#136-digital-signature-and-ed25519)
+      7. [Bootloader](#137-bootloader)
+         1. [KURO Bootloader](#1371-kuro-bootloader)
+      8. [Executable](#138-executable)
+      9. [Pseudocode](#139-pseudocode)
+         1. [Types](#1391-types)
+      10. [Revisions](#1310-revisions)
 2. [Overview](#2-overview)
    1. [Executable Structure](#21-executable-structure)
    2. [KURO Footer](#22-kuro-footer)
@@ -32,8 +34,11 @@
    4. [Interfaces Provided to the Loaded Executable](#24-interfaces-provided-to-the-loaded-executable)
    5. [Security Considerations](#25-security-considerations)
    6. [Limitations](#26-limitations)
-3. [Copyright](#copyright)
-4. [References](#references)
+3. [Executable Structure](#3-executable-structure)
+4. [KURO Footer](#4-kuro-footer)
+5. [Booting Process](#5-booting-process)
+6. [Copyright](#copyright)
+7. [References](#references)
 
 ## 1. Introduction
 
@@ -63,10 +68,12 @@ follows the KURO booting convention.
 
 This document covers the following topics and concepts related to the KURO booting convention:
 
-- Expected format of the executable file
-- Booting process
-- Interfaces provided to the loaded executable
-- Security features provided by the bootloader
+- Expected format of the executable file.
+- How the bootloader loads the executable (Booting Process).
+- Interfaces provided to the loaded executable.
+- Security features provided by the bootloader.
+- How KURO bootloader works.
+- Tools you can use to create a KURO compliant executable.
 
 ## 1.3 Conventions
 
@@ -80,7 +87,7 @@ presentation of information.
 - **Bold Italic**: Used to highlight highly important terms and concepts.
 - ~~Strikethrough~~: Used to indicate deprecated or outdated information.
 - <ins>Underline</ins>: Added to emphasize new or updated information.
-- `Code`: Used to represent code snippets, commands, or technical terms.
+- `Code`: Used to represent code snippets, commands, technical terms, versioning numbers, or values.
 - [Hyperlink](): Used to link to external resources or specific part of the document.
 - Reference[^1]: Used to indicate a reference to an external source of information. You can find all the references
   [here](#references).
@@ -104,6 +111,12 @@ presentation of information.
 > [!CAUTION]
 > This is a caution. It is used to highlight information that could potentially cause harm or inconvenience if not
 > followed. It is intended to alert the reader to potential risks and to encourage them to take appropriate precautions.
+
+| Term       | Definition                                                                                                                                                 |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **MUST**   | Indicates a requirement that must be met by the bootloader or executable. It is a mandatory requirement that must be followed.                             |
+| **SHOULD** | Indicates a recommendation that should be followed by the bootloader or executable. It is not a mandatory requirement, but it is recommended to follow it. |
+| **MAY**    | Indicates an optional feature or behavior. It is not required, but it is allowed.                                                                          |
 
 ### 1.3.2 KURO Compliance
 
@@ -158,7 +171,18 @@ This document will not cover the details of the UEFI specification, but it is ex
 understanding of the UEFI specification and how it works. For more information on the UEFI specification, please refer
 to the Unified Extensible Firmware Interface Specification.
 
-### 1.3.6 Bootloader
+### 1.3.6 Digital Signature and Ed25519
+
+Digital signatures[^4] are a cryptographic mechanism used to verify the authenticity and integrity of data. They are
+commonly used in software distribution to ensure that the software has not been tampered with and is from a trusted
+source. In this document, digital signatures are used to verify the authenticity of the executable being loaded by the
+bootloader.
+
+Ed25519[^5] is a digital signature algorithm that uses elliptic curve cryptography to sign messages and verify their
+integrity. It is designed to be fast, secure, and resistant to certain types of attacks. In this document, Ed25519 is
+used as the digital signature algorithm for signing the executable and verifying its authenticity.
+
+### 1.3.7 Bootloader
 
 A small program that prepares the environment for the operating system or other software to run and, then loads an operating
 system or other executable into memory and starts its execution. In this document, the term "bootloader" refers to a
@@ -167,7 +191,7 @@ bootloader that is KURO compliant.
 KURO compliant bootloaders are designed to load ELF executables that follow the KURO booting convention, which specifies
 the digital signature of the executable to verify its authenticity.
 
-#### 1.3.6.1 KURO Bootloader
+#### 1.3.7.1 KURO Bootloader
 KURO bootloader is a small EFI application designed to load and execute an executable that follows the KURO
 booting convention. It is designed to be as minimal as possible and self-contained, with a focus on security and
 simplicity. The KURO bootloader is designed to be compliant with the UEFI specification and to provide a secure and
@@ -178,9 +202,9 @@ boot an executable while leaving the developer with almost full control over the
 > KURO bootloader is the official reference implementation of the KURO booting convention.
 
 > [!IMPORTANT]
-> KURO can mean different things in different contexts. The bootloader, and the booting convention.
+> KURO can mean different things in different contexts. The bootloader and the booting convention.
 
-### 1.3.7 Executable
+### 1.3.8 Executable
 
 A file that contains a program that can be executed by the operating system or other software. In this document, the
 term "executable" refers to an executable file in the ELF format that follows the KURO booting convention and can be loaded by a KURO
@@ -188,13 +212,13 @@ compliant bootloader.
 
 For more information on ELF executables, please refer to the ELF Executable and Linkable Format specification.
 
-### 1.3.8 Pseudocode
+### 1.3.9 Pseudocode
 
 The pseudocode provided in this document is intended to provide a clear and concise representation of the concepts and
 conventions outlined in this document.
 
 It is not intended to be a complete implementation of a bootloader or an executable, but rather to illustrate the
-concepts and conventions in a way that is easy to understand. The pseudocode is written in a C-like syntax, but it is
+concepts and conventions in a way that is easy to understand. The pseudocode is written in a C++ or C-like syntax, but it is
 not intended to be compiled or run as-is. It is meant to be a reference for developers who want to create their own
 bootloader or executable that follows the KURO booting convention.
 
@@ -210,7 +234,23 @@ int main() {
 }
 ```
 
-### 1.3.9 Revisions
+#### 1.3.9.1 Types
+
+| Type       | Description                   |
+|------------|-------------------------------|
+| `uint8_t`  | 8-bit unsigned integer        |
+| `uint16_t` | 16-bit unsigned integer       |
+| `uint32_t` | 32-bit unsigned integer       |
+| `uint64_t` | 64-bit unsigned integer       |
+| `int8_t`   | 8-bit signed integer          |
+| `int16_t`  | 16-bit signed integer         |
+| `int32_t`  | 32-bit signed integer         |
+| `int64_t`  | 64-bit signed integer         |
+| `char`     | 8-bit character               |
+| `bool`     | Boolean value (true or false) |
+| `void`     | No return value               |
+
+### 1.3.10 Revisions
 
 Updates to this document are considered either revisions or errata as described below:
 - A new revision is made when significant changes are made to the document. Which changes the behavior of the bootloader,
@@ -219,7 +259,7 @@ Updates to this document are considered either revisions or errata as described 
   the behavior of the bootloader, executable, or the booting process such as fixing a typo or updating a link.
 
 > [!IMPORTANT]
-> Draft documents are not intended to be final and should not be considered a final version of the document. They are
+> Draft documents are not intended to be final and must not be considered a final version of the document. They are
 > not versioned for each change until they are finalized and ready for release.
 
 ## 2. Overview
@@ -236,7 +276,7 @@ The executable is expected to be in a standard ELF file with the following chara
 - Position-independent executable (PIE)
 - x86\_64 architecture
 - At the end of the file contains a KURO footer, which is used to identify the executable as a KURO executable.
-  More information regarding the KURO footer can be found at PLACEHOLDER.
+  More information regarding the KURO footer can be found at [section 4](#4-kuro-footer).
 
 ### 2.2 KURO Footer
 
@@ -247,7 +287,7 @@ It is expected that the bootloader will validate the KURO footer before loading 
 
 - **Magic number**: A unique identifier to recognize the executable as a KURO executable.
 - **Version**: The version of the KURO booting convention used by the executable.
-- **Signature**: An Ed25519 signature of the executable to verify its authenticity.
+- **Signature**: An Ed25519[^5] signature of the executable to verify its authenticity.
 
 ### 2.3 Booting Process
 
@@ -261,16 +301,17 @@ The bootloader should perform the following steps to load an executable:
 
 ### 2.4 Interfaces Provided to the Loaded Executable
 
-The bootloader should provide the following interfaces to the loaded executable:
-- Executable information: Provides information about the loaded executable, such as its entry point, segment information, and more.
-- System table[^3]: The UEFI system table, which provides access to various UEFI services and information.
+The bootloader must provide the following interfaces to the loaded executable:
+- **Executable information**: Provides information about the loaded executable, such as its entry point, segment information, and more.
+- **System table**: The UEFI[^3] system table, which provides access to various UEFI services and information.
 
 ### 2.5 Security Considerations
 
 This booting convention is designed with security in mind, and the following security features are considered for the bootloader:
 
-- **Secure boot**: an UEFI feature that verifies the authenticity of the bootloader before loading it.
+- **Secure boot**: an UEFI[^3] feature that verifies the authenticity of the bootloader before loading it.
 - **Code integrity**: the bootloader verifies the integrity of the executable using the signature in the KURO footer.
+  When used alongside the secure boot feature, this creates a chain of trust.
 
 ### 2.6 Limitations
 
@@ -285,216 +326,234 @@ This booting convention is designed to be as minimal as possible, which imposes 
 - **No support for multiple architectures**: The bootloader is not designed to support multiple architectures. This means
   that the bootloader will only be able to load executables that are designed for the x86\_64 architecture.
 
+## 3. Executable Structure
+
+A valid KURO executable is expected to be a Position-independent executable (PIE) with no relocations with no dynamic
+linking.
+
+The executable must be a valid ELF file with the following characteristics:
+  - It must be a position-independent executable (PIE) with ELF header field `e_type` set to `ET_DYN`.
+  - It must be for the x86\_64 architecture with ELF header field `e_machine` set to `EM_X86_64`.
+  - It must have no relocations in the ELF file (.rel and .rela sections).
+  - It must have a valid KURO footer at the end of the file.
+
+The bootloader must verify the ELF header and KURO footer to ensure that the executable is a valid KURO executable.
+
+Example of a valid ELF header in the KURO executable:
+
+```c++
+Elf64_Ehdr elf_header = {
+    .e_ident = {
+        0x7F, 'E', 'L', 'F',      // EI_MAG0 -> EI_MAG3
+        2,                        // EI_CLASS
+        1,                        // EI_DATA
+        1,                        // EI_VERSION
+        0,                        // EI_OSABI
+        0,                        // EI_ABIVERSION
+        0, 0, 0, 0, 0, 0, 0, 0,   // EI_PAD
+        16,                       // EI_NIDENT
+    },
+
+    .e_type      = ET_DYN,        // Position-Independent Executable (PIE)
+    .e_machine   = EM_X86_64,     // x86-64
+    .e_version   = EV_CURRENT,    // 1
+
+    .e_entry     = 0x1000,        // entry point
+    .e_phoff     = 64,            // program headers offset
+    .e_shoff     = 12944,         // section headers offset
+
+    .e_flags     = 0,             // flags
+
+    .e_ehsize    = 64,            // ELF header size
+    .e_phentsize = 56,            // size of one program header
+    .e_phnum     = 13,            // number of program headers
+
+    .e_shentsize = 64,            // size of one section header
+    .e_shnum     = 18,            // number of section headers
+    .e_shstrndx  = 17             // section name string table index
+};
+```
+
+```terminaloutput
+[user@host ~]$ readelf -h kuro_executable
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              DYN (Position-Independent Executable file)
+  Machine:                           Advanced Micro Devices X86-64
+  Version:                           0x1
+  Entry point address:               0x1000
+  Start of program headers:          64 (bytes into file)
+  Start of section headers:          12944 (bytes into file)
+  Flags:                             0x0
+  Size of this header:               64 (bytes)
+  Size of program headers:           56 (bytes)
+  Number of program headers:         13
+  Size of section headers:           64 (bytes)
+  Number of section headers:         18
+  Section header string table index: 17
+```
+
+> [!NOTE]
+> These GCC/Clang compiler and linker flags may help you compile a valid KURO executable:
+> ```shell
+> cc -fPIE -ffreestanding -o main.c.o -c main.c
+> ld -nostdlib -pie -o main main.c.o
+> ```
+> - `-fPIE` flag is used by compiler to create a position-independent executable (PIE).
+> - `-ffreestanding` flag is used to create an executable that is not on a hosted environment.
+> - `-pie` flag is used by linker to create a position-independent executable (PIE).
+> - `-nostdlib` flag is used to prevent the linker from linking against the standard library, which includes the C
+  standard library and startup code which introduces a dependency on the standard library and relocations.
+
+> [!IMPORTANT]
+> This will not include the KURO footer. You will need to add the KURO footer to the end of the file after compiling it.
+> See [section 4](#4-kuro-footer) for more information.
+
+## 4. KURO Footer
+
+The KURO footer is a fixed-size data structure located at the end of the executable file. It contains metadata about the
+executable for the bootloader to use during the loading process.
+
+Starting from 72 bytes before the end of the executable, lies the KURO footer. The KURO footer contains the following
+fields:
+
+```c++
+typedef struct {
+    KuroIdentifier k_identifier;
+    char k_signature[64];
+} KuroFooter;
+```
+
+> [!NOTE]
+> You can create a KURO footer on an existing ELF executable that follows [section 3](#3-executable-structure) by using the `kuro-sign` tool.
+
+#### k_identifier
+
+Eight initial bytes of the KURO footer are used to identify the executable as a KURO executable. The identifier contains
+a magic number and version information that are used to verify the authenticity of the executable. Complete descriptions
+can be found in [section 4.1](#41-kuro-identifier).
+
+#### k_signature
+
+The signature is an Ed25519[^5] signature of the executable to verify its authenticity. The signature is calculated over the
+entire executable file, excluding the KURO footer itself.
+
+### 4.1 KURO Identifier
+
+KURO identifier is a fixed-size structure that contains the magic number and version information used to identify the
+executable as a KURO executable. The KURO identifier is located at the beginning of the KURO footer and contains the following fields:
+
+```c++
+typedef struct {
+    char k_magic0;
+    char k_magic1;
+    char k_magic2;
+    char k_magic3;
+    char k_magic4;
+    uint8_t k_version;
+    uint16_t k_reserved;
+} KuroIdentifier;
+```
+
+#### k_magic
+
+The first five bytes of the KURO identifier are used to identify the executable as a KURO executable. The magic number is a unique
+sequence of bytes that is used to identify the executable as a KURO executable. The magic number is `0x7F` followed by
+`KURO` in ASCII, which is `0x4B 0x55 0x52 0x4F` in hexadecimal.
+
+The bootloader must verify that the magic number in the KURO identifier matches the expected value before loading the
+executable. If the magic number does not match, the bootloader must reject the executable and not load it.
+
+| Byte     | Value |
+|----------|-------|
+| k_magic0 | 0x7F  |
+| k_magic1 | 0x4B  |
+| k_magic2 | 0x55  |
+| k_magic3 | 0x52  |
+| k_magic4 | 0x4F  |
+
+> [!CAUTION]
+> Failure to reject the executable and load it might result in undefined behavior, as this indicates that the executable
+> has no KURO footer.
+
+#### k_version
+
+The second byte of the KURO identifier is used to identify the version of the KURO booting convention used by the
+executable. The version is a single byte that indicates the version of the KURO booting convention used by the
+executable.
+
+The bootloader must verify that the version in the KURO identifier matches the version of the KURO booting convention
+used by the bootloader before loading the executable. If the version does not match, the bootloader must reject the
+executable and not load it.
+
+Any other undefined version number is considered reserved for future use.
+
+| Version | Description                             |
+|---------|-----------------------------------------|
+| `1`     | KURO Booting Convention `1.0` (Current) |
+
+> [!CAUTION]
+> Failure to reject the executable and load it might result in undefined behavior, as the structure of the KURO footer
+> might be different from the expected structure.
+
+## 5. Booting Process
+
+The booting process for the bootloader may look like the following diagram:
+
+![KURO booting process](res/kuro_booting_process.png)
+
+At the beginning of the booting process, the bootloader reads the ELF header and checks if the executable is a valid ELF
+file. If the ELF header is not valid, the bootloader must reject the executable and not load it.
+
+After the ELF header is validated, the bootloader reads the KURO footer and checks if the executable is a valid KURO
+executable. If the KURO footer is not valid, the bootloader must reject the executable and not load it.
+
+The bootloader then verifies the signature in the KURO footer to ensure the authenticity of the executable. If the
+signature is not valid, the bootloader must reject the executable and not load it.
+
+After the executable is validated, the bootloader then loads the executable into memory according to the ELF program
+headers, which specify the memory layout of the executable. The position of the executable in memory is
+implementation-defined but must be aligned to a page boundary.
+
+After loading the executable into memory, the bootloader must prepare the stack for the executable and set the stack
+pointer to the top of the stack. The stack size and position are implementation-defined, but the start of the stack must
+be aligned to eight bytes.
+
+After all the necessary setup is done, the bootloader then transfers control to the entry point of the executable, which
+is specified in the ELF header.
+
+## 6. Paging
+
+The bootloader must set up paging for the executable. The bootloader must ensure that the page table is set up correctly
+as defined below:
+
+- The page table must be identity mapped, which means `physical address = virtual address`.
+
+DRAFT UNFINISHED
+
+## 7. How KURO Bootloader Works
+
+
 ## Copyright
 
-**Copyright © 2026 TheMonHub**
+Copyright 2026 TheMonHub
 
-**Licensed under the Apache License, Version 2.0**
-
-```text
-
-                                 Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
-
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-   1. Definitions.
-
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
-
-      "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
-
-      "Legal Entity" shall mean the union of the acting entity and all
-      other entities that control, are controlled by, or are under common
-      control with that entity. For the purposes of this definition,
-      "control" means (i) the power, direct or indirect, to cause the
-      direction or management of such entity, whether by contract or
-      otherwise, or (ii) ownership of fifty percent (50%) or more of the
-      outstanding shares, or (iii) beneficial ownership of such entity.
-
-      "You" (or "Your") shall mean an individual or Legal Entity
-      exercising permissions granted by this License.
-
-      "Source" form shall mean the preferred form for making modifications,
-      including but not limited to software source code, documentation
-      source, and configuration files.
-
-      "Object" form shall mean any form resulting from mechanical
-      transformation or translation of a Source form, including but
-      not limited to compiled object code, generated documentation,
-      and conversions to other media types.
-
-      "Work" shall mean the work of authorship, whether in Source or
-      Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
-
-      "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
-      editorial revisions, annotations, elaborations, or other modifications
-      represent, as a whole, an original work of authorship. For the purposes
-      of this License, Derivative Works shall not include works that remain
-      separable from, or merely link (or bind by name) to the interfaces of,
-      the Work and Derivative Works thereof.
-
-      "Contribution" shall mean any work of authorship, including
-      the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
-      submitted to Licensor for inclusion in the Work by the copyright owner
-      or by an individual or Legal Entity authorized to submit on behalf of
-      the copyright owner. For the purposes of this definition, "submitted"
-      means any form of electronic, verbal, or written communication sent
-      to the Licensor or its representatives, including but not limited to
-      communication on electronic mailing lists, source code control systems,
-      and issue tracking systems that are managed by, or on behalf of, the
-      Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
-      designated in writing by the copyright owner as "Not a Contribution."
-
-      "Contributor" shall mean Licensor and any individual or Legal Entity
-      on behalf of whom a Contribution has been received by Licensor and
-      subsequently incorporated within the Work.
-
-   2. Grant of Copyright License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      copyright license to reproduce, prepare Derivative Works of,
-      publicly display, publicly perform, sublicense, and distribute the
-      Work and such Derivative Works in Source or Object form.
-
-   3. Grant of Patent License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      (except as stated in this section) patent license to make, have made,
-      use, offer to sell, sell, import, and otherwise transfer the Work,
-      where such license applies only to those patent claims licensable
-      by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
-      cross-claim or counterclaim in a lawsuit) alleging that the Work
-      or a Contribution incorporated within the Work constitutes direct
-      or contributory patent infringement, then any patent licenses
-      granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
-
-   4. Redistribution. You may reproduce and distribute copies of the
-      Work or Derivative Works thereof in any medium, with or without
-      modifications, and in Source or Object form, provided that You
-      meet the following conditions:
-
-      (a) You must give any other recipients of the Work or
-          Derivative Works a copy of this License; and
-
-      (b) You must cause any modified files to carry prominent notices
-          stating that You changed the files; and
-
-      (c) You must retain, in the Source form of any Derivative Works
-          that You distribute, all copyright, patent, trademark, and
-          attribution notices from the Source form of the Work,
-          excluding those notices that do not pertain to any part of
-          the Derivative Works; and
-
-      (d) If the Work includes a "NOTICE" text file as part of its
-          distribution, then any Derivative Works that You distribute must
-          include a readable copy of the attribution notices contained
-          within such NOTICE file, excluding those notices that do not
-          pertain to any part of the Derivative Works, in at least one
-          of the following places: within a NOTICE text file distributed
-          as part of the Derivative Works; within the Source form or
-          documentation, if provided along with the Derivative Works; or,
-          within a display generated by the Derivative Works, if and
-          wherever such third-party notices normally appear. The contents
-          of the NOTICE file are for informational purposes only and
-          do not modify the License. You may add Your own attribution
-          notices within Derivative Works that You distribute, alongside
-          or as an addendum to the NOTICE text from the Work, provided
-          that such additional attribution notices cannot be construed
-          as modifying the License.
-
-      You may add Your own copyright statement to Your modifications and
-      may provide additional or different license terms and conditions
-      for use, reproduction, or distribution of Your modifications, or
-      for any such Derivative Works as a whole, provided Your use,
-      reproduction, and distribution of the Work otherwise complies with
-      the conditions stated in this License.
-
-   5. Submission of Contributions. Unless You explicitly state otherwise,
-      any Contribution intentionally submitted for inclusion in the Work
-      by You to the Licensor shall be under the terms and conditions of
-      this License, without any additional terms or conditions.
-      Notwithstanding the above, nothing herein shall supersede or modify
-      the terms of any separate license agreement you may have executed
-      with Licensor regarding such Contributions.
-
-   6. Trademarks. This License does not grant permission to use the trade
-      names, trademarks, service marks, or product names of the Licensor,
-      except as required for reasonable and customary use in describing the
-      origin of the Work and reproducing the content of the NOTICE file.
-
-   7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor provides the Work (and each
-      Contributor provides its Contributions) on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-      implied, including, without limitation, any warranties or conditions
-      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-      PARTICULAR PURPOSE. You are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume any
-      risks associated with Your exercise of permissions under this License.
-
-   8. Limitation of Liability. In no event and under no legal theory,
-      whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and grossly
-      negligent acts) or agreed to in writing, shall any Contributor be
-      liable to You for damages, including any direct, indirect, special,
-      incidental, or consequential damages of any character arising as a
-      result of this License or out of the use or inability to use the
-      Work (including but not limited to damages for loss of goodwill,
-      work stoppage, computer failure or malfunction, or any and all
-      other commercial damages or losses), even if such Contributor
-      has been advised of the possibility of such damages.
-
-   9. Accepting Warranty or Additional Liability. While redistributing
-      the Work or Derivative Works thereof, You may choose to offer,
-      and charge a fee for, acceptance of support, warranty, indemnity,
-      or other liability obligations and/or rights consistent with this
-      License. However, in accepting such obligations, You may act only
-      on Your own behalf and on Your sole responsibility, not on behalf
-      of any other Contributor, and only if You agree to indemnify,
-      defend, and hold each Contributor harmless for any liability
-      incurred by, or claims asserted against, such Contributor by reason
-      of your accepting any such warranty or additional liability.
-
-   END OF TERMS AND CONDITIONS
-
-   APPENDIX: How to apply the Apache License to your work.
-
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "[]"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in the appropriate
-      comment syntax for the file format. We also recommend that a
-      file or class name and description of purpose be included on the
-      same "printed page" as the copyright notice for easier
-      identification within third-party archives.
-
-   Copyright [yyyy] [name of copyright owner]
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
        http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-```
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 ## References
 
@@ -503,6 +562,10 @@ in this document:
 
 [^1]: **This is an example of a reference.**
 
-[^2]: **ELF Executable and Linkable Format, By Xinuos** – https://gabi.xinuos.com/elf/
+[^2]: **ELF Executable and Linkable Format, By Xinuos – [Section 1.3.4](#134-executable-and-linkable-format)** – https://gabi.xinuos.com/elf/
 
-[^3]: **Unified Extensible Firmware Interface Specification, Version 2.11 (UEFI 2.11)** – https://uefi.org/specs/UEFI/2.11/
+[^3]: **Unified Extensible Firmware Interface Specification, Version 2.11 (UEFI 2.11) – [Section 1.3.5](#135-unified-extensible-firmware-interface)** – https://uefi.org/specs/UEFI/2.11/
+
+[^4]: **Digital Signatures, Wikipedia** – https://en.wikipedia.org/wiki/Digital_signature
+
+[^5]: **Ed25519, Wikipedia** – https://en.wikipedia.org/wiki/EdDSA#Ed25519
