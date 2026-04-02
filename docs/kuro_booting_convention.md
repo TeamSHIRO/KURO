@@ -514,7 +514,7 @@ The booting process for the bootloader may look like the following diagram:
 <!-- TODO: TheMonHub - Add image -->
 
 At the beginning of the booting process, the bootloader must read the ELF header and check if the executable is a valid
-ELF file. If the ELF header is not valid, the bootloader must reject the executable and not load it.
+ELF file that follows the [section 3](#3-executable-structure). If the ELF header is invalid, the bootloader must reject the executable and not load it.
 
 After the ELF header is validated, the bootloader must read the KURO footer and check if the executable is a valid KURO
 executable. If the KURO footer is not valid, the bootloader must reject the executable and not load it.
