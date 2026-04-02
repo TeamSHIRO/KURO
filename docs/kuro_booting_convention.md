@@ -469,13 +469,13 @@ sequence of bytes that is used to identify the executable as a KURO executable. 
 The bootloader must verify that the magic number in the KURO identifier matches the expected value before loading the
 executable. If the magic number does not match, the bootloader must reject the executable and not load it.
 
-| Byte     | Value |
-|----------|-------|
-| k_magic0 | 0x7F  |
-| k_magic1 | 0x4B  |
-| k_magic2 | 0x55  |
-| k_magic3 | 0x52  |
-| k_magic4 | 0x4F  |
+| Byte     | Value  |
+|----------|--------|
+| k_magic0 | `0x7F` |
+| k_magic1 | `0x4B` |
+| k_magic2 | `0x55` |
+| k_magic3 | `0x52` |
+| k_magic4 | `0x4F` |
 
 > [!CAUTION]
 > Failure to reject the executable and load it might result in undefined behavior, as this indicates that the executable
