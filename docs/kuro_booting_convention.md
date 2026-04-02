@@ -400,15 +400,17 @@ ELF Header:
 
 > [!NOTE]
 > These GCC/Clang compiler and linker flags may help you compile a valid KURO executable:
+> 
 > ```shell
 > cc -fPIE -ffreestanding -o main.c.o -c main.c
 > ld -nostdlib -pie -o main main.c.o
 > ```
+> 
 > - `-fPIE` flag is used by compiler to create a position-independent executable (PIE).
 > - `-ffreestanding` flag is used to create an executable that is not on a hosted environment.
 > - `-pie` flag is used by linker to create a position-independent executable (PIE).
-> - `-nostdlib` flag is used to prevent the linker from linking against the standard library, which includes the C
-  standard library and startup code which introduces a dependency on the standard library and relocations.
+> - `-nostdlib` flag is used to prevent the linker from linking against the standard library, which includes the C 
+>   standard library and startup code which introduces a dependency on the standard library and relocations.
 
 > [!IMPORTANT]
 > This will not include the KURO footer. You will need to add the KURO footer to the end of the file after compiling it.
@@ -429,7 +431,7 @@ typedef struct {
 } KuroFooter;
 ```
 
-> [!NOTE]
+> [!TIP]
 > You can create a KURO footer on an existing ELF executable that follows [section 3](#3-executable-structure) by using the `kuro-sign` tool.
 
 #### k_identifier
@@ -507,25 +509,31 @@ The booting process for the bootloader may look like the following diagram:
 
 ![KURO booting process](res/kuro_booting_process.png)
 
-At the beginning of the booting process, the bootloader reads the ELF header and checks if the executable is a valid ELF
-file. If the ELF header is not valid, the bootloader must reject the executable and not load it.
+At the beginning of the booting process, the bootloader must read the ELF header and check if the executable is a valid
+ELF file. If the ELF header is not valid, the bootloader must reject the executable and not load it.
 
-After the ELF header is validated, the bootloader reads the KURO footer and checks if the executable is a valid KURO
+After the ELF header is validated, the bootloader must read the KURO footer and check if the executable is a valid KURO
 executable. If the KURO footer is not valid, the bootloader must reject the executable and not load it.
 
-The bootloader then verifies the signature in the KURO footer to ensure the authenticity of the executable. If the
+Then the bootloader must verify the signature in the KURO footer to ensure the authenticity of the executable. If the
 signature is not valid, the bootloader must reject the executable and not load it.
 
-After the executable is validated, the bootloader then loads the executable into memory according to the ELF program
+The bootloader may need to perform initialization steps before loading the executable, such as setting up the memory
+management unit (MMU) and paging, and more.
+
+Then the bootloader then may load the executable into memory according to the ELF program
 headers, which specify the memory layout of the executable. The position of the executable in memory is
 implementation-defined but must be aligned to a page boundary.
 
-After loading the executable into memory, the bootloader must prepare the stack for the executable and set the stack
-pointer to the top of the stack. The stack size and position are implementation-defined, but the start of the stack must
-be aligned to eight bytes.
+The bootloader must prepare the stack for the executable and set the stack pointer to the top of the stack. The stack
+size and position are implementation-defined, but the start of the stack must be aligned to eight bytes.
 
 After all the necessary setup is done, the bootloader then transfers control to the entry point of the executable, which
 is specified in the ELF header.
+
+> [!IMPORTANT]
+> The order of operations is not strictly defined, but the bootloader must ensure that all the necessary steps are
+> performed before transferring control to the entry point of the executable.
 
 ## 6. Paging
 
