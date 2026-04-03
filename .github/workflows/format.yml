@@ -12,11 +12,6 @@ jobs:
     name: clang-format (${{ matrix.target }})
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [bootloader, installer, signer]
-
     steps:
       - uses: actions/checkout@v6
 
@@ -42,16 +37,11 @@ jobs:
           sudo chmod +x /usr/bin/clang-format
 
       - name: Run clang-format
-        run: ./ci/clang-format-${{ matrix.target }}.sh
+        run: ./ci/clang-format.sh
 
   clang-tidy:
-    name: clang-tidy (${{ matrix.target }})
+    name: clang-tidy
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [bootloader, installer, signer]
 
     steps:
       - uses: actions/checkout@v6
@@ -83,4 +73,4 @@ jobs:
           packages: clang cmake ninja-build lld
 
       - name: Run clang-tidy
-        run: ./ci/clang-tidy-${{ matrix.target }}.sh
+        run: ./ci/clang-tidy.sh
