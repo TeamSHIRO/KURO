@@ -448,7 +448,7 @@ ELF Header:
 The KURO footer is a fixed-size data structure located at the end of the executable file. It contains metadata about the
 executable for the bootloader to use during the loading process.
 
-Starting from 72 bytes before the end of the executable, lies the KURO footer. The KURO footer contains the following
+Starting from 73 bytes before the end of the executable, lies the KURO footer. The KURO footer contains the following
 fields:
 
 ```c++
