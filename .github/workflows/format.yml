@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   clang-format:
-    name: clang-format (${{ matrix.target }})
+    name: clang-format
     runs-on: ubuntu-latest
 
     steps:
