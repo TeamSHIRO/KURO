@@ -1,4 +1,4 @@
-name: Format
+name: Run linters
 
 on:
   push:
@@ -8,17 +8,16 @@ permissions:
   contents: read
 
 jobs:
-  run-linters:
-    name: Check format
+  clang-format:
+    name: clang-format
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Check for cached clang-format
+      - name: Cache clang-format
         id: clang-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache
           key: clang-format-cache
@@ -26,26 +25,52 @@ jobs:
       - if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         name: Install clang-format
         run: |
-          echo "Installing clang-format..."
           sudo apt-get update
           sudo apt-get install -y clang-format
-          echo "Copying binaries to cache..."
           mkdir -p ~/.cache
           cp /usr/bin/clang-format ~/.cache/clang-format
-          echo "Installation complete"
-        shell: bash
 
       - if: ${{ steps.clang-cache.outputs.cache-hit == 'true' }}
         name: Restore clang-format from cache
         run: |
-          echo "Restoring clang-format from cache..."
           sudo cp ~/.cache/clang-format /usr/bin/clang-format
           sudo chmod +x /usr/bin/clang-format
-          echo "Cache restored"
 
       - name: Run clang-format
+        run: ./ci/clang-format.sh
+
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache clang-tidy
+        id: clang-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache
+          key: clang-tidy-cache
+
+      - if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        name: Install clang-tidy
         run: |
-          echo "Running clang-format..."
-          echo "---------------------------------------------------"
-          ./automated/clang-format.sh
-        shell: bash
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+          mkdir -p ~/.cache
+          cp /usr/bin/clang-tidy ~/.cache/clang-tidy
+
+      - if: ${{ steps.clang-cache.outputs.cache-hit == 'true' }}
+        name: Restore clang-tidy from cache
+        run: |
+          sudo cp ~/.cache/clang-tidy /usr/bin/clang-tidy
+          sudo chmod +x /usr/bin/clang-tidy
+
+      - name: Install build tools
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: clang cmake ninja-build lld
+
+      - name: Run clang-tidy
+        run: ./ci/clang-tidy.sh

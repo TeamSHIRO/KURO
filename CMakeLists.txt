@@ -4,53 +4,47 @@
 # Generate a UEFI bootloader
 #
 # Build options:
-# KURO_DEFAULT_CONFIG - path to default configuration file. If empty, the default configuration will be used
-# efi-clang - path to EFI-clang repository. if empty, it will be fetched automatically. Useful for offline builds
+# Name - Description
 
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
-project(KURO
+project(KURO_BOOTLOADER
         VERSION 0.1.0
         DESCRIPTION "A minimal secure UEFI bootloader"
         HOMEPAGE_URL "https://oshub.org/projects/kuro"
         LANGUAGES C
 )
 
-set(KURO_DEFAULT_CONFIG "" CACHE STRING "Path to default configuration file. If empty, the default configuration will be used")
 set(CMAKE_C_STANDARD 17)
 
-include(toolchain/efi.cmake)
+# =========================================
+# Setup the EFI toolchain
+# =========================================
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR x86_64)
 
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_C_COMPILER_ID_RUN TRUE)
+set(CMAKE_C_COMPILER_ID Clang)
+set(CMAKE_C_COMPILER_FORCED TRUE)
+
+add_compile_definitions(EFI_PLATFORM=1)
+
+set(CMAKE_C_COMPILE_OBJECT
+        "<CMAKE_C_COMPILER> <FLAGS> <DEFINES> -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
+)
+
+set(CMAKE_C_FLAGS "-ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -fshort-wchar")
+set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:efi_main -nodefaultlib <OBJECTS> <LINK_LIBRARIES> /out:<TARGET>.EFI")
+# =========================================
+# End of EFI toolchain setup
 # =========================================
 
-set(KURO_SOURCES
-        src/main.c
-        src/cout.c
-        src/file.c
-        src/logger.c
-        src/config.c
-        src/load.c
-        src/memory.c
-        src/string.c
+set(KURO_BOOTLOADER_SOURCES
+    src/main.c
 )
 
 add_executable(KUROX64
-        ${KURO_SOURCES}
+        ${KURO_BOOTLOADER_SOURCES}
 )
-target_include_directories(KUROX64 PRIVATE
-        include
-)
-
-if (NOT "${KURO_DEFAULT_CONFIG}" STREQUAL "")
-    file(READ "${KURO_DEFAULT_CONFIG}" KURO_DEFAULT_CONFIG_SERIALIZED)
-
-    string(REPLACE "\\" "\\\\" KURO_DEFAULT_CONFIG_SERIALIZED "${KURO_DEFAULT_CONFIG_SERIALIZED}")
-
-    string(REPLACE "\"" "\\\"" KURO_DEFAULT_CONFIG_SERIALIZED "${KURO_DEFAULT_CONFIG_SERIALIZED}")
-
-    string(REPLACE "\n" "\\n" KURO_DEFAULT_CONFIG_SERIALIZED "${KURO_DEFAULT_CONFIG_SERIALIZED}")
-
-    target_compile_definitions(KUROX64 PRIVATE
-            KURO_DEFAULT_CONFIG="${KURO_DEFAULT_CONFIG_SERIALIZED}"
-    )
-endif()
+target_include_directories(KUROX64 PRIVATE _deps/efi)
