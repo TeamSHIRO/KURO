@@ -651,6 +651,7 @@ Each `KuroSegmentInfo` structure is defined as follows:
 ```c++
 typedef struct {
     uint32_t ks_flags;
+    char pad[4]; // padding to align the structure to 8 bytes
     uint64_t ks_address;
     uint64_t ks_size;
     uint64_t ks_align;
