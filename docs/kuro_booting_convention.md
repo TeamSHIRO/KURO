@@ -585,6 +585,11 @@ Example of a KURO executable memory layout:
   <img src="res/kuro_exec_mem.png" alt="Example of a KURO executable memory layout">
 </picture>
 
+> [!WARNING]
+> The executable should be aware not to trigger stack overflows as the stack is located above the executable memory
+> which means that when stack overflow happens, it will overwrite the executable memory which might cause undefined
+> behavior.
+
 > [!IMPORTANT]
 > - The bootloader must not perform any modification to the page tables.
 > - The bootloader must not perform any modification to the CPU state, such as enabling or disabling interrupts, changing
