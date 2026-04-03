@@ -7,7 +7,7 @@
 
 ***Draft `1.0` | There be dragons!***
 
-**Last Updated: 2026-04-02**
+**Last Updated: 2026-04-03**
 
 ## Table of Contents
 
@@ -20,26 +20,26 @@
       3. [Data Structure](#133-data-structure)
       4. [Executable and Linkable Format](#134-executable-and-linkable-format)
       5. [Unified Extensible Firmware Interface](#135-unified-extensible-firmware-interface)
-      6. [Digital Signature and Ed25519](#136-digital-signature-and-ed25519)
-      7. [Bootloader](#137-bootloader)
-         1. [KURO Bootloader](#1371-kuro-bootloader)
-      8. [Executable](#138-executable)
-      9. [Pseudocode](#139-pseudocode)
-         1. [Types](#1391-types)
-      10. [Revisions](#1310-revisions)
+      6. [System V AMD64 ABI Calling Convention](#136-system-v-amd64-abi-calling-convention)
+      7. [Digital Signature and Ed25519](#137-digital-signature-and-ed25519)
+      8. [Bootloader](#138-bootloader)
+          1. [KURO Bootloader](#1381-kuro-bootloader)
+      9. [Executable](#139-executable)
+      10. [Pseudocode](#1310-pseudocode)
+      11. [Revisions](#1311-revisions)
 2. [Overview](#2-overview)
    1. [Executable Structure](#21-executable-structure)
    2. [KURO Footer](#22-kuro-footer)
    3. [Booting Process](#23-booting-process)
-   4. [Interfaces Provided to the Loaded Executable](#24-interfaces-provided-to-the-loaded-executable)
+   4. [Arguments Provided to the Loaded Executable](#24-arguments-provided-to-the-loaded-executable)
    5. [Security Considerations](#25-security-considerations)
    6. [Limitations](#26-limitations)
 3. [Executable Structure](#3-executable-structure)
 4. [KURO Footer](#4-kuro-footer)
 5. [Booting Process](#5-booting-process)
-6. [Paging](#6-paging)
-7. [Interface Provided to the Loaded Executable](#7-interfaces-provided-to-the-loaded-executable)
-8. [How KURO Bootloader Works](#8-how-kuro-bootloader-works)
+6. [Arguments Provided to the Loaded Executable](#6-arguments-provided-to-the-loaded-executable)
+7. [KURO Executable Information](#7-kuro-executable-information)
+8. [Farewell](#farewell)
 9. [Copyright](#copyright)
 10. [References](#references)
 
@@ -75,7 +75,6 @@ This document covers the following topics and concepts related to the KURO booti
 - How the bootloader loads the executable (Booting Process).
 - Interfaces provided to the loaded executable.
 - Security features provided by the bootloader.
-- How KURO bootloader works.
 - Tools you can use to create a KURO compliant executable.
 
 ## 1.3 Conventions
@@ -174,7 +173,18 @@ This document will not cover the details of the UEFI specification, but it is ex
 understanding of the UEFI specification and how it works. For more information on the UEFI specification, please refer
 to the Unified Extensible Firmware Interface Specification.
 
-### 1.3.6 Digital Signature and Ed25519
+### 1.3.6 System V AMD64 ABI Calling Convention
+
+System V AMD64 ABI calling convention[^6] is a standard calling convention for the x86\_64 architecture. It defines how
+the arguments are passed to and from functions in the x86\_64 architecture. It is used by the KURO bootloader to pass
+arguments to the loaded executable, such as the executable information and the UEFI system table.
+
+This document will not cover the details of the System V AMD64 ABI calling convention, but it is expected that the
+reader has a basic understanding of the calling convention and how it works. For more information on the System V AMD64
+ABI calling convention, please refer to the System V Application Binary Interface AMD64 Architecture Processor
+Supplement.
+
+### 1.3.7 Digital Signature and Ed25519
 
 Digital signatures[^4] are a cryptographic mechanism used to verify the authenticity and integrity of data. They are
 commonly used in software distribution to ensure that the software has not been tampered with and is from a trusted
@@ -185,7 +195,7 @@ Ed25519[^5] is a digital signature algorithm that uses elliptic curve cryptograp
 integrity. It is designed to be fast, secure, and resistant to certain types of attacks. In this document, Ed25519 is
 used as the digital signature algorithm for signing the executable and verifying its authenticity.
 
-### 1.3.7 Bootloader
+### 1.3.8 Bootloader
 
 A small program that prepares the environment for the operating system or other software to run and, then loads an operating
 system or other executable into memory and starts its execution. In this document, the term "bootloader" refers to a
@@ -194,7 +204,7 @@ bootloader that is KURO compliant.
 KURO compliant bootloaders are designed to load ELF executables that follow the KURO booting convention, which specifies
 the digital signature of the executable to verify its authenticity.
 
-#### 1.3.7.1 KURO Bootloader
+#### 1.3.8.1 KURO Bootloader
 KURO bootloader is a small EFI application designed to load and execute an executable that follows the KURO
 booting convention. It is designed to be as minimal as possible and self-contained, with a focus on security and
 simplicity. The KURO bootloader is designed to be compliant with the UEFI specification and to provide a secure and
@@ -207,7 +217,7 @@ boot an executable while leaving the developer with almost full control over the
 > [!IMPORTANT]
 > KURO can mean different things in different contexts. The bootloader and the booting convention.
 
-### 1.3.8 Executable
+### 1.3.9 Executable
 
 A file that contains a program that can be executed by the operating system or other software. In this document, the
 term "executable" refers to an executable file in the ELF format that follows the KURO booting convention and can be loaded by a KURO
@@ -215,7 +225,7 @@ compliant bootloader.
 
 For more information on ELF executables, please refer to the ELF Executable and Linkable Format specification.
 
-### 1.3.9 Pseudocode
+### 1.3.10 Pseudocode
 
 The pseudocode provided in this document is intended to provide a clear and concise representation of the concepts and
 conventions outlined in this document.
@@ -237,7 +247,7 @@ int main() {
 }
 ```
 
-#### 1.3.9.1 Types
+#### 1.3.10.1 Types
 
 | Type       | Description                   |
 |------------|-------------------------------|
@@ -253,7 +263,7 @@ int main() {
 | `bool`     | Boolean value (true or false) |
 | `void`     | No return value               |
 
-### 1.3.10 Revisions
+### 1.3.11 Revisions
 
 Updates to this document are considered either revisions or errata as described below:
 - A new revision is made when significant changes are made to the document. Which changes the behavior of the bootloader,
@@ -302,9 +312,13 @@ The bootloader should perform the following steps to load an executable:
 4. Load the executable into memory according to the ELF program headers.
 5. Transfer control to the entry point of the executable.
 
-### 2.4 Interfaces Provided to the Loaded Executable
+### 2.4 Arguments Provided to the Loaded Executable
 
-The bootloader must provide the following interfaces to the loaded executable:
+KURO booting convention uses the System V AMD64 ABI calling convention, which means that the first six integer or
+pointer arguments are passed in the following registers: `RDI`, `RSI`, `RDX`, `RCX`, `R8`, and `R9`. Additional
+arguments are passed on the stack.
+
+The bootloader must provide the following arguments to the loaded executable:
 - **Executable information**: Provides information about the loaded executable, such as its entry point, segment information, and more.
 - **System table**: The UEFI[^3] system table, which provides access to various UEFI services and information.
 
@@ -430,6 +444,7 @@ fields:
 ```c++
 typedef struct {
     KuroIdentifier k_identifier;
+    char k_is_signed;
     char k_signature[64];
 } KuroFooter;
 ```
@@ -443,6 +458,14 @@ Eight initial bytes of the KURO footer are used to identify the executable as a 
 a magic number and version information that are used to verify the authenticity of the executable. Complete descriptions
 can be found in [section 4.1](#41-kuro-identifier).
 
+#### k_is_signed
+
+The `k_is_signed` field is a single byte that indicates whether the executable is signed or not. If the value of
+`k_is_signed` is `0`, it means that the executable is not signed, and the bootloader must not attempt to verify the
+signature as the signature will be invalid and must handle accordingly depending on the bootloader implementation. If
+the value of `k_is_signed` is `1`, it means that the executable is signed, and the bootloader should verify the
+signature using the `k_signature` field.
+
 #### k_signature
 
 The signature is an Ed25519[^5] signature of the executable to verify its authenticity. The signature is calculated over the
@@ -451,7 +474,8 @@ entire executable file, excluding the KURO footer itself.
 ### 4.1 KURO Identifier
 
 KURO identifier is a fixed-size structure that contains the magic number and version information used to identify the
-executable as a KURO executable. The KURO identifier is located at the beginning of the KURO footer and contains the following fields:
+executable as a KURO executable and to verify that the argument passed to the executable is valid. The KURO identifier
+is located at the beginning of the KURO footer and KURO executable information and contains the following fields:
 
 ```c++
 typedef struct {
@@ -513,48 +537,126 @@ The booting process for the bootloader may look like the following diagram:
 ![KURO booting process](res/kuro_booting_process.png)
 <!-- TODO: TheMonHub - Add image -->
 
-At the beginning of the booting process, the bootloader must read the ELF header and check if the executable is a valid
-ELF file. If the ELF header is not valid, the bootloader must reject the executable and not load it.
+At the beginning of the booting process, the bootloader should perform the initializations and setup necessary for the
+booting process.
+
+The bootloader then must read the ELF header and check if the executable is a valid ELF file that follows the
+[section 3](#3-executable-structure) requirements. If the ELF header is not valid, the bootloader must reject the
+executable and not load it.
 
 After the ELF header is validated, the bootloader must read the KURO footer and check if the executable is a valid KURO
 executable. If the KURO footer is not valid, the bootloader must reject the executable and not load it.
 
 Then the bootloader must verify the signature in the KURO footer to ensure the authenticity of the executable. If the
-signature is not valid, the bootloader must reject the executable and not load it.
-
-The bootloader may need to perform initialization steps before loading the executable, such as setting up the memory
-management unit (MMU) and paging, and more.
+signature is not valid, the bootloader must reject the executable and not load it but if the signature is not present
+aka `k_is_signed` is `0`, the bootloader must handle it accordingly depending on the bootloader implementation.
 
 Then the bootloader then may load the executable into memory according to the ELF program
 headers, which specify the memory layout of the executable. The position of the executable in memory is
 implementation-defined but must be aligned to a page boundary.
 
 The bootloader must prepare the stack for the executable and set the stack pointer to the top of the stack. The stack
-size and position are implementation-defined, but the start of the stack must be aligned to eight bytes.
+size is implementation-defined, but the start of the stack must be aligned to eight bytes and must locate at the bottom
+of the executable memory.
 
 After all the necessary setup is done, the bootloader then transfers control to the entry point of the executable, which
 is specified in the ELF header.
 
 > [!IMPORTANT]
+> - The bootloader must not perform any modification to the page tables.
+> - The bootloader must not perform any modification to the CPU state, such as enabling or disabling interrupts, changing
+>   the CPU mode, or changing the memory management unit (MMU) state. The bootloader must leave the CPU state as it is
+>   when it transfers control to the entry point of the executable.
+> - The bootloader must disable the UEFI watchdog timers before loading the executable.
+> - The bootloader must not exit the UEFI boot services. The executable is expected to exit the UEFI boot services
+>   itself.
+> - The bootloader must make sure that the public key used to verify the signature in the KURO footer is not tampered
+>   with.
+
+> [!NOTE]
 > The order of operations is not strictly defined, but the bootloader must ensure that all the necessary steps are
 > performed before transferring control to the entry point of the executable.
 
-## 6. Paging
+## 6. Arguments Provided to the Loaded Executable
 
-The bootloader must set up paging for the executable. The bootloader must ensure that the page table is set up correctly
-as defined below:
+As before the bootloader transfers control to the entry point of the executable, it must provide the following arguments
+in their respective register as defined by the System V AMD64 ABI calling convention:
 
-- The page table must be identity mapped, which means `physical address = virtual address`.
+- `RDI`: The address of the executable information structure as defined in
+  [section 7](#7-kuro-executable-information).
+- `RSI`: The address of the UEFI system table as defined in UEFI specification[^3].
 
-DRAFT UNFINISHED
+> [!NOTE]
+> This can be interpreted as argument 1 and argument 2 in the System V AMD64 ABI calling convention, in their respective
+> register.
 
-## 7. Interfaces Provided to the Loaded Executable
+## 7. KURO Executable Information
 
+The executable information structure is a data structure that contains information about the loaded executable. It is
+passed to the loaded executable in the `RDI` register as defined by the System V AMD64 ABI calling convention. The
+structure contains the following fields:
 
+```c++
+typedef struct {
+    KuroIdentifier ke_identifier;
+    uint64_t ke_segment_count;
+    Elf64_Phdr* ke_segments;
+    uint64_t ke_stack_start;
+    uint64_t ke_stack_size;
+} KuroExecutableInfo;
+```
 
-## 8. How KURO Bootloader Works
+#### ke_identifier
 
+As described in [section 4.1](#41-kuro-identifier), the `ke_identifier` field is a KURO identifier that contains the magic
+number and version information used by the executable to identify that the argument passed to the executable is valid.
 
+#### ke_segment_count
+
+This field is a 64-bit unsigned integer that specifies the number of entries in the `ke_segments` array.
+
+#### ke_segments
+
+64-bit unsigned integer that points to an array of `Elf64_Phdr` structures. Each `Elf64_Phdr` structure describes a
+segment of the executable that has been loaded into memory. This structure is defined in the ELF specification[^2] and
+contains information such as the virtual address of the segment, the size of the segment in memory, and the permissions of the segment.
+
+Each `Elf64_Phdr` structure is defined as follows:
+
+```c++
+typedef struct {
+    Elf64_Word  p_type;
+    Elf64_Word  p_flags;
+    Elf64_Off   p_offset;
+    Elf64_Addr  p_vaddr;
+    Elf64_Addr  p_paddr;
+    Elf64_Xword p_filesz;
+    Elf64_Xword p_memsz;
+    Elf64_Xword p_align;
+} Elf64_Phdr;
+```
+
+> [!NOTE]
+> For more information about the `Elf64_Phdr` structure, see the ELF specification[^2].
+
+#### ke_stack_start
+
+64-bit unsigned integer that specifies the start address of the stack. The stack is located at the bottom of the
+executable memory, and it grows downwards. The bootloader must set the stack pointer to the top of the stack before
+transferring control to the entry point of the executable.
+
+#### ke_stack_size
+
+64-bit unsigned integer that specifies the size of the stack. The stack size is implementation-defined.
+
+## Farewell
+
+This document has covered the KURO booting convention, the necessary steps to make a bootloader or executable that uses
+KURO booting convention. We hope that this document has helped you understand the KURO booting
+convention and how it works.
+
+Thank you for reading! If you have any questions or feedback, please feel free to reach out to us at
+[mono@themonhub.net](mailto:mono@themonhub.net).
 
 ## Copyright
 
@@ -586,3 +688,5 @@ in this document:
 [^4]: **Digital Signatures, Wikipedia** – https://en.wikipedia.org/wiki/Digital_signature
 
 [^5]: **Ed25519, Wikipedia** – https://en.wikipedia.org/wiki/EdDSA#Ed25519
+
+[^6]: **System V AMD64 ABI, GitLab** – https://gitlab.com/x86-psABIs/x86-64-ABI
