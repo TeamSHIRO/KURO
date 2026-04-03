@@ -12,11 +12,11 @@ The configuration is appended to the end of the executable. It is a binary blob 
 - Public key: The public key of the executable, used for signature verification.
 - ASLR: Whether should KURO load the executable with ASLR enabled.
 
+Total size: 552 bytes.
+
 ```c++
 struct KUROConfig {
     KuroIdentifier identifier;
-    char has_public_key;
-    char aslr_enabled;
     uint8_t public_key[32];
     uint16_t executable_path[256];
 };
