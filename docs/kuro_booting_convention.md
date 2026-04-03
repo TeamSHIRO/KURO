@@ -48,23 +48,14 @@
 
 This document describes the conventions used by the KURO bootloader to load executables.
 
-This document is intended to provide a clear and concise specification for developers who want to create bootloaders
-that follow these conventions. It is also intended to provide a reference for developers who want to create executables
-that can be loaded by the KURO bootloader.
+This document is intended to provide a reference for developers who want to create executables that can be loaded by the
+KURO bootloader or to create their own bootloader that follows the KURO booting convention.
 
 ## 1.1 Target Audience
 
-Kernel developers, operating system developers, and anyone interested in understanding how the KURO bootloader loads
-executables.
-
-This document is not intended to be a step-by-step guide for creating bootloaders or executables. It is intended to be a
-reference for developers who want to create bootloaders or executables that follow the KURO booting convention. It is
-also intended to be a reference for developers who want to understand how the KURO bootloader loads executables.
+Kernel developers, operating system developers, and anyone inbetween.
 
 We will not be holding your hand on the technical details of how to create a bootloader or an executable. We will be
-providing the necessary information and conventions to allow you to create your own bootloader or executable that
-follows the KURO booting convention. We will be providing examples and pseudocode to illustrate the concepts and
-conventions, but we will not be providing a complete implementation of a bootloader or an executable. We will be
 providing the necessary information and conventions to allow you to create your own bootloader or executable that
 follows the KURO booting convention.
 
@@ -124,7 +115,7 @@ presentation of information.
 
 Any bootloader that is compliant with this specification is considered KURO compliant. This means that it adheres to the
 conventions and requirements outlined in this document, allowing it to load executables that follow the KURO booting
-convention.onventions and requirements for creating bootloaders and e
+convention and requirements for creating bootloaders and executables.
 
 The term "KURO compliant" is used to describe bootloaders that meet these standards, ensuring compatibility with
 executables designed for the KURO booting convention. It is important to note that while the KURO bootloader itself
@@ -448,13 +439,12 @@ ELF Header:
 The KURO footer is a fixed-size data structure located at the end of the executable file. It contains metadata about the
 executable for the bootloader to use during the loading process.
 
-Starting from 73 bytes before the end of the executable, lies the KURO footer. The KURO footer contains the following
+Starting from 72 bytes before the end of the executable, lies the KURO footer. The KURO footer contains the following
 fields:
 
 ```c++
 typedef struct {
     KuroIdentifier k_identifier;
-    char k_is_signed;
     char k_signature[64];
 } KuroFooter;
 ```
@@ -468,14 +458,6 @@ typedef struct {
 Eight initial bytes of the KURO footer are used to identify the executable as a KURO executable. The identifier contains
 a magic number and version information that are used to verify the authenticity of the executable. Complete descriptions
 can be found in [section 4.1](#41-kuro-identifier).
-
-#### k_is_signed
-
-The `k_is_signed` field is a single byte that indicates whether the executable is signed or not. If the value of
-`k_is_signed` is `0`, it means that the executable is not signed, and the bootloader must not attempt to verify the
-signature as the signature will be invalid and must handle accordingly depending on the bootloader implementation. If
-the value of `k_is_signed` is `1`, it means that the executable is signed, and the bootloader should verify the
-signature using the `k_signature` field.
 
 #### k_signature
 
@@ -562,8 +544,7 @@ After the ELF header is validated, the bootloader must read the KURO footer and 
 executable. If the KURO footer is not valid, the bootloader must reject the executable and not load it.
 
 Then the bootloader must verify the signature in the KURO footer to ensure the authenticity of the executable. If the
-signature is not valid, the bootloader must reject the executable and not load it but if the signature is not present
-aka `k_is_signed` is `0`, the bootloader must handle it accordingly depending on the bootloader implementation.
+signature is not valid, the bootloader must reject the executable and not load it.
 
 Then the bootloader then may load the executable into memory according to the ELF program
 headers, which specify the memory layout of the executable. The position of the executable in memory is
