@@ -10,13 +10,8 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.target }})
+    name: Build
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [ bootloader, installer, signer ]
 
     steps:
       - name: Check out Git repository
@@ -28,5 +23,5 @@ jobs:
           packages: clang cmake ninja-build lld
 
       - name: Build project
-        run: ./ci/build-${{ matrix.target }}.sh
+        run: ./ci/build.sh
         shell: bash
