@@ -5,7 +5,7 @@
 
 # KURO Booting Convention
 
-***Under Review `1.0` Errata `A`***
+***Release `1.0` Errata `A`***
 
 **2026-04-03**
 
