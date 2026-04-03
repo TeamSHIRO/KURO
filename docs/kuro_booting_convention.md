@@ -552,11 +552,6 @@ The booting process for the bootloader may look like the following diagram:
   <img src="res/kuro_booting_process.png" alt="Booting process diagram">
 </picture>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="res/kuro_exec_mem_dark.png">
-  <img src="res/kuro_exec_mem.png" alt="Example of a KURO executable memory layout">
-</picture>
-
 At the beginning of the booting process, the bootloader should perform the initializations and setup necessary for the
 booting process.
 
@@ -583,6 +578,13 @@ The bootloader should then prepare the arguments to be passed to the executable.
 
 After all the necessary setup is done, the bootloader then transfers control to the entry point of the executable, which
 is specified in the ELF header.
+
+Example of a KURO executable memory layout:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="res/kuro_exec_mem_dark.png">
+  <img src="res/kuro_exec_mem.png" alt="Example of a KURO executable memory layout">
+</picture>
 
 > [!IMPORTANT]
 > - The bootloader must not perform any modification to the page tables.
