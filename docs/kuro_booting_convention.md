@@ -73,10 +73,9 @@ follows the KURO booting convention.
 This document covers the following topics and concepts related to the KURO booting convention:
 
 - Expected format of the executable file.
-- How the bootloader loads the executable (Booting Process).
+- How the bootloader loads the executable.
 - Interfaces provided to the loaded executable.
-- Security features provided by the bootloader.
-- Tools you can use to create a KURO compliant executable.
+- And more.
 
 ## 1.3 Conventions
 
