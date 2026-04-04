@@ -5,7 +5,7 @@
 
 # KURO Booting Convention
 
-***Under Review `1.0` Errata `A`***
+***Release `1.0` Errata `A`***
 
 **2026-04-03**
 
@@ -140,8 +140,8 @@ bytes to match the expected format of the hardware architecture.
 
 ### 1.3.4 Executable and Linkable Format
 
-Executable and Linkable Format[^2] – standard file format for executables, object code, shared libraries, and core dumps.
-Notably, ELF executables are used by Linux, Unix systems, and other operating systems.
+Executable and Linkable Format[^2] – standard file format for executables, object code, shared libraries, and core
+dumps. Notably, ELF executables are used by Linux, Unix systems, and other operating systems.
 
 The KURO bootloader is designed to load ELF executables that follow the KURO booting convention, which specifies how the
 executable should be structured and how the bootloader should load it into memory.
@@ -461,8 +461,8 @@ can be found in [section 4.1](#41-kuro-identifier).
 
 #### k_signature
 
-The signature is an Ed25519[^5] signature of the executable to verify its authenticity. The signature is calculated over the
-entire executable file, excluding the KURO footer itself.
+The signature is an Ed25519[^5] signature of the executable to verify its authenticity. The signature is calculated over
+the entire executable file, excluding the KURO footer itself.
 
 ### 4.1 KURO Identifier
 
@@ -484,9 +484,9 @@ typedef struct {
 
 #### k_magic
 
-The first five bytes of the KURO identifier are used to identify the executable as a KURO executable. The magic number is a unique
-sequence of bytes that is used to identify the executable as a KURO executable. The magic number is `0x7F` followed by
-`KURO` in ASCII, which is `0x4B 0x55 0x52 0x4F` in hexadecimal.
+The first five bytes of the KURO identifier are used to identify the executable as a KURO executable. The magic number
+is a unique sequence of bytes that is used to identify the executable as a KURO executable. The magic number is `0x7F`
+followed by `KURO` in ASCII, which is `0x4B 0x55 0x52 0x4F` in hexadecimal.
 
 The bootloader must verify that the magic number in the KURO identifier matches the expected value before loading the
 executable. If the magic number does not match, the bootloader must reject the executable and not load it.
@@ -566,25 +566,32 @@ Example of a KURO executable memory layout:
   <img src="res/kuro_exec_mem.png" alt="Example of a KURO executable memory layout">
 </picture>
 
-> [!WARNING]
-> The executable should be aware not to trigger stack overflows as the stack is located above the executable memory
-> which means that when stack overflow happens, it will overwrite the executable memory which might cause undefined
-> behavior.
+
+> [!NOTE]
+> The order of operations is not strictly defined, but the bootloader must ensure that all the necessary steps are
+> performed before transferring control to the entry point of the executable.
 
 > [!IMPORTANT]
 > - The bootloader must not perform any modification to the page tables.
-> - The bootloader must not perform any modification to the CPU state, such as enabling or disabling interrupts, changing
->   the CPU mode, or changing the memory management unit (MMU) state. The bootloader must leave the CPU state as it is
->   when it transfers control to the entry point of the executable.
+> - The bootloader must not perform any modification to the CPU state, such as enabling or disabling interrupts,
+>   changing the CPU mode, or changing the memory management unit (MMU) state. The bootloader must leave the CPU state
+>   as it is.
 > - The bootloader must disable the UEFI watchdog timers before loading the executable.
 > - The bootloader must not exit the UEFI boot services. The executable is expected to exit the UEFI boot services
 >   itself.
 > - The bootloader must make sure that the public key used to verify the signature in the KURO footer is not tampered
 >   with.
 
-> [!NOTE]
-> The order of operations is not strictly defined, but the bootloader must ensure that all the necessary steps are
-> performed before transferring control to the entry point of the executable.
+> [!WARNING]
+> The executable should be aware not to trigger stack overflows as the stack is located above the executable memory
+> which means that when stack overflow happens, it will overwrite the executable memory which might cause undefined
+> behavior.
+
+> [!CAUTION]
+> Because of the UEFI boot services, the executable and the bootloader must allocate the memory through the UEFI
+> interfaces. Otherwise, UEFI may use your memory and cause undefined behavior. As UEFI does not have any idea that the
+> executable is using the memory, unless you are allocating the memory through the UEFI interfaces until you exit the
+> UEFI boot services.
 
 ## 6. Arguments Provided to the Loaded Executable
 
@@ -639,7 +646,17 @@ This field is a 64-bit unsigned integer that specifies the number of entries in 
 #### ke_segments
 
 64-bit unsigned integer that points to an array of `KuroSegmentInfo` structures. Each `KuroSegmentInfo` structure
-describes a segment of the executable that has been loaded into memory.
+describes a segment of the executable that has been loaded into memory as defined in [section 7.1](#71-kurosegmentinfo).
+
+#### ke_stack_start
+
+64-bit unsigned integer that specifies the top/start address of the stack. The stack is located at the top of the
+executable memory, and it grows downwards. The bootloader must set the stack pointer to the top of the stack before
+transferring control to the entry point of the executable.
+
+#### ke_stack_size
+
+64-bit unsigned integer that specifies the size of the stack in bytes. The stack size is implementation-defined.
 
 ### 7.1 KuroSegmentInfo
 
@@ -700,16 +717,6 @@ memory as follows:
 2. Set the `ks_address` field to the virtual address where the segment has been loaded into memory.
 3. Set the `ks_size` field to the size of the segment in memory in bytes.
 4. Set the `ks_align` field to the same value as the `p_align` field in the ELF program header for the segment.
-
-#### ke_stack_start
-
-64-bit unsigned integer that specifies the start address of the stack. The stack is located at the bottom of the
-executable memory, and it grows downwards. The bootloader must set the stack pointer to the top of the stack before
-transferring control to the entry point of the executable.
-
-#### ke_stack_size
-
-64-bit unsigned integer that specifies the size of the stack. The stack size is implementation-defined.
 
 ## Farewell
 
