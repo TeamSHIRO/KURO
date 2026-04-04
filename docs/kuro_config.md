@@ -18,7 +18,7 @@ Total size: 554 bytes.
 struct KuroConfig {
     KuroIdentifier identifier;
     uint8_t has_public_key;
-    char pad;
+    uint8_t aslr_enabled;
     uint8_t public_key[32];
     uint16_t executable_path[256];
 };
@@ -35,16 +35,16 @@ As described in [section 4.1](kuro_booting_convention.md#41-kuro-identifier) of 
 If KURO has no public key, it will enter unsecure mode and will not verify the executable's signature. This is useful
 for development purposes but should not be used in production.
 
-#### public_key
-
-Ed25519 public key of the executable. Used for signature verification. If `has_public_key` is `0`, this field is
-ignored.
-
 #### aslr_enabled
 
 `1` if ASLR should be enabled, `0` otherwise. If ASLR is enabled, KURO will load the executable at a random address each
 time it is booted. This is a security feature that makes it harder for attackers to exploit vulnerabilities in the
 executable.
+
+#### public_key
+
+Ed25519 public key of the executable. Used for signature verification. If `has_public_key` is `0`, this field is
+ignored.
 
 #### executable_path
 
