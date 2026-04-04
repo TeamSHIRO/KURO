@@ -639,7 +639,17 @@ This field is a 64-bit unsigned integer that specifies the number of entries in 
 #### ke_segments
 
 64-bit unsigned integer that points to an array of `KuroSegmentInfo` structures. Each `KuroSegmentInfo` structure
-describes a segment of the executable that has been loaded into memory.
+describes a segment of the executable that has been loaded into memory as defined in [section 7.1](#71-kurosegmentinfo).
+
+#### ke_stack_start
+
+64-bit unsigned integer that specifies the top/start address of the stack. The stack is located at the top of the
+executable memory, and it grows downwards. The bootloader must set the stack pointer to the top of the stack before
+transferring control to the entry point of the executable.
+
+#### ke_stack_size
+
+64-bit unsigned integer that specifies the size of the stack in bytes. The stack size is implementation-defined.
 
 ### 7.1 KuroSegmentInfo
 
@@ -700,16 +710,6 @@ memory as follows:
 2. Set the `ks_address` field to the virtual address where the segment has been loaded into memory.
 3. Set the `ks_size` field to the size of the segment in memory in bytes.
 4. Set the `ks_align` field to the same value as the `p_align` field in the ELF program header for the segment.
-
-#### ke_stack_start
-
-64-bit unsigned integer that specifies the start address of the stack. The stack is located at the bottom of the
-executable memory, and it grows downwards. The bootloader must set the stack pointer to the top of the stack before
-transferring control to the entry point of the executable.
-
-#### ke_stack_size
-
-64-bit unsigned integer that specifies the size of the stack. The stack size is implementation-defined.
 
 ## Farewell
 
