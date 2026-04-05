@@ -619,6 +619,9 @@ _Noreturn void entry_point(KuroExecutableInfo* exec_info, EFI_SYSTEM_TABLE* syst
 }
 ```
 
+> [!CAUTION]
+> These arguments must not be null or `0` unless otherwise specified.
+
 > [!NOTE]
 > This can be interpreted as argument 1, 2, and 3 in the System V AMD64 ABI calling convention, in their respective
 > register.
