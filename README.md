@@ -21,7 +21,7 @@ A minimal secure UEFI bootloader to load executables in the ELF format using KUR
 
 ## For Developers
 
-Please read the [**KURO booting convention**](docs/kuro_booting_convention.md) for details on how to develop an
+Please read the [**KURO booting convention**](docs/kuro_boot_protocol.md) for details on how to develop an
 application that uses KURO booting convention.
 
 ## Building

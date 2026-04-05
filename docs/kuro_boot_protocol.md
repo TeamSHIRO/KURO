@@ -362,7 +362,8 @@ The executable must be a valid ELF file with the following characteristics:
 
 - It must be a position-independent executable (PIE) with ELF header field `e_type` set to `ET_DYN`.
 - It must be for the x86\_64 architecture with ELF header field `e_machine` set to `EM_X86_64`.
-- It must have no relocations in the ELF file (.rel and .rela sections).
+- It must have no relocations in the ELF file (`SHT_REL`, `SHT_RELA`, or `SHT_RELR` sections) unless if
+  that section is related to dynamic linker, in that case the bootloader should ignore it.
 - It must have a valid KURO footer at the end of the file.
 
 The bootloader must verify the ELF header and KURO footer to ensure that the executable is a valid KURO executable.
@@ -569,7 +570,7 @@ The bootloader should then prepare the arguments to be passed to the executable.
 After all the necessary setup is done, the bootloader then transfers control to the entry point of the executable, which
 is specified in the ELF header.
 
-Example of a KURO executable memory layout:
+Example of a KURO executable memory layout (with the stack being above the executable):
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="res/kuro_exec_mem_dark.png">
@@ -754,7 +755,7 @@ memory as follows:
   - Added explicit reservations for the other registers that are passed to the executable for future use.
   - Remove the requirement for signature verification however, it is encouraged to verify the signature anyway.
   - Clarified the requirements of having no relocations in the executable by explicitly stating the disallowed program
-    segment types.
+    segment types and exception to it.
   - Added caution about UEFI memory allocation.
   - Update `k_version` from `1` to `2`.
   - Changed stack location to be implementation-defined.
