@@ -34,7 +34,7 @@ set(CMAKE_C_COMPILE_OBJECT
         "<CMAKE_C_COMPILER> <FLAGS> <DEFINES> -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
 )
 
-set(CMAKE_C_FLAGS "-ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -fshort-wchar")
+set(CMAKE_C_FLAGS "-ffreestanding -nostdlib -fshort-wchar")
 set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:efi_main -nodefaultlib <OBJECTS> <LINK_LIBRARIES> /out:<TARGET>.EFI")
 # =========================================
 # End of EFI toolchain setup
@@ -42,9 +42,18 @@ set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:
 
 set(KURO_BOOTLOADER_SOURCES
     src/main.c
+        src/boot.c
+        src/boot.h
+        src/file.c
+        src/file.h
+        src/string.c
+        src/string.h
+        src/elf.h
+        src/elf.c
+        src/efi_helper.h
 )
 
 add_executable(KUROX64
         ${KURO_BOOTLOADER_SOURCES}
 )
-target_include_directories(KUROX64 PRIVATE _deps/efi)
+target_include_directories(KUROX64 SYSTEM PRIVATE _deps/efi)
