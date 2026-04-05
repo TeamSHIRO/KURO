@@ -15,18 +15,54 @@ The configuration is appended to the end of the executable. It is a binary blob 
 Total size: 554 bytes.
 
 ```c++
-struct KuroConfig {
+typedef struct {
     KuroIdentifier identifier;
     uint8_t has_public_key;
     uint8_t aslr_enabled;
     uint8_t public_key[32];
     uint16_t executable_path[256];
-};
+} KuroConfig;
 ```
 
 #### identifier
 
-As described in [section 4.1](kuro_booting_convention.md#41-kuro-identifier) of the KURO booting convention.
+```c++
+typedef struct {
+    char k_magic0;
+    char k_magic1;
+    char k_magic2;
+    char k_magic3;
+    char k_magic4;
+    uint8_t k_version;
+    uint16_t k_reserved;
+} KuroIdentifier;
+```
+
+#### k_magic
+
+The first five bytes of the KURO identifier are used to identify the executable as a KURO executable. The magic number
+is a unique sequence of bytes that is used to identify the executable as a KURO executable. The magic number is `0x7F`
+followed by `KURO` in ASCII, which is `0x4B 0x55 0x52 0x4F` in hexadecimal.
+
+The bootloader must verify that the magic number in the KURO identifier matches the expected value before loading the
+executable. If the magic number does not match, the bootloader must reject the executable and not load it.
+
+| Byte     | Value  |
+|----------|--------|
+| k_magic0 | `0x7F` |
+| k_magic1 | `0x4B` |
+| k_magic2 | `0x55` |
+| k_magic3 | `0x52` |
+| k_magic4 | `0x4F` |
+
+#### k_version
+
+Any other undefined version number is considered reserved for future use.
+
+| Version | Description                      |
+|---------|----------------------------------|
+| `0`     | Invalid version (never used)     |
+| `1`     | KURO Configuration Version `1.0` |
 
 #### has_public_key
 
