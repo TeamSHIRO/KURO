@@ -138,6 +138,31 @@ int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file)
     return 0;
 }
 
+EFI_STATUS verify_phdr(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
+    const Elf64_Half phnum = header->e_phnum;
+    Elf64_Phdr phdr;
+    size_t phdr_size = sizeof(Elf64_Phdr);
+    for (size_t i = 0; i < phnum; i++) {
+        phdr_size = sizeof(Elf64_Phdr);
+        EFI_STATUS status = file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_phoff + i * phdr_size);
+        if (status != EFI_SUCCESS) {
+            return status;
+        }
+        status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
+        if (status != EFI_SUCCESS) {
+            return status;
+        }
+        if (phdr.p_type != PT_LOAD) {
+            continue;
+        }
+
+        if (phdr.p_filesz > phdr.p_memsz) {
+            return EFI_ERR(EFI_LOAD_ERROR);
+        }
+    }
+    return EFI_SUCCESS;
+}
+
 EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
                                  const EFI_FILE_PROTOCOL *file) {
     const size_t section_num = get_section_num(header, file);

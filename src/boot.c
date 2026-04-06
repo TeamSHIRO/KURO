@@ -177,6 +177,15 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
 
     system_table->ConOut->OutputString(system_table->ConOut, L"This is a valid ELF file!\r\n");
 
+    status = verify_phdr(&ehdr, file);
+    if (status != EFI_SUCCESS) {
+        status = EFI_ERR(EFI_LOAD_ERROR);
+        system_table->ConOut->OutputString(system_table->ConOut, L"This ELF file contains invalid program header!\r\n");
+        goto error;
+    }
+
+    system_table->ConOut->OutputString(system_table->ConOut, L"This ELF file contains valid program header!\r\n");
+
     status = check_for_rel_section(&ehdr, system_table, file);
     if (status != EFI_SUCCESS) {
         status = EFI_ERR(EFI_LOAD_ERROR);
