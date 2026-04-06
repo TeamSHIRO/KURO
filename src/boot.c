@@ -124,8 +124,16 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
         const char* file_addr;
         const size_t file_size = phdr.p_filesz;
         system_table->BootServices->AllocatePool(EfiLoaderData, file_size, (void**) &file_addr);
-        file->SetPosition((EFI_FILE_PROTOCOL*) file, phdr.p_offset);
-        file->Read((EFI_FILE_PROTOCOL*) file,(UINTN*) &file_size, (void*) file_addr);
+        status = file->SetPosition((EFI_FILE_PROTOCOL*) file, phdr.p_offset);
+        if (status != EFI_SUCCESS) {
+            system_table->BootServices->FreePool((void*)file_addr);
+            goto error;
+        }
+        status = file->Read((EFI_FILE_PROTOCOL*) file,(UINTN*) &file_size, (void*) file_addr);
+        if (status != EFI_SUCCESS) {
+            system_table->BootServices->FreePool((void*)file_addr);
+            goto error;
+        }
         system_table->BootServices->CopyMem((void*)load_addr, (void*)file_addr, file_size);
         system_table->BootServices->SetMem((void*)(load_addr + file_size), load_size - file_size, 0);
         system_table->BootServices->FreePool((void*)file_addr);
