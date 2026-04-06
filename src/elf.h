@@ -128,6 +128,7 @@ enum machine_type {
 };
 
 int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
+EFI_STATUS verify_phdr(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
 EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
                                  const EFI_FILE_PROTOCOL *file);
 
