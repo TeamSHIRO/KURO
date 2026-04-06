@@ -563,7 +563,7 @@ headers, which specify the memory layout of the executable. The position of the 
 implementation-defined.
 
 The bootloader must prepare the stack for the executable and set the stack pointer to the top of the stack. The stack
-size and location are implementation-defined, but the start of the stack must be aligned to `8` bytes.
+size and location are implementation-defined, but the start of the stack must be aligned to `16` bytes.
 
 The bootloader should then prepare the arguments to be passed to the executable.
 
@@ -762,6 +762,7 @@ memory as follows:
   - Added `ke_stack_end` field to the executable information structure.
   - Added Bootloader Identifier String to the arguments provided to the executable and the table containing the
     currently known bootloader identifier strings by the document.
+  - Stack alignment is now `16` bytes.
   - Clarified versioning of this document.
   - Removed the farewell section from this document.
   - Added the contact section to this document.
