@@ -12,7 +12,7 @@ project(KURO_BOOTLOADER
         VERSION 0.1.0
         DESCRIPTION "A minimal secure UEFI bootloader"
         HOMEPAGE_URL "https://oshub.org/projects/kuro"
-        LANGUAGES C
+        LANGUAGES C ASM_NASM
 )
 
 set(CMAKE_C_STANDARD 17)
@@ -29,6 +29,10 @@ set(CMAKE_C_COMPILER_ID Clang)
 set(CMAKE_C_COMPILER_FORCED TRUE)
 
 add_compile_definitions(EFI_PLATFORM=1)
+
+set(CMAKE_ASM_NASM_COMPILE_OBJECT
+        "<CMAKE_ASM_NASM_COMPILER> <FLAGS> -f win64 <INCLUDES> -o <OBJECT> <SOURCE>"
+)
 
 set(CMAKE_C_COMPILE_OBJECT
         "<CMAKE_C_COMPILER> <FLAGS> <DEFINES> -target x86_64-pc-win32-coff <INCLUDES> -c -o <OBJECT> <SOURCE>"
@@ -51,6 +55,8 @@ set(KURO_BOOTLOADER_SOURCES
         src/elf.h
         src/elf.c
         src/efi_helper.h
+        src/transfer_control.h
+        src/transfer_control.asm
 )
 
 add_executable(KUROX64

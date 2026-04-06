@@ -121,8 +121,14 @@ enum special_section_type {
     SHN_HIRESERVE = 0xffff
 };
 
+enum machine_type {
+    EM_NONE = 0,
+    EM_X86_64 = 62
+    // More if needed
+};
+
 int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
-int check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
-                          const EFI_FILE_PROTOCOL *file);
+EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
+                                 const EFI_FILE_PROTOCOL *file);
 
 #endif // ELF_H

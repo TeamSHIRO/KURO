@@ -18,7 +18,7 @@ You may obtain a copy of the source code at:
 =====================================================
 
 The KURO bootloader uses EFI headers made available by yoppeh,
-provided under the MIT license.
+provided under the MIT license. Modified to fit the needs of KURO.
 
     MIT License
 

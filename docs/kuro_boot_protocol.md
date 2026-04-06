@@ -605,17 +605,19 @@ in their respective register as defined by the System V AMD64 ABI calling conven
 
 - `RDI`: The address of the executable information structure as defined in
   [section 7](#7-kuro-executable-information).
-- `RSI`: The address of the UEFI system table as defined in UEFI specification[^3].
-- `RDX`: Arbitrary data passed to the executable. This data is implementation-defined. If not being used, it can be set
+- `RSI`: Contains the bootloader's image handle.
+- `RDX`: Points to the UEFI system table as defined in UEFI specification[^3].
+- `RCX`: Arbitrary data passed to the executable. This data is implementation-defined. If not being used, it can be set
   to null or `0`.
-- `RCX`: Pointer to bootloader identifier string. This data is implementation-defined but must be byte-sized
+- `R8`: Pointer to bootloader identifier string. This data is implementation-defined but must be byte-sized
   null-terminated string. See the bootloader identifier string in [section 6.1](#61-bootloader-identifier-string).
 - Any other register is reserved for future use. The bootloader must not use these registers.
 
 Example of the arguments provided to the entry point of the executable:
 
 ```c++
-_Noreturn void entry_point(KuroExecutableInfo* exec_info, EFI_SYSTEM_TABLE* system_table, void* data, char* boot_id) {
+_Noreturn void entry_point(KuroExecutableInfo* exec_info, EFI_HANDLE image_handle,
+                           EFI_SYSTEM_TABLE* system_table, void* data, char* boot_id) {
     // Executable logic here
 }
 ```
@@ -649,6 +651,7 @@ structure contains the following fields:
 ```c++
 typedef struct {
     KuroIdentifier ke_identifier;
+    uint64_t ke_entry_point;
     uint64_t ke_segment_count;
     KuroSegmentInfo* ke_segments;
     uint64_t ke_stack_start;
@@ -662,6 +665,11 @@ typedef struct {
 As described in [section 4.1](#41-kuro-identifier), the `ke_identifier` field is a KURO identifier that contains the
 magic number and version information used by the executable to identify that the argument passed to the executable is
 valid.
+
+#### ke_entry_point
+
+This field contains the address to the entry point of the executable. The entry point is the first instruction that the
+executable will execute.
 
 #### ke_segment_count
 
@@ -763,6 +771,8 @@ memory as follows:
   - Added Bootloader Identifier String to the arguments provided to the executable and the table containing the
     currently known bootloader identifier strings by the document.
   - Stack alignment is now `16` bytes.
+  - Added an image handle to the arguments provided to the executable.
+  - Added `ke_entry_point` field to the executable information structure.
   - Clarified versioning of this document.
   - Removed the farewell section from this document.
   - Added the contact section to this document.
