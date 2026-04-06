@@ -123,7 +123,7 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
         const size_t load_size = phdr.p_memsz;
         const char* file_addr;
         const size_t file_size = phdr.p_filesz;
-        system_table->BootServices->AllocatePool(EfiLoaderData, file_size, (void**) &file_addr);
+        system_table->BootServices->AllocatePool(EfiLoaderData, file_size, (void**) &file_addr); // FIXME: TheMonHub - Reductant allocation
         status = file->SetPosition((EFI_FILE_PROTOCOL*) file, phdr.p_offset);
         if (status != EFI_SUCCESS) {
             system_table->BootServices->FreePool((void*)file_addr);
