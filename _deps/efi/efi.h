@@ -64,7 +64,11 @@
 #endif
 
 #ifndef EFIAPI
+#if defined(__x86_64__) || defined(_M_X64)
+#define EFIAPI __attribute__((ms_abi))
+#else
 #define EFIAPI
+#endif
 #endif
 
 #define EFI_FALSE (0 == 1)
