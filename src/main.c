@@ -21,7 +21,8 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     system_table->ConOut->OutputString(system_table->ConOut, status_str);
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\nPress any key to continue...\r\n");
 
-    system_table->BootServices->WaitForEvent(1, (EFI_EVENT[]) {system_table->ConIn->WaitForKey}, NULL);
+    EFI_EVENT wait_for_key[1] = {system_table->ConIn->WaitForKey};
+    system_table->BootServices->WaitForEvent(1, wait_for_key, NULL);
 
     return status;
 }
