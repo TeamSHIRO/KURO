@@ -70,7 +70,7 @@ jobs:
       - name: Install build tools
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: clang cmake ninja-build lld
+          packages: clang cmake ninja-build lld nasm
 
       - name: Run clang-tidy
         run: ./ci/clang-tidy.sh
