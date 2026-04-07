@@ -17,12 +17,7 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     CHAR16 status_str[19];
     to_hex(status, status_str);
 
-    if (status != EFI_SUCCESS) {
-        system_table->ConOut->OutputString(system_table->ConOut, L"\r\nBoot failed with status: ");
-    } else {
-        system_table->ConOut->OutputString(system_table->ConOut, L"\r\nBoot succeeded with status: ");
-    }
-
+    system_table->ConOut->OutputString(system_table->ConOut, L"\r\nBoot failed with status: ");
     system_table->ConOut->OutputString(system_table->ConOut, status_str);
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\nPress any key to continue...\r\n");
 
