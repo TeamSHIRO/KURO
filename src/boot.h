@@ -28,7 +28,7 @@ typedef struct {
     KuroIdentifier ke_identifier;
     uint64_t ke_entry_point;
     uint64_t ke_segment_count;
-    KuroSegmentInfo* ke_segments;
+    KuroSegmentInfo *ke_segments;
     uint64_t ke_stack_start;
     uint64_t ke_stack_end;
     uint64_t ke_stack_size;

@@ -1,17 +1,12 @@
 #ifndef TRANSFER_CONTROL_H
 #define TRANSFER_CONTROL_H
 
-#include "efi.h"
 #include "boot.h"
+#include "efi.h"
 
-extern EFI_HANDLE transfer_image_handle;
-extern EFI_SYSTEM_TABLE* transfer_system_table;
-extern KuroExecutableInfo* transfer_exec_info;
-extern char* transfer_boot_id_addr;
-extern uint64_t transfer_stack_start;
+__attribute__((sysv_abi)) extern _Noreturn void transfer_control(KuroExecutableInfo *exec_info, EFI_HANDLE image_handle,
+                                                                 const EFI_SYSTEM_TABLE *system_table, void *data,
+                                                                 char *boot_id, uint64_t stack_start,
+                                                                 uint64_t entry_point);
 
-extern uint64_t transfer_entry_point;
-
-extern _Noreturn void transfer_control(void);
-
-#endif //TRANSFER_CONTROL_H
+#endif // TRANSFER_CONTROL_H

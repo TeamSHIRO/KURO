@@ -8,8 +8,6 @@
 #include "string.h"
 #include "transfer_control.h"
 
-// TODO: TheMonHub - Refactor this mess too!
-
 static EFI_STATUS get_mem_size(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, UINTN *output) {
     const size_t phnum = ehdr->e_phnum;
     EFI_STATUS status = EFI_SUCCESS;
@@ -19,11 +17,11 @@ static EFI_STATUS get_mem_size(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *
     for (size_t i = 0; i < phnum; i++) {
         Elf64_Phdr phdr;
         size_t phdr_size = sizeof(Elf64_Phdr);
-        status = file->SetPosition((EFI_FILE_PROTOCOL*) file, ehdr->e_phoff + i * ehdr->e_phentsize);
+        status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * ehdr->e_phentsize);
         if (status != EFI_SUCCESS) {
             return status;
         }
-        status = file->Read((EFI_FILE_PROTOCOL*) file, &phdr_size, &phdr);
+        status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
         if (status != EFI_SUCCESS) {
             return status;
         }
@@ -41,12 +39,34 @@ static EFI_STATUS get_mem_size(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *
     return status;
 }
 
+static EFI_STATUS get_start_mem(const Elf64_Ehdr *ehdr, Elf64_Phdr *phdr, const size_t phdr_size_on_disk,
+                                const EFI_FILE_PROTOCOL *file, size_t *output) {
+    size_t start_mem = -1;
+    size_t phdr_size = sizeof(Elf64_Phdr);
+    for (size_t i = 0; i < ehdr->e_phnum; i++) {
+        phdr_size = sizeof(Elf64_Phdr);
+        EFI_STATUS status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * phdr_size_on_disk);
+        if (status != EFI_SUCCESS) {
+            return status;
+        }
+        status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, phdr);
+        if (status != EFI_SUCCESS) {
+            return status;
+        }
+        if (phdr->p_type == PT_LOAD && start_mem > phdr->p_vaddr) {
+            start_mem = phdr->p_vaddr;
+        }
+    }
+    *output = start_mem;
+    return EFI_SUCCESS;
+}
+
 // This function loads the executable into memory
 // after calling, the `info` arg will point to KuroExecutableInfo. This is heap-allocated. Free on failure.
 static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, const EFI_SYSTEM_TABLE *system_table,
                             const Elf64_Ehdr *ehdr, KuroExecutableInfo *info) {
-    const char *kernel_addr = (char*) base_addr + STACK_SIZE;
-    const char *stack_addr = (char*) base_addr + STACK_SIZE - 16;
+    const char *kernel_addr = (char *) base_addr + STACK_SIZE;
+    const char *stack_addr = (char *) base_addr + STACK_SIZE - 16;
 
     CHAR16 str[21];
     to_hex((size_t) kernel_addr, str);
@@ -61,23 +81,9 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
     Elf64_Phdr phdr;
     size_t phdr_size = sizeof(Elf64_Phdr);
     const size_t phdr_size_on_disk = ehdr->e_phentsize;
-    EFI_STATUS status;
+    size_t start_mem;
 
-    size_t start_mem = -1;
-    for (size_t i = 0; i < ehdr->e_phnum; i++) {
-        phdr_size = sizeof(Elf64_Phdr);
-        status = file->SetPosition((EFI_FILE_PROTOCOL*) file, ehdr->e_phoff + i * phdr_size_on_disk);
-        if (status != EFI_SUCCESS) {
-            goto error;
-        }
-        status = file->Read((EFI_FILE_PROTOCOL*) file, &phdr_size, &phdr);
-        if (status != EFI_SUCCESS) {
-            goto error;
-        }
-        if (phdr.p_type == PT_LOAD && start_mem > phdr.p_vaddr) {
-            start_mem = phdr.p_vaddr;
-        }
-    }
+    get_start_mem(ehdr, &phdr, phdr_size_on_disk, file, &start_mem);
 
     info->ke_identifier.k_magic0 = 0x7f;
     info->ke_identifier.k_magic1 = 'K';
@@ -94,23 +100,24 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
 
     info->ke_segment_count = ehdr->e_phnum;
 
-    status = system_table->BootServices->AllocatePool(EfiLoaderData, sizeof(KuroSegmentInfo) * info->ke_segment_count, (void**) &info->ke_segments);
+    EFI_STATUS status = system_table->BootServices->AllocatePool(
+            EfiLoaderData, sizeof(KuroSegmentInfo) * info->ke_segment_count, (void **) &info->ke_segments);
     if (status != EFI_SUCCESS) {
         return status;
     }
 
     for (size_t i = 0; i < ehdr->e_phnum; i++) {
         phdr_size = sizeof(Elf64_Phdr);
-        status = file->SetPosition((EFI_FILE_PROTOCOL*) file, ehdr->e_phoff + i * phdr_size_on_disk);
+        status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * phdr_size_on_disk);
         if (status != EFI_SUCCESS) {
             goto error;
         }
-        status = file->Read((EFI_FILE_PROTOCOL*) file, &phdr_size, &phdr);
+        status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
         if (status != EFI_SUCCESS) {
             goto error;
         }
 
-        KuroSegmentInfo* seg = &info->ke_segments[i];
+        KuroSegmentInfo *seg = &info->ke_segments[i];
         seg->ks_flags = phdr.p_flags;
         seg->ks_address = (uint64_t) kernel_addr + (phdr.p_vaddr - start_mem);
         seg->ks_size = phdr.p_memsz;
@@ -119,29 +126,25 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
         if (phdr.p_type != PT_LOAD) {
             continue;
         }
-        const char* load_addr = (const char*) seg->ks_address;
+        const char *load_addr = (const char *) seg->ks_address;
         const size_t load_size = phdr.p_memsz;
-        const char* file_addr;
         const size_t file_size = phdr.p_filesz;
-        system_table->BootServices->AllocatePool(EfiLoaderData, file_size, (void**) &file_addr); // FIXME: TheMonHub - Reductant allocation
-        status = file->SetPosition((EFI_FILE_PROTOCOL*) file, phdr.p_offset);
+
+        status = file->SetPosition((EFI_FILE_PROTOCOL *) file, phdr.p_offset);
         if (status != EFI_SUCCESS) {
-            system_table->BootServices->FreePool((void*)file_addr);
             goto error;
         }
-        status = file->Read((EFI_FILE_PROTOCOL*) file,(UINTN*) &file_size, (void*) file_addr);
+        status = file->Read((EFI_FILE_PROTOCOL *) file, (UINTN *) &file_size, (void *) load_addr);
         if (status != EFI_SUCCESS) {
-            system_table->BootServices->FreePool((void*)file_addr);
             goto error;
         }
-        system_table->BootServices->CopyMem((void*)load_addr, (void*)file_addr, file_size);
-        system_table->BootServices->SetMem((void*)(load_addr + file_size), load_size - file_size, 0);
-        system_table->BootServices->FreePool((void*)file_addr);
+
+        system_table->BootServices->SetMem((void *) (load_addr + file_size), load_size - file_size, 0);
     }
 
     return EFI_SUCCESS;
 
-    error:
+error:
     system_table->BootServices->FreePool(info->ke_segments);
     return status;
 }
@@ -212,12 +215,8 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
 
     EFI_PHYSICAL_ADDRESS addr = 0xffffffffffffffff;
 
-    status = system_table->BootServices->AllocatePages(
-        AllocateMaxAddress,
-        EfiLoaderData,
-        total_page_needed + STACK_SIZE_PAGE,
-        &addr
-    );
+    status = system_table->BootServices->AllocatePages(AllocateMaxAddress, EfiLoaderData,
+                                                       total_page_needed + STACK_SIZE_PAGE, &addr);
     if (status != EFI_SUCCESS) {
         goto error;
     }
@@ -228,17 +227,20 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\n");
 
     KuroExecutableInfo *executable_info;
-    status = system_table->BootServices->AllocatePool(EfiLoaderData, sizeof(KuroExecutableInfo), (void**) &executable_info);
+    status = system_table->BootServices->AllocatePool(EfiLoaderData, sizeof(KuroExecutableInfo),
+                                                      (void **) &executable_info);
     if (status != EFI_SUCCESS) {
         goto error;
     }
 
-    status = load_exec((char*) addr, file, system_table, &ehdr, executable_info);
+    status = load_exec((char *) addr, file, system_table, &ehdr, executable_info);
     if (status != EFI_SUCCESS) {
         goto error2;
     }
 
-    status = system_table->BootServices->AllocatePool(EfiLoaderData, 5, (void**) &transfer_boot_id_addr);
+    char *boot_id;
+
+    status = system_table->BootServices->AllocatePool(EfiLoaderData, 5, (void **) &boot_id);
     if (status != EFI_SUCCESS) {
         goto error2;
     }
@@ -248,20 +250,16 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     system_table->ConOut->OutputString(system_table->ConOut, str);
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\n");
 
-    transfer_exec_info = executable_info;
-    transfer_image_handle = image_handle;
-    transfer_system_table = (EFI_SYSTEM_TABLE*) system_table;
-    transfer_boot_id_addr[0] = 'K';
-    transfer_boot_id_addr[1] = 'U';
-    transfer_boot_id_addr[2] = 'R';
-    transfer_boot_id_addr[3] = 'O';
-    transfer_boot_id_addr[4] = '\0';
-    transfer_stack_start = executable_info->ke_stack_start;
-    transfer_entry_point = executable_info->ke_entry_point;
+    boot_id[0] = 'K';
+    boot_id[1] = 'U';
+    boot_id[2] = 'R';
+    boot_id[3] = 'O';
+    boot_id[4] = '\0';
 
-    transfer_control();
+    transfer_control(executable_info, image_handle, system_table, NULL, boot_id, executable_info->ke_stack_start,
+                     executable_info->ke_entry_point);
 
-    error2:
+error2:
     system_table->BootServices->FreePool(executable_info);
 error:
     file_protocol->Close(file_protocol);

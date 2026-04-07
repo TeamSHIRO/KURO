@@ -5,8 +5,6 @@
 #include "efi_helper.h"
 #include "protocol/efi-fp.h"
 
-// TODO: TheMonHub - Refactor this entire horrendous thing
-
 static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
     if (header->e_shnum != 0) {
         return header->e_shnum;
@@ -95,7 +93,8 @@ static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, con
     }
 
     const char *name = strtab + index;
-    for (size_t i = 0; name[i] != '\0' && index + i + 3 < strtab_size; i++) {
+    // Maximum scan length is 16 characters.
+    for (size_t i = 0; name[i] != '\0' && index + i + 3 < strtab_size && i < 12; i++) {
         if (name[i] != '.') {
             continue;
         }
