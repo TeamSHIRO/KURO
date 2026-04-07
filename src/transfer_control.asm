@@ -5,4 +5,5 @@ transfer_control:
     ; So we don't have to deal with setting up the args
     mov rax, [rsp + 8]
     mov rsp, r9
+    xor r9, r9
     jmp rax
