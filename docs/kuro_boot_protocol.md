@@ -263,16 +263,16 @@ Updates to this document are considered either revisions or errata as described 
   affect the behavior of the bootloader, executable, or the booting process such as fixing a typo or updating a link.
 
 > [!IMPORTANT]
-> Draft documents are not intended to be final and must not be considered a final version of the document. They are
-> not versioned for each change until they are finalized and ready for release.
-
-> [!IMPORTANT]
 > The versioning follows the [Semantic Versioning](https://semver.org/). The versioning scheme is `MAJOR.MINOR.PATCH`.
 > However, the document will omit the `PATCH` version number.
 > 
 > The `MAJOR` version is incremented when there are changes to the bootloader that are not backwards compatible.
 > The `MINOR` version is incremented when there are changes to the bootloader that are backwards compatible but may
 > introduce new features or changes in the behavior.
+
+> [!CAUTION]
+> Not all commits of the document are considered final. Please refer to the git tag for each final version of the
+> document.
 
 ## 2. Overview
 
@@ -611,7 +611,8 @@ in their respective register as defined by the System V AMD64 ABI calling conven
   to null or `0`.
 - `R8`: Pointer to bootloader identifier string. This data is implementation-defined but must be byte-sized
   null-terminated string. See the bootloader identifier string in [section 6.1](#61-bootloader-identifier-string).
-- Any other register is reserved for future use. The bootloader must not use these registers.
+- `R9` must be reserved for future use. Must be null or `0`.
+- Stack pointer must be aligned to `16` bytes and the stack itself must be null-initialized.
 
 Example of the arguments provided to the entry point of the executable:
 
@@ -773,6 +774,7 @@ memory as follows:
   - Stack alignment is now `16` bytes.
   - Added an image handle to the arguments provided to the executable.
   - Added `ke_entry_point` field to the executable information structure.
+  - Clarified the pointer and stack in the arguments provided to the executable.
   - Clarified versioning of this document.
   - Removed the farewell section from this document.
   - Added the contact section to this document.
