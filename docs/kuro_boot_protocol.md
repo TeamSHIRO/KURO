@@ -11,40 +11,7 @@
 
 ## Table of Contents
 
-1. [Introduction](#1-introduction)
-   1. [Target Audience](#11-target-audience)
-   2. [Scope](#12-scope)
-   3. [Conventions](#13-conventions)
-      1. [Typography](#131-typography)
-      2. [KURO Compliance](#132-kuro-compliance)
-      3. [Data Structure](#133-data-structure)
-      4. [Executable and Linkable Format](#134-executable-and-linkable-format)
-      5. [Unified Extensible Firmware Interface](#135-unified-extensible-firmware-interface)
-      6. [System V AMD64 ABI Calling Convention](#136-system-v-amd64-abi-calling-convention)
-      7. [Digital Signature and Ed25519](#137-digital-signature-and-ed25519)
-      8. [Bootloader](#138-bootloader)
-          1. [KURO Bootloader](#1381-kuro-bootloader)
-      9. [Executable](#139-executable)
-      10. [Pseudocode](#1310-pseudocode)
-      11. [Revisions](#1311-revisions)
-2. [Overview](#2-overview)
-   1. [Executable Structure](#21-executable-structure)
-   2. [KURO Footer](#22-kuro-footer)
-   3. [Booting Process](#23-booting-process)
-   4. [Arguments Provided to the Loaded Executable](#24-arguments-provided-to-the-loaded-executable)
-   5. [Security Considerations](#25-security-considerations)
-   6. [Limitations](#26-limitations)
-3. [Executable Structure](#3-executable-structure)
-4. [KURO Footer](#4-kuro-footer)
-5. [Booting Process](#5-booting-process)
-6. [Arguments Provided to the Loaded Executable](#6-arguments-provided-to-the-loaded-executable)
-    1. [Boot Identifier String](#61-bootloader-identifier-string)
-7. [KURO Executable Information](#7-kuro-executable-information)
-    1. [KuroSegmentInfo](#71-kurosegmentinfo)
-8. [Changes](#changes)
-9. [Contact](#contact)
-10. [Copyright](#copyright)
-11. [References](#references)
+TO BE ADDED
 
 ## 1. Introduction
 
@@ -57,204 +24,21 @@ KURO bootloader or to create their own bootloader that follows the KURO boot pro
 
 Kernel developers, operating system developers, and anyone inbetween.
 
-We will not be holding your hand on the technical details of how to create a bootloader or an executable. We will be
-providing the necessary information to allow you to create your own bootloader or executable that
-follows the KURO boot protocol.
+## 1.2 Conventions
 
-## 1.2 Scope
+These are the conventions used throughout this document.
 
-This document covers the following topics and concepts related to the KURO boot protocol:
+### 1.2.1 Typography
 
-- Expected format of the executable file.
-- How the bootloader loads the executable.
-- Interfaces provided to the loaded executable.
-- And more.
+Reference[^1]: Used to indicate a reference to an external source of information. You can find all the references
+[here](#references).
 
-## 1.3 Conventions
+      The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+      NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
+      "OPTIONAL" in this document are to be interpreted as described in
+      RFC 2119.
 
-These are the conventions used throughout this document. They are intended to provide clarity and consistency in the
-presentation of information.
-
-### 1.3.1 Typography
-
-- **Bold**: Used to highlight important terms and concepts.
-- _Italic_: Used to emphasize specific words or phrases.
-- **Bold Italic**: Used to highlight highly important terms and concepts.
-- ~~Strikethrough~~: Used to indicate deprecated or outdated information.
-- <ins>Underline</ins>: Added to emphasize new or updated information.
-- `Code`: Used to represent code snippets, commands, technical terms, versioning numbers, or values.
-- [Hyperlink](): Used to link to external resources or specific part of the document.
-- Reference[^1]: Used to indicate a reference to an external source of information. You can find all the references
-  [here](#references).
-
-> [!NOTE]
-> This is a note. It is used to provide additional information or clarification about a specific topic or concept. It is
-> not intended to be a warning or an important notice, but rather to provide helpful information to the reader.
-
-> [!TIP]
-> This is a tip. It is used to provide helpful advice or best practices related to a specific topic or concept. It is
-> not intended to be a warning or an important notice, but rather to provide useful information to the reader.
-
-> [!IMPORTANT]
-> This is an important notice. It is used to highlight critical information that the reader should pay attention to. It
-> is not intended to be a warning, but rather to emphasize the importance of the information being presented.
-
-> [!WARNING]
-> This is a warning. It is used to highlight information that could potentially cause minor harm or damage if not
-> followed. It is intended to alert the reader to potential risks and to encourage them to take appropriate precautions.
-
-> [!CAUTION]
-> This is a caution. It is used to highlight information that could potentially cause harm or inconvenience if not
-> followed. It is intended to alert the reader to potential risks and to encourage them to take appropriate precautions.
-
-| Term       | Definition                                                                                        |
-|------------|---------------------------------------------------------------------------------------------------|
-| **MUST**   | Indicates a requirement that must be met by the bootloader or executable. MANDATORY               |
-| **SHOULD** | Indicates a recommendation that should be followed by the bootloader or executable. RECOMMENDED   |
-| **MAY**    | Indicates an optional feature or behavior. It is not required, but it is allowed. AVAILABLE TO DO |
-
-### 1.3.2 KURO Compliance
-
-Any bootloader that is compliant with this specification is considered KURO compliant. This means that it adheres to the
-protocols and requirements outlined in this document, allowing it to load executables that follow the KURO booting
-protocol and requirements for creating bootloaders and executables.
-
-The term "KURO compliant" is used to describe bootloaders that meet these standards, ensuring compatibility with
-executables designed for the KURO boot protocol. It is important to note that while the KURO bootloader itself
-is designed to be compliant with this specification, other bootloaders may also be compliant as long as they adhere to
-the outlined protocols and requirements. This allows for flexibility in the implementation of bootloaders while
-maintaining a consistent and standardized approach to loading executables that follow the KURO boot protocol.
-
-Any executable that is compliant with this specification is considered KURO compliant. This means that it adheres to the
-protocols and requirements outlined in this document, allowing it to be loaded by KURO compliant bootloaders.
-
-### 1.3.3 Data Structure
-
-The supported architecture is x86\_64, little-endian byte order, which means that the most significant byte is stored
-at the lowest address as an example of this; `0x12345678` will be stored as `0x78563412`. Noting that `12 34 56 78` is
-now `78 56 34 12` in little-endian byte order.
-
-Hexadecimal values are written in uppercase, with a leading `0x`.
-
-All data structures, even those that are saved in a file, are represented in little-endian byte order. Providing ease
-for the bootloader or any other software to read and write data without having to worry about byte order or swapping
-bytes to match the expected format of the hardware architecture.
-
-### 1.3.4 Executable and Linkable Format
-
-Executable and Linkable Format[^2] – standard file format for executables, object code, shared libraries, and core
-dumps. Notably, ELF executables are used by Linux, Unix systems, and other operating systems.
-
-The KURO bootloader is designed to load ELF executables that follow the KURO boot protocol, which specifies how the
-executable should be structured and how the bootloader should load it into memory.
-
-This document will not cover the details of the ELF executable format, but it is expected that the reader has a basic
-understanding of the ELF format and how it works. For more information on the ELF format, please refer to the ELF
-Executable and Linkable Format specification.
-
-### 1.3.5 Unified Extensible Firmware Interface
-
-Unified Extensible Firmware Interface[^3] – defines software interface between operating system and platform firmware.
-UEFI is used notably by bootloaders as a modern alternative to BIOS to interact with the firmware and perform tasks such
-as loading executables, accessing hardware, and providing services. Many other parts of the operating system use UEFI to
-interact with the firmware.
-
-Notably, UEFI has a secure boot feature that allows the firmware to verify the authenticity
-of the bootloader before loading it, which can help prevent unauthorized software from running on the system.
-
-This document will not cover the details of the UEFI specification, but it is expected that the reader has a basic
-understanding of the UEFI specification and how it works. For more information on the UEFI specification, please refer
-to the Unified Extensible Firmware Interface Specification.
-
-### 1.3.6 System V AMD64 ABI Calling Convention
-
-System V AMD64 ABI calling convention[^6] is a standard calling convention for the x86\_64 architecture. It defines how
-the arguments are passed to and from functions in the x86\_64 architecture. It is used by the KURO bootloader to pass
-arguments to the loaded executable, such as the executable information and the UEFI system table.
-
-This document will not cover the details of the System V AMD64 ABI calling convention, but it is expected that the
-reader has a basic understanding of the calling convention and how it works. For more information on the System V AMD64
-ABI calling convention, please refer to the System V Application Binary Interface AMD64 Architecture Processor
-Supplement.
-
-### 1.3.7 Digital Signature and Ed25519
-
-Digital signatures[^4] are a cryptographic mechanism used to verify the authenticity and integrity of data. They are
-commonly used in software distribution to ensure that the software has not been tampered with and is from a trusted
-source. In this document, digital signatures are used to verify the authenticity of the executable being loaded by the
-bootloader.
-
-Ed25519[^5] is a digital signature algorithm that uses elliptic curve cryptography to sign messages and verify their
-integrity. It is designed to be fast, secure, and resistant to certain types of attacks. In this document, Ed25519 is
-used as the digital signature algorithm for signing the executable and verifying its authenticity.
-
-### 1.3.8 Bootloader
-
-A small program that prepares the environment for the operating system or other software to run and, then loads an
-operating system or other executable into memory and starts its execution. In this document, the term "bootloader"
-refers to a bootloader that is KURO compliant.
-
-KURO compliant bootloaders are designed to load ELF executables that follow the KURO boot protocol, which specifies
-the digital signature of the executable to verify its authenticity.
-
-#### 1.3.8.1 KURO Bootloader
-KURO bootloader is a small EFI application designed to load and execute an executable that follows the KURO
-boot protocol. It is designed to be as minimal as possible and self-contained, with a focus on security and
-simplicity. The KURO bootloader is designed to be compliant with the UEFI specification and to provide a secure and
-reliable booting process for executables that follow the KURO boot protocol. It is designed to be minimal enough to
-boot an executable while leaving the developer with almost full control over the boot process.
-
-> [!NOTE]
-> KURO bootloader is the official reference implementation of the KURO boot protocol.
-
-> [!IMPORTANT]
-> KURO can mean different things in different contexts. The bootloader and the boot protocol.
-
-### 1.3.9 Executable
-
-A file that contains a program that can be executed by the operating system or other software. In this document, the
-term "executable" refers to an executable file in the ELF format that follows the KURO boot protocol and can be
-loaded by a KURO compliant bootloader.
-
-For more information on ELF executables, please refer to the ELF Executable and Linkable Format specification.
-
-### 1.3.10 Pseudocode
-
-The pseudocode provided in this document is intended to provide a clear and concise representation of the concepts and
-conventions outlined in this document.
-
-It is not intended to be a complete implementation of a bootloader or an executable, but rather to illustrate the
-concepts and conventions in a way that is easy to understand. The pseudocode is written in a C++ or C-like syntax, but
-it is not intended to be compiled or run as-is. It is meant to be a reference for developers who want to create their
-own bootloader or executable that follows the KURO boot protocol.
-
-```c++
-// Example pseudocode
-int main() {
-    // Initialize the bootloader
-    init_bootloader();
-    // Load the executable
-    load_executable();
-    // Transfer control to the entry point of the executable
-    execute_entry_point();
-}
-```
-
-#### 1.3.10.1 Types
-
-| Type       | Description                   |
-|------------|-------------------------------|
-| `uint8_t`  | 8-bit unsigned integer        |
-| `uint16_t` | 16-bit unsigned integer       |
-| `uint32_t` | 32-bit unsigned integer       |
-| `uint64_t` | 64-bit unsigned integer       |
-| `int8_t`   | 8-bit signed integer          |
-| `int16_t`  | 16-bit signed integer         |
-| `int32_t`  | 32-bit signed integer         |
-| `int64_t`  | 64-bit signed integer         |
-| `char`     | 8-bit character               |
-
-### 1.3.11 Revisions
+### 1.2.2 Revisions
 
 Updates to this document are considered either revisions or errata as described below:
 - A new revision is made when significant changes are made to the document. Which changes the behavior of the
@@ -264,91 +48,16 @@ Updates to this document are considered either revisions or errata as described 
 
 > [!IMPORTANT]
 > The versioning follows the [Semantic Versioning](https://semver.org/). The versioning scheme is `MAJOR.MINOR.PATCH`.
-> However, the document will omit the `PATCH` version number.
-> 
+> However, this document will omit the `PATCH` version number.
+>
 > The `MAJOR` version is incremented when there are changes to the bootloader that are not backwards compatible.
 > The `MINOR` version is incremented when there are changes to the bootloader that are backwards compatible but may
 > introduce new features or changes in the behavior.
-
-> [!CAUTION]
+>
 > Not all commits of the document are considered final. Please refer to the git tag for each final version of the
 > document.
 
-## 2. Overview
-
-KURO is a minimal secure boot protocol designed for x86\_64 UEFI systems.
-
-The bootloader loads ELF executables that follow the
-KURO boot protocol, which specifies how the executable should be structured and how the bootloader should load it
-into memory.
-
-### 2.1 Executable Structure
-
-The executable is expected to be in a standard ELF file with the following characteristics:
-- Position-independent executable (PIE)
-- x86\_64 architecture
-- At the end of the file contains a KURO footer, which is used to identify the executable as a KURO executable.
-  More information regarding the KURO footer can be found at [section 4](#4-kuro-footer).
-
-### 2.2 KURO Footer
-
-The KURO footer is a fixed-size data structure located at the end of the executable file. It contains metadata about the
-executable for the bootloader to use during the loading process.
-
-It is expected that the bootloader will validate the KURO footer before loading the executable. The KURO footer contains
-the following fields:
-
-- **Magic number**: A unique identifier to recognize the executable as a KURO executable.
-- **Version**: The version of the KURO boot protocol used by the executable.
-- **Signature**: An Ed25519[^5] signature of the executable to verify its authenticity.
-
-### 2.3 Booting Process
-
-The bootloader should perform the following steps to load an executable:
-
-1. Read the ELF header and check if the executable is a valid ELF file.
-2. Read the KURO footer and check if the executable is a valid KURO executable.
-3. Verify the signature in the KURO footer to ensure the authenticity of the executable.
-4. Load the executable into memory according to the ELF program headers.
-5. Transfer control to the entry point of the executable.
-
-### 2.4 Arguments Provided to the Loaded Executable
-
-KURO boot protocol uses the System V AMD64 ABI calling convention, which means that the first six integer or
-pointer arguments are passed in the following registers: `RDI`, `RSI`, `RDX`, `RCX`, `R8`, and `R9`. Additional
-arguments are passed on the stack.
-
-The bootloader must provide the following arguments to the loaded executable:
-- **Executable information**: Provides information about the loaded executable, such as its entry point, segment
-  information, and more.
-- **System table**: The UEFI[^3] system table, which provides access to various UEFI services and information.
-- **Arbitary data**: Implementation-defined data that can be passed to the loaded executable.
-- **Boot Identifier String**: A string that uniquely identifies the bootloader being used.
-
-### 2.5 Security Considerations
-
-This boot protocol is designed with security in mind, and the following security features are considered for the
-bootloader:
-
-- **Secure boot**: an UEFI[^3] feature that verifies the authenticity of the bootloader before loading it.
-- **Code integrity**: the bootloader verifies the integrity of the executable using the signature in the KURO footer.
-  When used alongside the secure boot feature, this creates a chain of trust.
-
-### 2.6 Limitations
-
-This boot protocol is designed to be as minimal as possible, which imposes the following limitations:
-
-- **Kernel heavy initialization**: The bootloader is designed to be minimal and provides few services or features. This
-  means that the kernel or other executable loaded by the bootloader will need to perform more initialization and setup
-  than it would if it were loaded by a more feature-rich bootloader.
-- **No support for dynamic loading**: This is a common limitation of bootloaders, as they are designed to load a single
-  executable and transfer control to it. This means that the kernel or other executable loaded by the bootloader will
-  need to implement its own dynamic loading mechanism if it wants to load additional executables or libraries at
-  runtime.
-- **No support for multiple architectures**: The bootloader is not designed to support multiple architectures. This
-  means that the bootloader will only be able to load executables that are designed for the x86\_64 architecture.
-
-## 3. Executable Structure
+## 2. Executable Structure
 
 A valid KURO executable is expected to be a Position-independent executable (PIE) with no relocations with no dynamic
 linking.
@@ -369,81 +78,6 @@ The executable must be a valid ELF file with the following characteristics:
 The bootloader must verify the ELF header and KURO footer to ensure that the executable is a valid KURO executable.
 
 Example of a valid ELF header in the KURO executable:
-
-```c++
-Elf64_Ehdr elf_header = {
-    .e_ident = {
-        0x7F, 'E', 'L', 'F',      // EI_MAG0 -> EI_MAG3
-        2,                        // EI_CLASS
-        1,                        // EI_DATA
-        1,                        // EI_VERSION
-        0,                        // EI_OSABI
-        0,                        // EI_ABIVERSION
-        0, 0, 0, 0, 0, 0, 0, 0,   // EI_PAD
-        16,                       // EI_NIDENT
-    },
-
-    .e_type      = ET_DYN,        // Position-Independent Executable (PIE)
-    .e_machine   = EM_X86_64,     // x86-64
-    .e_version   = EV_CURRENT,    // 1
-
-    .e_entry     = 0x1000,        // entry point
-    .e_phoff     = 64,            // program headers offset
-    .e_shoff     = 12944,         // section headers offset
-
-    .e_flags     = 0,             // flags
-
-    .e_ehsize    = 64,            // ELF header size
-    .e_phentsize = 56,            // size of one program header
-    .e_phnum     = 13,            // number of program headers
-
-    .e_shentsize = 64,            // size of one section header
-    .e_shnum     = 18,            // number of section headers
-    .e_shstrndx  = 17             // section name string table index
-};
-```
-
-```terminaloutput
-[user@host ~]$ readelf -h kuro_executable
-ELF Header:
-  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 
-  Class:                             ELF64
-  Data:                              2's complement, little endian
-  Version:                           1 (current)
-  OS/ABI:                            UNIX - System V
-  ABI Version:                       0
-  Type:                              DYN (Position-Independent Executable file)
-  Machine:                           Advanced Micro Devices X86-64
-  Version:                           0x1
-  Entry point address:               0x1000
-  Start of program headers:          64 (bytes into file)
-  Start of section headers:          12944 (bytes into file)
-  Flags:                             0x0
-  Size of this header:               64 (bytes)
-  Size of program headers:           56 (bytes)
-  Number of program headers:         13
-  Size of section headers:           64 (bytes)
-  Number of section headers:         18
-  Section header string table index: 17
-```
-
-> [!NOTE]
-> These GCC/Clang compiler and linker flags may help you compile a valid KURO executable:
-> 
-> ```shell
-> cc -fPIE -ffreestanding -o main.c.o -c main.c
-> ld -nostdlib -pie -o main main.c.o
-> ```
-> 
-> - `-fPIE` flag is used by compiler to create a position-independent executable (PIE).
-> - `-ffreestanding` flag is used to create an executable that is not on a hosted environment.
-> - `-pie` flag is used by linker to create a position-independent executable (PIE).
-> - `-nostdlib` flag is used to prevent the linker from linking against the standard library, which includes the C 
->   standard library and startup code which introduces a dependency on the standard library and relocations.
-
-> [!IMPORTANT]
-> This will not include the KURO footer. You will need to add the KURO footer to the end of the file after compiling it.
-> See [section 4](#4-kuro-footer) for more information.
 
 ## 4. KURO Footer
 
@@ -536,68 +170,6 @@ Any other undefined version number is considered reserved for future use.
 > Failure to reject the executable and load it might result in undefined behavior, as the structure of the KURO footer
 > might be different from the expected structure.
 
-## 5. Booting Process
-
-The booting process for the bootloader may look like the following diagram:
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="res/kuro_booting_process_dark.png">
-  <img src="res/kuro_booting_process.png" alt="Booting process diagram">
-</picture>
-
-At the beginning of the booting process, the bootloader should perform the initializations and setup necessary for the
-booting process.
-
-The bootloader then must read the ELF header and check if the executable is a valid ELF file that follows the
-[section 3](#3-executable-structure) requirements. If the ELF header is not valid, the bootloader must reject the
-executable and not load it.
-
-After the ELF header is validated, the bootloader must read the KURO footer and check if the executable is a valid KURO
-executable. If the KURO footer is not valid, the bootloader must reject the executable and not load it.
-
-Then the bootloader should verify the signature in the KURO footer to ensure the authenticity of the executable. If the
-signature is not valid, the bootloader must reject the executable and not load it.
-
-Then the bootloader then may load the executable into memory according to the ELF program
-headers, which specify the memory layout of the executable. The position of the executable in memory is
-implementation-defined.
-
-The bootloader must prepare the stack for the executable and set the stack pointer to the top of the stack. The stack
-size and location are implementation-defined, but the start of the stack must be aligned to `16` bytes.
-
-The bootloader should then prepare the arguments to be passed to the executable.
-
-After all the necessary setup is done, the bootloader then transfers control to the entry point of the executable, which
-is specified in the ELF header.
-
-Example of a KURO executable memory layout (with the stack being above the executable):
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="res/kuro_exec_mem_dark.png">
-  <img src="res/kuro_exec_mem.png" alt="Example of a KURO executable memory layout">
-</picture>
-
-> [!NOTE]
-> The order of operations is not strictly defined, but the bootloader must ensure that all the necessary steps are
-> performed before transferring control to the entry point of the executable.
-
-> [!IMPORTANT]
-> - The bootloader must not perform any modification to the page tables.
-> - The bootloader must not perform any modification to the CPU state, such as enabling or disabling interrupts,
->   changing the CPU mode, or changing the memory management unit (MMU) state. The bootloader must leave the CPU state
->   as it is.
-> - The bootloader must disable the UEFI watchdog timers before loading the executable.
-> - The bootloader must not exit the UEFI boot services. The executable is expected to exit the UEFI boot services
->   by itself.
-> - The bootloader must make sure that the public key used to verify the signature in the KURO footer is not tampered
->   with.
-
-> [!CAUTION]
-> Because of the UEFI boot services, the executable and the bootloader must allocate the memory through the UEFI
-> interfaces. Otherwise, UEFI may use your memory and cause undefined behavior. As UEFI does not have any idea that the
-> executable is using the memory, unless you are allocating the memory through the UEFI interfaces until you exit the
-> UEFI boot services.
-
 ## 6. Arguments Provided to the Loaded Executable
 
 As before the bootloader transfers control to the entry point of the executable, it must provide the following arguments
@@ -629,19 +201,6 @@ _Noreturn void entry_point(KuroExecutableInfo* exec_info, EFI_HANDLE image_handl
 > [!NOTE]
 > This can be interpreted as argument 1, 2, and 3 in the System V AMD64 ABI calling convention, in their respective
 > register.
-
-### 6.1 Bootloader Identifier String
-
-This table lists the bootloader identifier strings that are currently known by the documents.
-
-| Bootloader Identifier String | Description                                                   |
-|------------------------------|---------------------------------------------------------------|
-| `UNKNOWN`                    | Unknown Bootloader.                                           |
-| `KURO`                       | KURO Bootloader. See [KURO Bootloader](#1381-kuro-bootloader) |
-
-> [!NOTE]
-> If you would like to add a new bootloader identifier string to this table, please [contact](#contact) the author of
-> this document.
 
 ## 7. KURO Executable Information
 
@@ -755,32 +314,45 @@ memory as follows:
 3. Set the `ks_size` field to the size of the segment in memory in bytes.
 4. Set the `ks_align` field to the same value as the `p_align` field in the ELF program header for the segment.
 
+## Appendix A: Bootloader Identifier String
+
+This table lists the bootloader identifier strings that are currently known by the documents.
+
+| Bootloader Identifier String | Description         |
+|------------------------------|---------------------|
+| `UNKNOWN`                    | Unknown Bootloader. |
+| `KURO`                       | KURO Bootloader.    |
+
+> [!NOTE]
+> If you would like to add a new bootloader identifier string to this table, please [contact](#contact) the author of
+> this document.
+
 ## Changes
 
 - `1.0` - Initial release.
 - `2.0`
-  - Added support for passing arbitrary data to the executable. This allows the bootloader to pass data depending on
-    the bootloader implementation.
-  - Added explicit reservations for the other registers that are passed to the executable for future use.
-  - Remove the requirement for signature verification however, it is encouraged to verify the signature anyway.
-  - Clarified the requirements of having no relocations in the executable by explicitly stating the disallowed program
-    segment types and exception to it.
-  - Added caution about UEFI memory allocation.
-  - Update `k_version` from `1` to `2`.
-  - Changed stack location to be implementation-defined.
-  - Added `ke_stack_end` field to the executable information structure.
-  - Added Bootloader Identifier String to the arguments provided to the executable and the table containing the
-    currently known bootloader identifier strings by the document.
-  - Stack alignment is now `16` bytes.
-  - Added an image handle to the arguments provided to the executable.
-  - Added `ke_entry_point` field to the executable information structure.
-  - Clarified the pointer and stack in the arguments provided to the executable.
-  - Clarified versioning of this document.
-  - Removed the farewell section from this document.
-  - Added the contact section to this document.
-  - Added the changes section to this document.
-  - Renamed from KURO Booting Convention to KURO Boot Protocol.
-  - The versioning should now be correct from now on.
+    - Added support for passing arbitrary data to the executable. This allows the bootloader to pass data depending on
+      the bootloader implementation.
+    - Added explicit reservations for the other registers that are passed to the executable for future use.
+    - Remove the requirement for signature verification however, it is encouraged to verify the signature anyway.
+    - Clarified the requirements of having no relocations in the executable by explicitly stating the disallowed program
+      segment types and exception to it.
+    - Added caution about UEFI memory allocation.
+    - Update `k_version` from `1` to `2`.
+    - Changed stack location to be implementation-defined.
+    - Added `ke_stack_end` field to the executable information structure.
+    - Added Bootloader Identifier String to the arguments provided to the executable and the table containing the
+      currently known bootloader identifier strings by the document.
+    - Stack alignment is now `16` bytes.
+    - Added an image handle to the arguments provided to the executable.
+    - Added `ke_entry_point` field to the executable information structure.
+    - Clarified the pointer and stack in the arguments provided to the executable.
+    - Clarified versioning of this document.
+    - Removed the farewell section from this document.
+    - Added the contact section to this document.
+    - Added the changes section to this document.
+    - Renamed from KURO Booting Convention to KURO Boot Protocol.
+    - The versioning should now be correct from now on.
 
 ## Contact
 
