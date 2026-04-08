@@ -146,7 +146,7 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
     if (section_num == 0) {
         system_table->ConOut->OutputString(system_table->ConOut,
                                            L"This ELF file does not contain any section! Skipping...\r\n");
-        return 1;
+        return EFI_ERR(EFI_LOAD_ERROR);
     }
     const Elf64_Word strtab_index = get_strtab_index(header, file);
 
@@ -154,7 +154,7 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
     if (strtab_index == 0) {
         system_table->ConOut->OutputString(system_table->ConOut,
                                            L"This ELF file does not contain any string table! Skipping...\r\n");
-        return 1;
+        return EFI_ERR(EFI_LOAD_ERROR);
     }
 
     size_t shdr_size_on_disk = header->e_shentsize;
