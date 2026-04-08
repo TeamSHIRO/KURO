@@ -217,7 +217,7 @@ EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Eh
             return EFI_ERR(EFI_LOAD_ERROR);
         }
 
-        // Currently, we only support p_align equal or lesser (power of two) than 0x1000, which is 4096 bytes page size
+        // Currently, we only support p_align modulo page size (0x1000) == 0, which is 4096 bytes page size
         if (phdr.p_align % PAGE_SIZE != 0) {
             return EFI_ERR(EFI_LOAD_ERROR);
         }
