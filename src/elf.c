@@ -149,9 +149,12 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
         return 1;
     }
     const Elf64_Word strtab_index = get_strtab_index(header, file);
+
+    // Without string table, it's very unlikely for dynamic section to exist.
     if (strtab_index == 0) {
         system_table->ConOut->OutputString(system_table->ConOut,
-                                           L"This ELF file does not contain any string table!\r\n");
+                                           L"This ELF file does not contain any string table! Skipping...\r\n");
+        return 1;
     }
 
     size_t shdr_size_on_disk = header->e_shentsize;
