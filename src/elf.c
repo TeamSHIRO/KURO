@@ -34,7 +34,7 @@ static Elf64_Word get_strtab_index(const Elf64_Ehdr *header, const EFI_FILE_PROT
     }
 
     if (str_index != 0xffff) {
-        return 0;
+        return str_index;
     }
 
     Elf64_Shdr shdr;
