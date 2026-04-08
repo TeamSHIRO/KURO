@@ -1,9 +1,13 @@
 #ifndef ELF_H
 #define ELF_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "protocol/efi-fp.h"
+
+#define CHECK_PASSED 1
+#define CHECK_FAILED 0
 
 #define EI_NIDENT 16
 
@@ -128,8 +132,9 @@ enum machine_type {
 };
 
 int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
-EFI_STATUS verify_phdr(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
 EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
                                  const EFI_FILE_PROTOCOL *file);
+EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
+                                   size_t *out_start_mem);
 
 #endif // ELF_H

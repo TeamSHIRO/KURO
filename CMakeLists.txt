@@ -63,3 +63,4 @@ add_executable(KUROX64
         ${KURO_BOOTLOADER_SOURCES}
 )
 target_include_directories(KUROX64 SYSTEM PRIVATE _deps/efi)
+target_compile_definitions(KUROX64 PRIVATE PROJECT_VERSION=L"${CMAKE_PROJECT_VERSION}\\r\\n")
