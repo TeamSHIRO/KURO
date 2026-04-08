@@ -3,8 +3,14 @@
 #include "efi-st.h"
 #include "efi.h"
 
+#define PAGE_SIZE 4096
+
+// Configurable
 #define STACK_SIZE_PAGE 3
-#define STACK_SIZE (STACK_SIZE_PAGE * 4096)
+
+#define STACK_SIZE (STACK_SIZE_PAGE * PAGE_SIZE)
+#define HIGH_ADDR 0xffffffffffffffff
+#define LOW_ADDR 0x0
 
 typedef struct {
     char k_magic0;

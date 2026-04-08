@@ -8,64 +8,23 @@
 #include "string.h"
 #include "transfer_control.h"
 
-static EFI_STATUS get_mem_size(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, UINTN *output) {
-    const size_t phnum = ehdr->e_phnum;
-    EFI_STATUS status = EFI_SUCCESS;
-    *output = 0;
-    size_t end_mem = 0;
-    size_t start_mem = -1;
-    for (size_t i = 0; i < phnum; i++) {
-        Elf64_Phdr phdr;
-        size_t phdr_size = sizeof(Elf64_Phdr);
-        status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * ehdr->e_phentsize);
-        if (status != EFI_SUCCESS) {
-            return status;
-        }
-        status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
-        if (status != EFI_SUCCESS) {
-            return status;
-        }
-        if (phdr.p_type != PT_LOAD) {
-            continue;
-        }
-        if (start_mem > phdr.p_vaddr) {
-            start_mem = phdr.p_vaddr;
-        }
-        if (end_mem < phdr.p_vaddr + phdr.p_memsz) {
-            end_mem = phdr.p_vaddr + phdr.p_memsz;
-        }
-    }
-    *output = end_mem - start_mem;
-    return status;
-}
-
-static EFI_STATUS get_start_mem(const Elf64_Ehdr *ehdr, Elf64_Phdr *phdr, const size_t phdr_size_on_disk,
-                                const EFI_FILE_PROTOCOL *file, size_t *output) {
-    size_t start_mem = -1;
-    size_t phdr_size = sizeof(Elf64_Phdr);
-    for (size_t i = 0; i < ehdr->e_phnum; i++) {
-        phdr_size = sizeof(Elf64_Phdr);
-        EFI_STATUS status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * phdr_size_on_disk);
-        if (status != EFI_SUCCESS) {
-            return status;
-        }
-        status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, phdr);
-        if (status != EFI_SUCCESS) {
-            return status;
-        }
-        if (phdr->p_type == PT_LOAD && start_mem > phdr->p_vaddr) {
-            start_mem = phdr->p_vaddr;
-        }
-    }
-    *output = start_mem;
-    return EFI_SUCCESS;
+static void set_ident(KuroIdentifier *ident) {
+    ident->k_magic0 = 0x7f;
+    ident->k_magic1 = 'K';
+    ident->k_magic2 = 'U';
+    ident->k_magic3 = 'R';
+    ident->k_magic4 = 'O';
+    ident->k_version = 1;
+    ident->k_reserved = 0;
 }
 
 // This function loads the executable into memory
-// after calling, the `info` arg will point to KuroExecutableInfo. This is heap-allocated. Free on failure.
+// after calling, the `info` arg will point to KuroExecutableInfo. The segment field is heap-allocated, managed by the callee and automatically free on failure.
 static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, const EFI_SYSTEM_TABLE *system_table,
-                            const Elf64_Ehdr *ehdr, KuroExecutableInfo *info) {
+                            const Elf64_Ehdr *ehdr, KuroExecutableInfo *info, const size_t alloc_size, size_t start_mem) {
     const char *kernel_addr = (char *) base_addr + STACK_SIZE;
+
+    // Minus 16 to prevent the same address of executable and stack conflicting with each other while keeping it 16 bytes aligned
     const char *stack_addr = (char *) base_addr + STACK_SIZE - 16;
 
     CHAR16 str[21];
@@ -78,20 +37,13 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
     system_table->ConOut->OutputString(system_table->ConOut, str);
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\n");
 
+    system_table->BootServices->SetMem((void *) base_addr, alloc_size, 0);
+
     Elf64_Phdr phdr;
     size_t phdr_size = sizeof(Elf64_Phdr);
     const size_t phdr_size_on_disk = ehdr->e_phentsize;
-    size_t start_mem;
 
-    get_start_mem(ehdr, &phdr, phdr_size_on_disk, file, &start_mem);
-
-    info->ke_identifier.k_magic0 = 0x7f;
-    info->ke_identifier.k_magic1 = 'K';
-    info->ke_identifier.k_magic2 = 'U';
-    info->ke_identifier.k_magic3 = 'R';
-    info->ke_identifier.k_magic4 = 'O';
-    info->ke_identifier.k_version = 1;
-    info->ke_identifier.k_reserved = 0;
+    set_ident(&info->ke_identifier);
 
     info->ke_entry_point = (size_t) kernel_addr + (ehdr->e_entry - start_mem);
     info->ke_stack_start = (size_t) stack_addr;
@@ -127,7 +79,6 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
             continue;
         }
         const char *load_addr = (const char *) seg->ks_address;
-        const size_t load_size = phdr.p_memsz;
         const size_t file_size = phdr.p_filesz;
 
         status = file->SetPosition((EFI_FILE_PROTOCOL *) file, phdr.p_offset);
@@ -138,8 +89,6 @@ static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, cons
         if (status != EFI_SUCCESS) {
             goto error;
         }
-
-        system_table->BootServices->SetMem((void *) (load_addr + file_size), load_size - file_size, 0);
     }
 
     return EFI_SUCCESS;
@@ -158,6 +107,7 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
 
     EFI_FILE_PROTOCOL *file;
 
+    // Hardcoded path, change once we have a configuration system going on.
     EFI_STATUS status = file_protocol->Open(file_protocol, &file, L"\\kernel", EFI_FILE_MODE_READ, 0);
     if (status != EFI_SUCCESS) {
         goto error;
@@ -172,7 +122,7 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     }
 
     status = is_valid_elf_header(&ehdr, file);
-    if (status == 0) {
+    if (status == CHECK_FAILED) {
         status = EFI_ERR(EFI_LOAD_ERROR);
         system_table->ConOut->OutputString(system_table->ConOut, L"This is NOT a valid ELF file!\r\n");
         goto error;
@@ -180,7 +130,10 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
 
     system_table->ConOut->OutputString(system_table->ConOut, L"This is a valid ELF file!\r\n");
 
-    status = verify_phdr(&ehdr, file);
+    size_t mem_size;
+    size_t mem_start;
+
+    status = get_mem_info_and_verify(file, &ehdr, &mem_size, &mem_start);
     if (status != EFI_SUCCESS) {
         status = EFI_ERR(EFI_LOAD_ERROR);
         system_table->ConOut->OutputString(system_table->ConOut, L"This ELF file contains invalid program header!\r\n");
@@ -201,26 +154,21 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
                                        L"This ELF file does not contain any relocation section!\r\n");
     system_table->ConOut->OutputString(system_table->ConOut, L"Booting...\r\n");
 
-    size_t mem_size;
-    status = get_mem_size(file, &ehdr, &mem_size);
-    if (status != EFI_SUCCESS) {
-        goto error;
-    }
     if (mem_size == 0) {
         status = EFI_ERR(EFI_LOAD_ERROR);
         goto error;
     }
 
-    const size_t total_page_needed = (mem_size + 0xfff) / 0x1000;
+    const size_t total_page_needed = (mem_size + 0xfff) / PAGE_SIZE;
 
-    EFI_PHYSICAL_ADDRESS addr = 0xffffffffffffffff;
+    EFI_PHYSICAL_ADDRESS addr = HIGH_ADDR;
 
     status = system_table->BootServices->AllocatePages(AllocateMaxAddress, EfiLoaderData,
                                                        total_page_needed + STACK_SIZE_PAGE, &addr);
     if (status != EFI_SUCCESS) {
         goto error;
     }
-    CHAR16 str[21];
+    CHAR16 str[HEX_BUFFER_SIZE];
     to_hex(addr, str);
     system_table->ConOut->OutputString(system_table->ConOut, L"Allocated memory at: ");
     system_table->ConOut->OutputString(system_table->ConOut, str);
@@ -233,7 +181,7 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
         goto error;
     }
 
-    status = load_exec((char *) addr, file, system_table, &ehdr, executable_info);
+    status = load_exec((char *) addr, file, system_table, &ehdr, executable_info, (total_page_needed + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
     if (status != EFI_SUCCESS) {
         goto error2;
     }
@@ -241,6 +189,8 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     char *boot_id;
 
     status = system_table->BootServices->AllocatePool(EfiLoaderData, 5, (void **) &boot_id);
+    // KURO with null-term is 5 bytes
+
     if (status != EFI_SUCCESS) {
         goto error2;
     }
