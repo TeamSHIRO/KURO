@@ -19,12 +19,15 @@ static void set_ident(KuroIdentifier *ident) {
 }
 
 // This function loads the executable into memory
-// after calling, the `info` arg will point to KuroExecutableInfo. The segment field is heap-allocated, managed by the callee and automatically free on failure.
+// after calling, the `info` arg will point to KuroExecutableInfo. The segment field is heap-allocated, managed by the
+// callee and automatically free on failure.
 static EFI_STATUS load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, const EFI_SYSTEM_TABLE *system_table,
-                            const Elf64_Ehdr *ehdr, KuroExecutableInfo *info, const size_t alloc_size, size_t start_mem) {
+                            const Elf64_Ehdr *ehdr, KuroExecutableInfo *info, const size_t alloc_size,
+                            size_t start_mem) {
     const char *kernel_addr = (char *) base_addr + STACK_SIZE;
 
-    // Minus 16 to prevent the same address of executable and stack conflicting with each other while keeping it 16 bytes aligned
+    // Minus 16 to prevent the same address of executable and stack conflicting with each other while keeping it 16
+    // bytes aligned
     const char *stack_addr = (char *) base_addr + STACK_SIZE - 16;
 
     CHAR16 str[21];
@@ -181,7 +184,8 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
         goto error;
     }
 
-    status = load_exec((char *) addr, file, system_table, &ehdr, executable_info, (total_page_needed + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
+    status = load_exec((char *) addr, file, system_table, &ehdr, executable_info,
+                       (total_page_needed + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
     if (status != EFI_SUCCESS) {
         goto error2;
     }
