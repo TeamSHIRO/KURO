@@ -8,6 +8,8 @@
 #include "string.h"
 #include "transfer_control.h"
 
+const char *boot_id = "KURO";
+
 static void set_ident(KuroIdentifier *ident) {
     ident->k_magic0 = 0x7f;
     ident->k_magic1 = 'K';
@@ -177,44 +179,22 @@ EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     system_table->ConOut->OutputString(system_table->ConOut, str);
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\n");
 
-    KuroExecutableInfo *executable_info;
-    status = system_table->BootServices->AllocatePool(EfiLoaderData, sizeof(KuroExecutableInfo),
-                                                      (void **) &executable_info);
+    KuroExecutableInfo executable_info;
+    status = load_exec((char *) addr, file, system_table, &ehdr, &executable_info,
+                       (total_page_needed + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
     if (status != EFI_SUCCESS) {
         goto error;
     }
 
-    status = load_exec((char *) addr, file, system_table, &ehdr, executable_info,
-                       (total_page_needed + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
-    if (status != EFI_SUCCESS) {
-        goto error2;
-    }
-
-    char *boot_id;
-
-    status = system_table->BootServices->AllocatePool(EfiLoaderData, 5, (void **) &boot_id);
-    // KURO with null-term is 5 bytes
-
-    if (status != EFI_SUCCESS) {
-        goto error2;
-    }
-
-    to_hex(executable_info->ke_entry_point, str);
+    to_hex(executable_info.ke_entry_point, str);
     system_table->ConOut->OutputString(system_table->ConOut, L"Jumping to: ");
     system_table->ConOut->OutputString(system_table->ConOut, str);
     system_table->ConOut->OutputString(system_table->ConOut, L"\r\n");
 
-    boot_id[0] = 'K';
-    boot_id[1] = 'U';
-    boot_id[2] = 'R';
-    boot_id[3] = 'O';
-    boot_id[4] = '\0';
+    file_protocol->Close(file_protocol);
+    transfer_control(&executable_info, image_handle, system_table, NULL, (char *) boot_id,
+                     executable_info.ke_stack_start, executable_info.ke_entry_point);
 
-    transfer_control(executable_info, image_handle, system_table, NULL, boot_id, executable_info->ke_stack_start,
-                     executable_info->ke_entry_point);
-
-error2:
-    system_table->BootServices->FreePool(executable_info);
 error:
     file_protocol->Close(file_protocol);
     return status;
