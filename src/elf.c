@@ -6,6 +6,9 @@
 #include "efi_helper.h"
 #include "protocol/efi-fp.h"
 
+// Encouraged to read ELF specifications
+// Specifically https://gabi.xinuos.com/elf
+
 static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
     if (header->e_shnum != 0) {
         return header->e_shnum;
@@ -13,13 +16,13 @@ static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROT
     Elf64_Shdr shdr;
     size_t shdr_size = sizeof(Elf64_Shdr);
     if (file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff) != EFI_SUCCESS) {
-        return CHECK_FAILED;
+        return 0;
     }
     if (file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &shdr) != EFI_SUCCESS) {
-        return CHECK_FAILED;
+        return 0;
     }
     if (shdr.sh_size < 0xff00) {
-        return CHECK_FAILED;
+        return 0;
     }
     return shdr.sh_size;
 }
@@ -27,26 +30,27 @@ static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROT
 static Elf64_Word get_strtab_index(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
     Elf64_Word str_index = header->e_shstrndx;
     if (str_index == SHN_UNDEF) {
-        return CHECK_FAILED;
+        return 0;
     }
 
-    if (str_index >= 0xffff) {
-        Elf64_Shdr shdr;
-        size_t shdr_size = sizeof(Elf64_Shdr);
-        if (file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff) != EFI_SUCCESS) {
-            return CHECK_FAILED;
-        }
-        if (file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &shdr) != EFI_SUCCESS) {
-            return CHECK_FAILED;
-        }
-        str_index = shdr.sh_link;
+    if (str_index != 0xffff) {
+        return 0
     }
 
-    if (str_index == 0) {
-        return CHECK_FAILED;
+    Elf64_Shdr shdr;
+    size_t shdr_size = sizeof(Elf64_Shdr);
+    if (file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff) != EFI_SUCCESS) {
+        return 0;
+    }
+    if (file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &shdr) != EFI_SUCCESS) {
+        return 0;
     }
 
-    return str_index;
+    if (shdr.sh_link < 0xff00) {
+        return 0;
+    }
+
+    return shdr.sh_link;
 }
 
 static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, const EFI_FILE_PROTOCOL *file,
@@ -91,13 +95,13 @@ static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, con
         goto error;
     }
 
-    if (index >= strtab_size) {
+    if (index + 4 >= strtab_size) {
         goto error;
     }
 
     const char *name = strtab + index;
-    // Maximum scan length is 16 characters.
-    for (size_t i = 0; name[i] != '\0' && index + i + 3 < strtab_size && i < 12; i++) {
+    // Maximum scan length is 16 characters. 12 + 4 forward check
+    for (size_t i = 0; name[i] != '\0' && name[i + 1] != '\0' && name[i + 2] != '\0' && name[i + 3] != '\0' && index + i + 3 < strtab_size && i < 12; i++) {
         if (name[i] != '.') {
             continue;
         }
