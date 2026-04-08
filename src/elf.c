@@ -100,9 +100,10 @@ static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, con
     }
 
     const char *name = strtab + index;
-    // Maximum scan length is 16 characters. 12 + 4 forward check
+    // The maximum scan length is 16 characters. 12 + 4 forward check.
     for (size_t i = 0; name[i] != '\0' && name[i + 1] != '\0' && name[i + 2] != '\0' && name[i + 3] != '\0' &&
-         index + i + 3 < strtab_size && i < 12; i++) {
+                       index + i + 3 < strtab_size && i < 12;
+         i++) {
         if (name[i] != '.') {
             continue;
         }
