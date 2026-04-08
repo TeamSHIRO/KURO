@@ -171,13 +171,7 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
             return status;
         }
         if (shdr.sh_type == SHT_REL || shdr.sh_type == SHT_RELA || shdr.sh_type == SHT_RELR) {
-            // If there's string table then check if it contains dynamic linking keyword or not. If yes, ignore,
-            // otherwise if not.
-            if (strtab_index != 0) {
-                if (is_section_dyn(header, strtab_index, file, system_table, shdr.sh_name) == CHECK_FAILED) {
-                    return EFI_ERR(EFI_LOAD_ERROR);
-                }
-            } else {
+            if (is_section_dyn(header, strtab_index, file, system_table, shdr.sh_name) == CHECK_FAILED) {
                 return EFI_ERR(EFI_LOAD_ERROR);
             }
         }
