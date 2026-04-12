@@ -111,11 +111,11 @@ static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, con
             (name[i + 1] == 'g' && name[i + 2] == 'o' && name[i + 3] == 't') ||
             (name[i + 1] == 'd' && name[i + 2] == 'y' && name[i + 3] == 'n')) {
             system_table->ConOut->OutputString(system_table->ConOut,
-                                               L"This ELF file contains PLT, GOT, or DYNAMIC section: ");
+                                               (CHAR16 *) L"This ELF file contains PLT, GOT, or DYNAMIC section: ");
             CHAR16 str[32];
             to_wchar(name, str, 32);
             system_table->ConOut->OutputString(system_table->ConOut, str);
-            system_table->ConOut->OutputString(system_table->ConOut, L"\r\nIgnoring...\r\n");
+            system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"\r\nIgnoring...\r\n");
             goto pos;
         }
     }
@@ -151,15 +151,15 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
     const size_t section_num = get_section_num(header, file);
     if (section_num == 0) {
         system_table->ConOut->OutputString(system_table->ConOut,
-                                           L"This ELF file does not contain any section! Skipping...\r\n");
+                                           (CHAR16 *) L"This ELF file does not contain any section! Skipping...\r\n");
         return EFI_ERR(EFI_LOAD_ERROR);
     }
     const Elf64_Word strtab_index = get_strtab_index(header, file);
 
     // Without string table, it's very unlikely for dynamic section to exist.
     if (strtab_index == 0) {
-        system_table->ConOut->OutputString(system_table->ConOut,
-                                           L"This ELF file does not contain any string table! Skipping...\r\n");
+        system_table->ConOut->OutputString(
+                system_table->ConOut, (CHAR16 *) L"This ELF file does not contain any string table! Skipping...\r\n");
         return EFI_ERR(EFI_LOAD_ERROR);
     }
 

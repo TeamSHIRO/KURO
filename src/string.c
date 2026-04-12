@@ -3,6 +3,23 @@
 #include <protocol/efi-fp.h>
 #include <stddef.h>
 
+void *memset(void *s, int c, size_t n) {
+    unsigned char *p = (unsigned char *) s;
+    while (n--) {
+        *p++ = (unsigned char) c;
+    }
+    return s;
+}
+
+void *memcpy(void *dest, const void *src, size_t n) {
+    unsigned char *d = (unsigned char *) dest;
+    const unsigned char *s2 = (const unsigned char *) src;
+    while (n--) {
+        *d++ = *s2++;
+    }
+    return dest;
+}
+
 void to_wchar(const char *src, CHAR16 *dest, size_t max_len) {
     size_t i = 0;
     while (src[i] != '\0' && i < max_len - 1) {
@@ -13,14 +30,14 @@ void to_wchar(const char *src, CHAR16 *dest, size_t max_len) {
 }
 
 void to_hex(uint64_t value, CHAR16 *dest) {
-    const CHAR16 hex_digits[16] = L"0123456789ABCDEF";
+    const CHAR16 *hex_digits = (CHAR16 *) L"0123456789ABCDEF";
 
-    dest[0] = L'0';
-    dest[1] = L'x';
+    dest[0] = '0';
+    dest[1] = 'x';
 
     if (value == 0) {
-        dest[2] = L'0';
-        dest[3] = L'\0';
+        dest[2] = '0';
+        dest[3] = '\0';
         return;
     }
 
@@ -36,18 +53,18 @@ void to_hex(uint64_t value, CHAR16 *dest) {
         dest[2 + j] = temp[i - 1 - j];
     }
 
-    dest[2 + i] = L'\0';
+    dest[2 + i] = '\0';
 }
 
 void to_hex_char(uint64_t value, char *dest) {
-    const char hex_digits[16] = "0123456789ABCDEF";
+    const char *hex_digits = "0123456789ABCDEF";
 
-    dest[0] = L'0';
-    dest[1] = L'x';
+    dest[0] = '0';
+    dest[1] = 'x';
 
     if (value == 0) {
-        dest[2] = L'0';
-        dest[3] = L'\0';
+        dest[2] = '0';
+        dest[3] = '\0';
         return;
     }
 
@@ -63,7 +80,7 @@ void to_hex_char(uint64_t value, char *dest) {
         dest[2 + j] = temp[i - 1 - j];
     }
 
-    dest[2 + i] = L'\0';
+    dest[2 + i] = '\0';
 }
 
 void to_str(uint64_t value, CHAR16 *buffer) {

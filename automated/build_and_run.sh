@@ -4,6 +4,13 @@
 
 set -e
 
+error_exit() {
+    echo -e "$1"
+    exit 1
+}
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 ALLOCATED_MEMORY=256M
 EXTRA_QEMU_ARGS="" # You can add extra arguments for QEMU here if needed
 LOCAL_OVMF_CODE_PATH="ignore_automated/ovmf/OVMF_CODE.fd"
@@ -46,7 +53,7 @@ A_UNDERLINE='\033[4m'
 
 echo -e "${B_BLUE} INFO ${A_RESET} Starting build process..."
 
-cd "$(dirname "$0")"/.. || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
+cd "$PROJECT_ROOT" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 mkdir -p ignore_automated
@@ -62,7 +69,16 @@ else
     cp build/$BUILD_FILE_NAME.EFI $BOOT_DIRECTORY/BOOTX64.EFI
 fi
 
+cd "$PROJECT_ROOT/test_kernel" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
 
+cd "$PROJECT_ROOT" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
+
+mkdir -p ignore_automated/esp
+
+
+cp test_kernel/build/kernel ignore_automated/esp/kernel
 
 echo -e "${B_BLUE} INFO ${A_RESET} Build completed. Attempting to launch QEMU..."
 
