@@ -464,7 +464,7 @@ Each `KuroSegmentInfo` structure is defined as follows:
 ```c++
 typedef struct {
     uint32_t ks_flags;
-    uint64_t ks_paddress;
+    uint64_t ks_address;
     uint64_t ks_size;
     uint64_t ks_align;
 } KuroSegmentInfo;
