@@ -35,8 +35,6 @@
 11. [Memory Layout](#11-memory-layout)
      1. [Lower Half](#111-lower-half)
      2. [Higher Half](#112-higher-half)
-        1. [x86-64](#1121-x86-64)
-        2. [ARM64](#1122-arm64)
 12. [Appendix A: Bootloader Identifier String](#appendix-a-bootloader-identifier-string)
 13. [Appendix B: Legacy Boot Protocols](#appendix-b-legacy-boot-protocols)
 14. [Appendix C: Changes](#appendix-c-changes)
@@ -60,7 +58,7 @@ It supports UEFI `x86-64` and `ARM64` environments.
 ## 1.2 Target Audience
 
 Kernel developers, operating system developers, and anyone inbetween who wants to develop a bootloader that is
-compliant with the KURO boot protocol or kernel developers who want to create a KURO executable that can be loaded by
+compliant with the KURO boot protocol or kernel developers who want to create an executable that can be loaded by
 the KURO bootloader.
 
 ## 1.3 Conventions
@@ -93,13 +91,15 @@ follows the standard C alignment rules.
 
 All the fields must not be null or 0 unless otherwise specified.
 
+All the pointers are in the higher half of the address space.
+
 ## 2. Executable Structure
 
 A valid KURO executable must be a Position-independent executable (PIE).
 
 The following diagram shows an example structure of a KURO executable:
 
-PLACEHOLDER
+PLACEHOLDER – put the diagram here
 
 ![Executable structure diagram](res/kuro_execstruct.png)
 
@@ -280,6 +280,7 @@ typedef struct {
     uint64_t km_map_size;
     uint64_t km_desc_size;
     uint32_t km_desc_version;
+    uint64_t km_mem_offset;
 } KuroMemoryMap;
 ```
 
@@ -300,7 +301,14 @@ Specifies the size of each memory descriptor in bytes.
 
 #### km_desc_version
 
-Specifies the version of the memory descriptor structure.
+Specifies the version of the memory descriptor structure as defined in the UEFI specification[^2].
+
+#### km_mem_offset
+
+Specifies the offset used to calculate the virtual address of a physical address.
+See [section 11.2](#112-higher-half) for more information.
+
+This is the base address of the higher half.
 
 ## 8. KURO Module
 
@@ -325,13 +333,13 @@ Specifies the size of the module in bytes.
 ### 8.1 Module Structure
 
 A module is an arbitrary binary file loaded into memory by the bootloader.
-The module must contain a KURO footer at the end of the file.
+The module must contain a KURO footer at the end of the file. There must be only one module loaded.
 
 The bootloader must verify the KURO footer and then load the module into memory as-is but excluding the KURO footer.
 
 The structure of a module can be found in the following diagram:
 
-PLACEHOLDER
+PLACEHOLDER – put the diagram here
 
 ![Module structure diagram](res/kuro_modstruct.png)
 
@@ -356,7 +364,7 @@ typedef struct {
 
 #### kf_base
 
-Specifies the base address of the framebuffer.
+Specifies the base address of the framebuffer in the physical address.
 
 #### kf_size
 
@@ -428,7 +436,7 @@ typedef struct {
 
 #### ke_entry_point
 
-This field contains the address to the entry point of the executable in physical memory.
+This field contains the address to the entry point of the executable in physical address.
 
 #### ke_segment_count
 
@@ -440,7 +448,7 @@ Points to an array of `KuroSegmentInfo` structures as defined in [section 10.1](
 
 #### ke_stack_start
 
-Specifies the top of the stack in physical memory.
+Specifies the top of the stack in physical address.
 
 #### ke_stack_size
 
@@ -456,7 +464,7 @@ Each `KuroSegmentInfo` structure is defined as follows:
 ```c++
 typedef struct {
     uint32_t ks_flags;
-    uint64_t ks_address;
+    uint64_t ks_paddress;
     uint64_t ks_size;
     uint64_t ks_align;
 } KuroSegmentInfo;
@@ -482,7 +490,7 @@ More information about the flags can be found in the ELF specification[^1].
 
 #### ks_address
 
-64-bit unsigned integer that specifies the address of the segment in physical memory.
+64-bit unsigned integer that specifies the address of the segment in physical address.
 
 #### ks_size
 
@@ -503,33 +511,29 @@ The bootloader must arrange the memory layout as shown down below.
 
 The following diagram shows the memory layout:
 
-PLACEHOLDER
+PLACEHOLDER – put the diagram here
 
 ![Memory layout diagram](res/kuro_memlay.png)
 
-As shown in the diagram, the memory layout is split into two regions:
-- Lower half
-- Higher half
+The bootloader must configure the virtual address space to the maximum size supported by the hardware.
+
+The bootloader must use the smallest page size supported by the hardware.
+
+divided into two regions:
+
+A lower region and a higher region, where the split is architecture-dependent.
 
 ### 11.1 Lower Half
 
-This region is not mapped to any physical memory.
+This region must not be mapped to any physical address when the control is transferred to the executable.
 
 ### 11.2 Higher Half
 
-This region is identity mapped with offset in the physical memory.
+This region is mapped to the physical address with offset.
 
-`virtual_address = physical_address + offset`
+The offset is the base address of the higher half.
 
-The offset is specific to each architecture as described in the following sections.
-
-#### 11.2.1 x86-64
-
-The offset is `0xFFFF800000000000`.
-
-#### 11.2.2 ARM64
-
-The offset is `0xFFFF000000000000`.
+`Virtual Address = Physical Address + Higher Half Base`
 
 ## Appendix A: Bootloader Identifier String
 
@@ -575,7 +579,19 @@ should never be used. Those revisions are now considered legacy and the count is
     - Added the changes section to this document.
     - Renamed from KURO Booting Convention to KURO Boot Protocol.
 - `1.0`
-    - Big changes to the boot protocol, please refer to git history for details.
+    - Fixed the stack alignment
+    - Removed `ke_stack_end` field from the executable information structure.
+    - Removed reductant sections from the document.
+    - Bump the version to `3`.
+    - Added support for ARM64.
+    - Boot service is now being exited.
+    - Added boot information structure.
+    - Added framebuffer structure.
+    - Added module structure.
+    - Added memory map structure.
+    - Defined memory layout.
+    - Changed position of the KURO identifier.
+    - Please refer to git history for details.
 
 ## Contact
 
