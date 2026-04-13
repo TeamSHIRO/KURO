@@ -428,7 +428,7 @@ typedef struct {
 
 #### ke_entry_point
 
-This field contains the address to the entry point of the executable.
+This field contains the address to the entry point of the executable in physical memory.
 
 #### ke_segment_count
 
@@ -440,8 +440,7 @@ Points to an array of `KuroSegmentInfo` structures as defined in [section 10.1](
 
 #### ke_stack_start
 
-Specifies the top of the stack. The bootloader must set the stack pointer
-to the top of the stack before transferring control to the entry point of the executable.
+Specifies the top of the stack in physical memory.
 
 #### ke_stack_size
 
