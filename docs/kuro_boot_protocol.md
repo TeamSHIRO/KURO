@@ -17,6 +17,7 @@
     3. [Conventions](#13-conventions)
         1. [Typography](#131-typography)
         2. [Revisions](#132-revisions)
+        3. [Data Structures](#133-data-structures)
 2. [Executable Structure](#2-executable-structure)
 3. [KURO Footer](#3-kuro-footer)
 4. [KURO Identifier](#4-kuro-identifier)
@@ -85,7 +86,7 @@ Updates to this document are considered either revisions or errata as described 
 > Not all commits of the document are considered final. Please refer to the git tag for each final version of the
 > document.
 
-### 1.3.3 Data structures
+### 1.3.3 Data Structures
 
 All data structures are presented in C syntax with the padding implicitly added to ensure that the structure alignment
 follows the standard C alignment rules.
