@@ -87,7 +87,7 @@ Updates to this document are considered either revisions or errata as described 
 
 ### 1.3.3 Data structures
 
-All data structures are presented in C syntax with the padding explicitly added to ensure that the structure alignment
+All data structures are presented in C syntax with the padding implicitly added to ensure that the structure alignment
 follows the standard C alignment rules.
 
 All the fields must not be null or 0 unless otherwise specified.
