@@ -12,33 +12,36 @@
 ## Table of Contents
 
 1. [Introduction](#1-introduction)
-    1. [Target Audience](#11-target-audience)
-    2. [Conventions](#12-conventions)
-        1. [Typography](#121-typography)
-        2. [Revisions](#122-revisions)
+    1. [About KURO](#11-about-kuro)
+    2. [Target Audience](#12-target-audience)
+    3. [Conventions](#13-conventions)
+        1. [Typography](#131-typography)
+        2. [Revisions](#132-revisions)
 2. [Executable Structure](#2-executable-structure)
 3. [KURO Footer](#3-kuro-footer)
 4. [KURO Identifier](#4-kuro-identifier)
 5. [Calling Convention and Registers](#5-calling-convention-and-registers)
-    1. [X86-64 Registers](#51-x86-64-registers)
+    1. [x86-64 Registers](#51-x86-64-registers)
     2. [ARM64 Registers](#52-arm64-registers)
 6. [KURO Boot Information](#6-kuro-boot-information)
-7. [KURO Framebuffer](#7-kuro-framebuffer)
-    1. [KURO Pixel Format](#71-kuro-pixel-format)
-    2. [KURO Pixel Information](#72-kuro-pixel-information)
-8. [KURO Executable Information](#8-kuro-executable-information)
-    1. [KuroSegmentInfo](#81-kurosegmentinfo)
-9. [Memory Layout](#9-memory-layout)
-     1. [Lower Half](#91-lower-half)
-     2. [Higher Half](#92-higher-half)
-         1. [x86-64](#921-x86-64)
-         2. [ARM64](#922-arm64)
-9. [Appendix A: Bootloader Identifier String](#appendix-a-bootloader-identifier-string)
-10. [Appendix B: Legacy Boot Protocols](#appendix-b-legacy-boot-protocols)
-11. [Appendix C: Changes](#appendix-c-changes)
-12. [Contact](#contact)
-13. [Copyright](#copyright)
-14. [References](#references)
+7. [KURO Memory Map](#7-kuro-memory-map)
+8. [KURO Module](#8-kuro-module)
+9. [KURO Framebuffer](#9-kuro-framebuffer)
+    1. [KURO Pixel Format](#91-kuro-pixel-format)
+    2. [KURO Pixel Information](#92-kuro-pixel-information)
+10. [KURO Executable Information](#10-kuro-executable-information)
+    1. [KuroSegmentInfo](#101-kurosegmentinfo)
+11. [Memory Layout](#11-memory-layout)
+     1. [Lower Half](#111-lower-half)
+     2. [Higher Half](#112-higher-half)
+        1. [x86-64](#1121-x86-64)
+        2. [ARM64](#1122-arm64)
+12. [Appendix A: Bootloader Identifier String](#appendix-a-bootloader-identifier-string)
+13. [Appendix B: Legacy Boot Protocols](#appendix-b-legacy-boot-protocols)
+14. [Appendix C: Changes](#appendix-c-changes)
+15. [Contact](#contact)
+16. [Copyright](#copyright)
+17. [References](#references)
 
 ## 1. Introduction
 
@@ -47,25 +50,30 @@ This document describes the protocols used by the KURO bootloader to load execut
 This document is intended to provide a reference for developers who want to create executables that can be loaded by the
 KURO bootloader or to create their own bootloader that follows the KURO boot protocol.
 
-## 1.1 Target Audience
+## 1.1 About KURO
 
-Kernel developers, operating system developers, and anyone inbetween.
+KURO is both a bootloader and boot protocol. It is designed to be opinionated, secure, and minimalistic.
 
-## 1.2 Conventions
+It supports UEFI `x86-64` and `ARM64` environments.
+
+## 1.2 Target Audience
+
+Kernel developers, operating system developers, and anyone inbetween who wants to develop a bootloader that is
+compliant with the KURO boot protocol or kernel developers who want to create a KURO executable that can be loaded by
+the KURO bootloader.
+
+## 1.3 Conventions
 
 These are the conventions used throughout this document.
 
-### 1.2.1 Typography
-
-Reference[^1]: Used to indicate a reference to an external source of information. You can find all the references
-[here](#references).
+### 1.3.1 Typography
 
       The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
       NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
       "OPTIONAL" in this document are to be interpreted as described in
       RFC 2119.
 
-### 1.2.2 Revisions
+### 1.3.2 Revisions
 
 Updates to this document are considered either revisions or errata as described below:
 - A new revision is made when significant changes are made to the document. Which changes the behavior of the
@@ -77,18 +85,25 @@ Updates to this document are considered either revisions or errata as described 
 > Not all commits of the document are considered final. Please refer to the git tag for each final version of the
 > document.
 
+### 1.3.3 Data structures
+
+All data structures are presented in C syntax with the padding explicitly added to ensure that the structure alignment
+follows the standard C alignment rules.
+
+All the fields must not be null or 0 unless otherwise specified.
+
 ## 2. Executable Structure
 
 A valid KURO executable must be a Position-independent executable (PIE).
 
-The following diagram shows a simple structure of a KURO executable:
+The following diagram shows an example structure of a KURO executable:
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="res/kuro_exec_file_dark.png">
-  <img src="res/kuro_exec_file.png" alt="Example of a valid KURO executable file structure">
-</picture>
+PLACEHOLDER
 
-The executable must be a position-independent executable (PIE) with ELF header field `e_type` set to `ET_DYN`.
+![Executable structure diagram](res/kuro_execstruct.png)
+
+- The executable must be a position-independent executable (PIE) with ELF header field `e_type` set to `ET_DYN`.
+- The executable must contain a KURO footer at the end of the file.
 
 The bootloader must verify the ELF header and KURO footer to ensure that the executable is a valid KURO executable.
 
@@ -109,12 +124,15 @@ typedef struct {
 
 > [!TIP]
 > You can create a KURO footer on an existing ELF executable that follows [section 2](#2-executable-structure) by using
-> the `kuro-sign` tool.
+> the `kuro-sign`[^6] tool.
 
 #### k_signature
 
-The signature is an Ed25519[^4] signature of the executable to verify its authenticity. The signature is calculated over
+The signature is an Ed25519[^3] signature of the executable to verify its authenticity. The signature is calculated over
 the entire executable file, excluding the KURO footer itself.
+
+Every file loaded by the bootloader must have a KURO footer, and the bootloader must verify the signature of the file
+before loading it.
 
 #### k_identifier
 
@@ -163,12 +181,12 @@ If the version does not match the expected version, the bootloader must reject t
 
 Any other undefined version number is considered reserved for future use.
 
-| Version | Description                        |
-|---------|------------------------------------|
-| `0`     | Invalid Version                    |
-| `1`     | KURO Boot Protocol `Legacy 1.0`    |
-| `2`     | KURO Boot Protocol `Legacy 2.0`    |
-| `3`     | KURO Boot Protocol `1.0` (current) |
+| Revision | Description                        |
+|----------|------------------------------------|
+| `0`      | Invalid Revision                   |
+| `1`      | KURO Boot Protocol `Legacy 1.0`    |
+| `2`      | KURO Boot Protocol `Legacy 2.0`    |
+| `3`      | KURO Boot Protocol `1.0` (current) |
 
 Information regarding the legacy boot protocols can be found in [appendix B](#appendix-b-legacy-boot-protocols).
 
@@ -178,15 +196,15 @@ As before the bootloader transfers control to the entry point of the executable,
 boot information structure and pass it to the executable following the ABI/Calling
 Convention in the register for each architecture.
 
-### 5.1 X86-64 Registers
+### 5.1 x86-64 Registers
 
-Following the System V AMD64 ABI[^5].
+Following the System V AMD64 ABI[^4].
 
-`rsi` - Pointer to the KURO boot information.
+`rdi` - Pointer to the KURO boot information.
 
 ### 5.2 ARM64 Registers
 
-Following the Procedure Call standard for the Arm 64-bit Architecture[^6].
+Following the Procedure Call standard for the Arm 64-bit Architecture[^5].
 
 `x0` - Pointer to the KURO boot information.
 
@@ -199,8 +217,10 @@ structure contains the following fields:
 typedef struct {
     KuroIdentifier kb_identifier;
     char *kb_boot_id;
-    char *kb_initimage;
-    uint64_t kb_initimage_size;
+    char *kb_cmdline;
+    EFI_SYSTEM_TABLE *kb_system_table;
+    KuroMemoryMap *kb_memory_map;
+    KuroModule *kb_module;
     KuroFramebuffer *kb_framebuffer;
     KuroExecutableInfo *kb_executable_info;
 } KuroBootInfo;
@@ -215,33 +235,108 @@ As described in [section 4](#4-kuro-identifier).
 Points to a null-terminated string that contains the boot identifier of the bootloader.
 See [appendix A](#appendix-a-bootloader-identifier-string) for the list of boot identifiers.
 
-#### kb_initimage
+#### kb_cmdline
 
-Points to a file in the memory that contains the information such as:
+Points to a null-terminated string that contains the command line passed to the executable.
+The command line is passed to the executable as-is and does not contain any modifications.
 
-- Drivers
-- Init program
-- Filesystem table
+#### kb_system_table
 
-More information about the initimage can be found in the related specification[^7].
+Pointer to the EFI system table. Please refer to the UEFI specification[^2] for more information about the EFI system table.
 
-#### kb_initimage_size
+#### kb_memory_map
 
-Specifies the size of the initimage in bytes inside the memory.
+Pointer to the memory map structure.
+As described in [section 7](#7-kuro-memory-map).
+
+#### kb_module
+
+Pointer to the module structure.
+As described in [section 8](#8-kuro-module).
+
+This field can be null if no module is loaded.
 
 #### kb_framebuffer
 
 Pointer to the framebuffer structure.
-As described in [section 7](#7-kuro-framebuffer).
+As described in [section 9](#9-kuro-framebuffer).
 
 This field can be null if no framebuffer is available.
 
 #### kb_executable_info
 
 Pointer to the executable information structure.
-As described in [section 8](#8-kuro-executable-information).
+As described in [section 10](#10-kuro-executable-information).
 
-## 7. KURO Framebuffer
+## 7. KURO Memory Map
+
+The memory map structure is a data structure that contains information about the memory map of the system. The
+structure contains the following fields:
+
+```c++
+typedef struct {
+    EFI_MEMORY_DESCRIPTOR *km_map;
+    uint64_t km_map_size;
+    uint64_t km_desc_size;
+    uint32_t km_desc_version;
+} KuroMemoryMap;
+```
+
+> [!TIP]
+> This structure is heavily based on the UEFI specification[^2].
+
+#### km_map
+
+Point to the start of the memory map array as defined in the UEFI specification[^2].
+
+#### km_map_size
+
+Specifies the size of the memory map array in bytes.
+
+#### km_desc_size
+
+Specifies the size of each memory descriptor in bytes.
+
+#### km_desc_version
+
+Specifies the version of the memory descriptor structure.
+
+## 8. KURO Module
+
+The module structure is a data structure that contains information about the module that is loaded into memory. The
+structure contains the following fields:
+
+```c++
+typedef struct {
+    void *km_module_base;
+    uint64_t km_module_size;
+} KuroModule;
+```
+
+#### km_module_base
+
+Points to the base address of the module.
+
+#### km_module_size
+
+Specifies the size of the module in bytes.
+
+### 8.1 Module Structure
+
+A module is an arbitrary binary file loaded into memory by the bootloader.
+The module must contain a KURO footer at the end of the file.
+
+The bootloader must verify the KURO footer and then load the module into memory as-is but excluding the KURO footer.
+
+The structure of a module can be found in the following diagram:
+
+PLACEHOLDER
+
+![Module structure diagram](res/kuro_modstruct.png)
+
+The KURO footer is described in [section 3](#3-kuro-footer).
+
+## 9. KURO Framebuffer
 
 The framebuffer structure is a data structure that contains information about the framebuffer. The structure contains
 the following fields:
@@ -280,13 +375,13 @@ Specifies the number of pixels per scanline.
 
 #### kf_pixel_format
 
-As described in [section 7.1](#71-kuro-pixel-format).
+As described in [section 9.1](#91-kuro-pixel-format).
 
 #### kf_pixel_info
 
-As described in [section 7.2](#72-kuro-pixel-information).
+As described in [section 9.2](#92-kuro-pixel-information).
 
-### 7.1 KURO Pixel Format
+### 9.1 KURO Pixel Format
 
 ```c++
 typedef enum {
@@ -299,9 +394,9 @@ typedef enum {
 ```
 
 > [!NOTE]
-> Please refer to the UEFI specification[^3] for more information about `EFI_GRAPHICS_PIXEL_FORMAT`
+> Please refer to the UEFI specification[^2] for more information about `EFI_GRAPHICS_PIXEL_FORMAT`
 
-### 7.2 KURO Pixel Information
+### 9.2 KURO Pixel Information
 
 ```c++
 typedef struct {
@@ -313,9 +408,9 @@ typedef struct {
 ```
 
 > [!NOTE]
-> Please refer to the UEFI specification[^3] for more information about `EFI_PIXEL_BITMASK`
+> Please refer to the UEFI specification[^2] for more information about `EFI_PIXEL_BITMASK`
 
-## 8. KURO Executable Information
+## 10. KURO Executable Information
 
 The executable information structure is a data structure that contains information about the loaded executable. The
 structure contains the following fields:
@@ -340,7 +435,7 @@ This field specifies the number of entries in the `ke_segments` array.
 
 #### ke_segments
 
-Points to an array of `KuroSegmentInfo` structures as defined in [section 8.1](#81-kurosegmentinfo).
+Points to an array of `KuroSegmentInfo` structures as defined in [section 10.1](#101-kurosegmentinfo).
 
 #### ke_stack_start
 
@@ -350,9 +445,8 @@ to the top of the stack before transferring control to the entry point of the ex
 #### ke_stack_size
 
 Specifies the size of the stack in bytes. The stack size is implementation-defined.
-`ke_stack_end - ke_stack_start` must be equal to `ke_stack_size`.
 
-### 8.1 KuroSegmentInfo
+### 10.1 KuroSegmentInfo
 
 `KuroSegmentInfo` is a structure that describes a segment of the executable that has been loaded into memory. It
 contains information about each segment, such as its address, size, permission, and alignment.
@@ -362,9 +456,7 @@ Each `KuroSegmentInfo` structure is defined as follows:
 ```c++
 typedef struct {
     uint32_t ks_flags;
-    char pad[4]; // padding to align the structure to 8 bytes
-    uint64_t ks_paddress;
-    uint64_t ks_vaddress;
+    uint64_t ks_address;
     uint64_t ks_size;
     uint64_t ks_align;
 } KuroSegmentInfo;
@@ -372,7 +464,7 @@ typedef struct {
 
 > [!TIP]
 > This structure depends heavily on the ELF program header structure, so it is recommended to read the ELF
-> specification[^2] to understand how the ELF program header structure is used.
+> specification[^1] to understand how the ELF program header structure is used.
 
 #### ks_flags
 
@@ -386,15 +478,11 @@ typedef struct {
 | PF_MASKOS   | `0x0FF00000` | Unspecified |
 | PF_MASKPROC | `0xF0000000` | Unspecified |
 
-More information about the flags can be found in the ELF specification[^2].
+More information about the flags can be found in the ELF specification[^1].
 
-#### ks_paddress
+#### ks_address
 
 64-bit unsigned integer that specifies the address of the segment in physical memory.
-
-#### ks_vaddress
-
-64-bit unsigned integer that specifies the address of the segment in virtual memory.
 
 #### ks_size
 
@@ -404,9 +492,12 @@ memory in bytes.
 #### ks_align
 
 64-bit unsigned integer that specifies the alignment of the segment in memory. This value is the same as the `p_align`
-field in the ELF program header[^2] for the segment.
+field in the ELF program header[^1] for the segment.
 
-## 9. Memory Layout
+## 11. Memory Layout
+
+> [!NOTE]
+> This section needs more consideration and is under development.
 
 The bootloader must arrange the memory layout as shown down below.
 
@@ -414,22 +505,17 @@ The following diagram shows the memory layout:
 
 PLACEHOLDER
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="res/PLACEHOLDER_DARK.png">
-  <img src="res/PLACEHOLDER.png" alt="Memory layout">
-</picture>
+![Memory layout diagram](res/kuro_memlay.png)
 
 As shown in the diagram, the memory layout is split into two regions:
 - Lower half
 - Higher half
 
-### 9.1 Lower Half
+### 11.1 Lower Half
 
-This region is identity mapped to the same address in the physical memory.
+This region is not mapped to any physical memory.
 
-`virtual_address = physical_address`
-
-### 9.2 Higher Half
+### 11.2 Higher Half
 
 This region is identity mapped with offset in the physical memory.
 
@@ -437,11 +523,11 @@ This region is identity mapped with offset in the physical memory.
 
 The offset is specific to each architecture as described in the following sections.
 
-#### 9.2.1 x86-64
+#### 11.2.1 x86-64
 
 The offset is `0xFFFF800000000000`.
 
-#### 9.2.2 ARM64
+#### 11.2.2 ARM64
 
 The offset is `0xFFFF000000000000`.
 
@@ -460,8 +546,8 @@ This table lists the bootloader identifier strings that are currently known by t
 
 ## Appendix B: Legacy Boot Protocols
 
-Due to the lack of real-world usage and impracticality in the first two versions of the KURO boot protocol, they are considered legacy and
-should never be used. Those versions are now considered legacy and the versioning is reset to `1`.
+Due to the lack of real-world usage and impracticality in the first two revisions of the KURO boot protocol, they are considered legacy and
+should never be used. Those revisions are now considered legacy and the count is reset to `1`.
 
 ## Appendix C: Changes
 
@@ -522,16 +608,14 @@ limitations under the License.
 The following publications and sources of information may be useful for understanding this document or are referred to
 in this document:
 
-[^1]: **This is an example of a reference.**
+[^1]: **ELF Executable and Linkable Format, Xinuos** – https://gabi.xinuos.com/elf/
 
-[^2]: **ELF Executable and Linkable Format, Xinuos** – https://gabi.xinuos.com/elf/
+[^2]: **Unified Extensible Firmware Interface Specification, Version 2.11** – https://uefi.org/specs/UEFI/2.11/
 
-[^3]: **Unified Extensible Firmware Interface Specification, Version 2.11** – https://uefi.org/specs/UEFI/2.11/
+[^3]: **Ed25519, Wikipedia** – https://en.wikipedia.org/wiki/EdDSA#Ed25519
 
-[^4]: **Ed25519, Wikipedia** – https://en.wikipedia.org/wiki/EdDSA#Ed25519
+[^4]: **System V ABI for the X86-64 Architecture, GitLab** – https://gitlab.com/x86-psABIs/x86-64-ABI
 
-[^5]: **System V ABI for the X86-64 Architecture, GitLab** – https://gitlab.com/x86-psABIs/x86-64-ABI
+[^5]: **Procedure Call Standard for the Arm 64-bit Architecture, GitHub** – https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst
 
-[^6]: **Procedure Call Standard for the Arm 64-bit Architecture, GitHub** – https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst
-
-[^7]: **The KURO Initimage, GitHub** – https://github.com/TeamSHIRO/KURO/blob/main/docs/kuro_initimage.md
+[^6]: **kuro-sign, GitHub** – https://github.com/TeamSHIRO/kuro-sign
