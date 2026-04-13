@@ -16,11 +16,11 @@ Total size: 554 bytes.
 
 ```c++
 typedef struct {
-    KuroIdentifier identifier;
     uint8_t has_public_key;
     uint8_t aslr_enabled;
     uint8_t public_key[32];
     uint16_t executable_path[256];
+    KuroIdentifier identifier;
 } KuroConfig;
 ```
 
