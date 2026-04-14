@@ -33,8 +33,9 @@
 10. [KURO Executable Information](#10-kuro-executable-information)
     1. [KuroSegmentInfo](#101-kurosegmentinfo)
 11. [Memory Layout](#11-memory-layout)
-     1. [Lower Half](#111-lower-half)
-     2. [Higher Half](#112-higher-half)
+    1. [Executable Memory](#111-executable-memory)
+    2. [Lower Half](#112-lower-half)
+    3. [Higher Half](#113-higher-half)
 12. [Appendix A: Bootloader Identifier String](#appendix-a-bootloader-identifier-string)
 13. [Appendix B: Legacy Boot Protocols](#appendix-b-legacy-boot-protocols)
 14. [Appendix C: Changes](#appendix-c-changes)
@@ -60,6 +61,12 @@ It supports UEFI `x86-64` and `ARM64` environments.
 Kernel developers, operating system developers, and anyone inbetween who wants to develop a bootloader that is
 compliant with the KURO boot protocol or kernel developers who want to create an executable that can be loaded by
 the KURO bootloader.
+
+This document assumed you have an understanding of the following topics:
+
+- ELF[^1]
+- UEFI[^2]
+- Virtual memory and paging of your target architecture
 
 ## 1.3 Conventions
 
@@ -89,9 +96,9 @@ Updates to this document are considered either revisions or errata as described 
 All data structures are presented in C syntax with the padding implicitly added to ensure that the structure alignment
 follows the standard C alignment rules.
 
-All the fields must not be null or 0 unless otherwise specified.
+All the fields must not be null or 0 unless stated otherwise.
 
-All the pointers are in the higher half of the address space.
+All the pointers are fixed to be in the higher half of the address space by the bootloader unless stated otherwise.
 
 ## 2. Executable Structure
 
@@ -244,6 +251,12 @@ This field can be null if no command line is passed to the executable.
 
 Pointer to the EFI system table. Please refer to the UEFI specification[^2] for more information about the EFI system table.
 
+Even though the system table is a pointer that points to the EFI system table in the higher half address space,
+the system table will be handed to the executable as-is, which means that the executable must fix the pointers inside
+the system table to be in the higher half of the address space by offsetting them by the `km_higher_half_base` value.
+
+The bootloader must call `ExitBootServices()` before tranferring control to the executable.
+
 #### kb_memory_map
 
 Pointer to the memory map structure.
@@ -279,16 +292,22 @@ typedef struct {
     uint64_t km_map_size;
     uint64_t km_desc_size;
     uint32_t km_desc_version;
-    uint64_t km_higher_half_base;
+    uintptr_t km_higher_half_base;
+    uintptr_t km_execmem_base;
+    uint64_t km_execmem_size;
+    uint64_t km_progstack_size;
+    uint64_t km_bootinfo_size;
 } KuroMemoryMap;
 ```
 
-> [!TIP]
-> This structure is heavily based on the UEFI specification[^2].
-
 #### km_map
 
-Point to the start of the memory map array as defined in the UEFI specification[^2].
+Point to the start of the memory descriptor array as defined in the UEFI specification[^2].
+
+This memory map is the same as the one that is used to call `SetVirtualAddressMap()` in UEFI.
+The `VirtualStart` must be the same as the `PhysicalStart + km_higher_half_base`.
+
+See [section 11](#11-memory-layout) for more information.
 
 #### km_map_size
 
@@ -304,8 +323,30 @@ Specifies the version of the memory descriptor structure as defined in the UEFI 
 
 #### km_higher_half_base
 
-Specifies the base address of the higher half in the physical address.
-See [section 11.2](#112-higher-half) for more information.
+Specifies the base address of the higher half.
+See [section 11.3](#113-higher-half) for more information.
+
+#### km_execmem_base
+
+Specifies the base address of the executable memory in the virtual address.
+See [section 11.1](#111-executable-memory) for more information.
+
+This field must be aligned to the page boundary (`km_executable_mem_base % 0x1000 == 0`).
+
+#### km_execmem_size
+
+Specifies the size of the executable memory in bytes.
+This field must be divisible by the page size (`km_execmem_size % 0x1000 == 0`).
+
+#### km_progstack_size
+
+Specifies the size of the program stack in bytes.
+This field must be divisible by the page size (`km_progstack_size % 0x1000 == 0`).
+
+#### km_bootinfo_size
+
+Specifies the size of the boot information structure in bytes.
+This field must be divisible by the page size (`km_bootinfo_size % 0x1000 == 0`).
 
 ## 8. KURO Module
 
@@ -347,7 +388,7 @@ the following fields:
 
 ```c++
 typedef struct {
-    uint64_t kf_base;
+    void *kf_base;
     uint64_t kf_size;
     uint32_t kf_width;
     uint32_t kf_height;
@@ -359,7 +400,7 @@ typedef struct {
 
 #### kf_base
 
-Specifies the base address of the framebuffer in the physical address.
+Points to the base address of the framebuffer.
 
 #### kf_size
 
@@ -421,7 +462,7 @@ structure contains the following fields:
 
 ```c++
 typedef struct {
-    uint64_t ke_entry_point;
+    uintptr_t ke_entry_point;
     uint64_t ke_segment_count;
     KuroSegmentInfo* ke_segments;
     uint64_t ke_stack_start;
@@ -443,11 +484,12 @@ Points to an array of `KuroSegmentInfo` structures as defined in [section 10.1](
 
 #### ke_stack_start
 
-Specifies the top of the stack in physical address.
+Specifies the top of the stack at the time the control is transferred to the executable.
 
 #### ke_stack_size
 
-Specifies the size of the stack in bytes. The stack size is implementation-defined.
+Specifies the size of the stack in bytes available at the entry point. The stack size is implementation-defined but must
+be the multiple of the page size.
 
 ### 10.1 KuroSegmentInfo
 
@@ -459,7 +501,7 @@ Each `KuroSegmentInfo` structure is defined as follows:
 ```c++
 typedef struct {
     uint32_t ks_flags;
-    uint64_t ks_address;
+    uintptr_t ks_address;
     uint64_t ks_size;
     uint64_t ks_align;
 } KuroSegmentInfo;
@@ -471,7 +513,7 @@ typedef struct {
 
 #### ks_flags
 
-32-bit unsigned integer that specifies the permissions of the segment. The permissions are defined as follows:
+Specifies the permissions of the segment. The permissions are defined as follows:
 
 | Name        | Value        | Meaning     |
 |-------------|--------------|-------------|
@@ -485,16 +527,16 @@ More information about the flags can be found in the ELF specification[^1].
 
 #### ks_address
 
-64-bit unsigned integer that specifies the address of the segment in physical address.
+Specifies the address of the segment in physical address.
 
 #### ks_size
 
-64-bit unsigned integer that specifies the size of the segment in memory. This value is the size of the segment in
+Specifies the size of the segment in memory. This value is the size of the segment in
 memory in bytes.
 
 #### ks_align
 
-64-bit unsigned integer that specifies the alignment of the segment in memory. This value is the same as the `p_align`
+Specifies the alignment of the segment in memory. This value is the same as the `p_align`
 field in the ELF program header[^1] for the segment.
 
 ## 11. Memory Layout
@@ -504,22 +546,60 @@ The bootloader must arrange the memory layout as described down below.
 The bootloader should configure the virtual address space to the maximum size supported by the hardware. When there is a
 bigger available virtual address space, the bootloader should use the biggest one.
 
-The bootloader must use the smallest page size supported by the hardware.
+The bootloader must set the page size to `4` KiB.
+
+The permissions must be set to `RWX` for all pages.
 
 The bootloader must set the virtual address map in UEFI Virtual Memory Services (`SetVirtualAddressMap()`) to the higher
 half to ensure that the UEFI Runtime Services are usable.
 
-### 11.1 Lower Half
+### 11.1 Executable Memory
+
+The executable memory and the memory layout are laid out as shown in the following diagram:
+
+![Executable memory layout](res/kuro_memlayout.png)
+
+Each region is separated by a page boundary, and each region is defined in order from high to low as follows:
+
+- **Executable region** – Contains executable code and data
+- **Program stack region** – Contains program stack
+- **Boot information region** – Contains information that is being passed to the executable from the bootloader
+
+Each region must not overlap and must be big enough to contain the contents of the region.
+
+The program stack is located below the executable code and data pages.
+
+Below the program stack is the boot information region which must contain the information that is passed to the
+executable, including but not limited to memory map, module, framebuffer, and executable information.
+An exception to this is the `EFI_SYSTEM_TABLE` which may be located anywhere in the memory, not limited to the boot
+information region but must not be inside the executable, program stack, or the region that is not considered free
+in the EFI memory map.
+
+The executable memory is contiguous and must not have any gap between regions.
+
+The executable memory should be placed at the highest address in the memory as possible. ASLR wise, the executable
+memory should be placed at the overall high address in the memory.
+
+The executable memory must not be placed in the memory not considered free in the EFI memory map. It is recommended to
+use the EFI allocators to allocate the executable memory.
+
+### 11.2 Lower Half
 
 This region must not be mapped to any physical address when the control is transferred to the executable.
 
-### 11.2 Higher Half
+### 11.3 Higher Half
 
-This region is mapped to the physical address with offset.
+This region is mapped to every physical address with an offset.
 
 The offset is the base address of the higher half.
 
+The bootloader must configure the paging table to only allow privileged access to the higher half.
+
+This formula must always be true at the entry point of the executable:
+
 `Virtual Address = Physical Address + Higher Half Base`
+
+The offset can be obtained from the `kb_memory_map` structure as described in [section 7](#7-kuro-memory-map).
 
 ## Appendix A: Bootloader Identifier String
 
