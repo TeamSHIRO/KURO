@@ -280,7 +280,7 @@ typedef struct {
     uint64_t km_map_size;
     uint64_t km_desc_size;
     uint32_t km_desc_version;
-    uint64_t km_mem_offset;
+    uint64_t km_higher_half_base;
 } KuroMemoryMap;
 ```
 
@@ -303,12 +303,10 @@ Specifies the size of each memory descriptor in bytes.
 
 Specifies the version of the memory descriptor structure as defined in the UEFI specification[^2].
 
-#### km_mem_offset
+#### km_higher_half_base
 
-Specifies the offset used to calculate the virtual address of a physical address.
+Specifies the base address of the higher half in the physical address.
 See [section 11.2](#112-higher-half) for more information.
-
-This is the base address of the higher half.
 
 ## 8. KURO Module
 
@@ -504,9 +502,6 @@ field in the ELF program header[^1] for the segment.
 
 ## 11. Memory Layout
 
-> [!NOTE]
-> This section needs more consideration and is under development.
-
 The bootloader must arrange the memory layout as shown down below.
 
 The following diagram shows the memory layout:
@@ -515,13 +510,10 @@ PLACEHOLDER – put the diagram here
 
 ![Memory layout diagram](res/kuro_memlay.png)
 
-The bootloader must configure the virtual address space to the maximum size supported by the hardware.
+The bootloader should configure the virtual address space to the maximum size supported by the hardware. When there is a
+bigger available virtual address space, the bootloader should use the biggest one.
 
 The bootloader must use the smallest page size supported by the hardware.
-
-divided into two regions:
-
-A lower region and a higher region, where the split is architecture-dependent.
 
 ### 11.1 Lower Half
 
