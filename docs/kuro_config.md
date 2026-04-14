@@ -4,14 +4,6 @@ Instead of having a separate configuration file, KURO has a configuration at the
 
 The configuration is appended to the end of the executable. It is a binary blob that contains the following information:
 
-- Magic number: A fixed value that identifies the configuration as a KURO configuration.
-- Version: The version of the configuration format.
-- Executable path: The path to the executable.
-- Public key present: Whether KURO has a public key or not, If not, KURO will enter unsecure mode and will not verify
-  the executable's signature.
-- Public key: The public key of the executable, used for signature verification.
-- ASLR: Whether should KURO load the executable with ASLR enabled.
-
 Total size: 554 bytes.
 
 ```c++
@@ -68,8 +60,10 @@ Any other undefined version number is considered reserved for future use.
 
 `1` if the KURO has a public key, `0` otherwise.
 
-If KURO has no public key, it will enter unsecure mode and will not verify the executable's signature. This is useful
+If KURO has no public key, it will enter insecure mode and will not verify the executable's signature. This is useful
 for development purposes but should not be used in production.
+
+Insecure mode is not allowed when secure boot is enabled.
 
 #### aslr_enabled
 
