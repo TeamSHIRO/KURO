@@ -132,8 +132,10 @@ typedef struct {
 The signature is an Ed25519[^3] signature of the executable to verify its authenticity. The signature is calculated over
 the entire executable file, excluding the KURO footer itself.
 
-Every file loaded by the bootloader must have a KURO footer, and the bootloader must verify the signature of the file
-before loading it.
+The bootloader must verify the signature of the file before loading it fully except for when the UEFI secure boot is
+disabled.
+
+The bootloader must ensure that the public key and configuration are not tampered with.
 
 #### k_identifier
 
@@ -142,8 +144,7 @@ As described in [section 4.1](#4-kuro-identifier).
 ## 4. KURO Identifier
 
 KURO identifier is a fixed-size structure that contains the magic number and version information used to identify the
-executable as a KURO executable and to verify that the argument passed to the executable is valid. The KURO identifier
-is located at the beginning of the KURO footer and KURO executable information and contains the following fields:
+validity of a file and structure.
 
 ```c++
 typedef struct {
@@ -159,11 +160,9 @@ typedef struct {
 
 #### k_magic
 
-The first five bytes of the KURO identifier are used to identify the executable as a KURO executable.
 The magic number is `0x7F` followed by `KURO` in ASCII, which is `0x4B 0x55 0x52 0x4F` in hexadecimal.
 
-The bootloader must verify that the magic number in the KURO identifier matches the expected value before loading the
-executable. If the magic number does not match, the bootloader must reject the executable and not load it.
+If the magic number does not match the expected magic number, it must not be loaded.
 
 | Byte     | Value  |
 |----------|--------|
@@ -178,7 +177,7 @@ executable. If the magic number does not match, the bootloader must reject the e
 The sixth byte of the KURO identifier is used to identify the version of the KURO boot protocol used by the
 executable.
 
-If the version does not match the expected version, the bootloader must reject the executable and not load it.
+If the version does not match the supported version, it must not be loaded.
 
 Any other undefined version number is considered reserved for future use.
 
@@ -194,8 +193,8 @@ Information regarding the legacy boot protocols can be found in [appendix B](#ap
 ## 5. Calling Convention and Registers
 
 As before the bootloader transfers control to the entry point of the executable, the bootloader must prepare the
-boot information structure and pass it to the executable following the ABI/Calling
-Convention in the register for each architecture.
+boot information structure and pass it to the executable following the ABI/calling convention in the register for each
+architecture.
 
 ### 5.1 x86-64 Registers
 
