@@ -99,8 +99,6 @@ A valid KURO executable must be a Position-independent executable (PIE).
 
 The following diagram shows an example structure of a KURO executable:
 
-PLACEHOLDER – put the diagram here
-
 ![Executable structure diagram](res/kuro_execstruct.png)
 
 - The executable must be a position-independent executable (PIE) with ELF header field `e_type` set to `ET_DYN`.
@@ -338,8 +336,6 @@ The bootloader must verify the KURO footer and then load the module into memory 
 
 The structure of a module can be found in the following diagram:
 
-PLACEHOLDER – put the diagram here
-
 ![Module structure diagram](res/kuro_modstruct.png)
 
 The KURO footer is described in [section 3](#3-kuro-footer).
@@ -503,13 +499,7 @@ field in the ELF program header[^1] for the segment.
 
 ## 11. Memory Layout
 
-The bootloader must arrange the memory layout as shown down below.
-
-The following diagram shows the memory layout:
-
-PLACEHOLDER – put the diagram here
-
-![Memory layout diagram](res/kuro_memlay.png)
+The bootloader must arrange the memory layout as described down below.
 
 The bootloader should configure the virtual address space to the maximum size supported by the hardware. When there is a
 bigger available virtual address space, the bootloader should use the biggest one.
