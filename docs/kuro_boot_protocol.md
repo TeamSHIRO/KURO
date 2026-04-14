@@ -240,6 +240,8 @@ See [appendix A](#appendix-a-bootloader-identifier-string) for the list of boot 
 Points to a null-terminated string that contains the command line passed to the executable.
 The command line is passed to the executable as-is and does not contain any modifications.
 
+This field can be null if no command line is passed to the executable.
+
 #### kb_system_table
 
 Pointer to the EFI system table. Please refer to the UEFI specification[^2] for more information about the EFI system table.
@@ -513,6 +515,9 @@ The bootloader should configure the virtual address space to the maximum size su
 bigger available virtual address space, the bootloader should use the biggest one.
 
 The bootloader must use the smallest page size supported by the hardware.
+
+The bootloader must set the virtual address map in UEFI Virtual Memory Services (`SetVirtualAddressMap()`) to the higher
+half to ensure that the UEFI Runtime Services are usable.
 
 ### 11.1 Lower Half
 
