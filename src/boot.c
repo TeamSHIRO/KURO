@@ -41,44 +41,44 @@ static void fetch_gop_highest_mode(EFI_GRAPHICS_OUTPUT_PROTOCOL *gop, UINTN *mod
     }
 }
 
-static ErrorStatus prepare_framebuffer(KuroExecutableInfo *info, const EFI_SYSTEM_TABLE *system_table) {
-    EFI_STATUS status;
-    EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-    EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
+// static ErrorStatus prepare_framebuffer(KuroExecutableInfo *info, const EFI_SYSTEM_TABLE *system_table) {
+//     EFI_STATUS status;
+//     EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+//     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
 
-    status = system_table->BootServices->LocateProtocol(&gop_guid, NULL, (void **) &gop);
-    if (status != EFI_SUCCESS || gop == NULL || gop->Mode == NULL || gop->Mode->Info == NULL) {
-        system_table->BootServices->FreePool(info->ke_segments);
-        ErrorStatus error = {.error_code = EFI_ERR(EFI_LOAD_ERROR), .status = Framebuffer_PrepareFailed};
-        throw_error((EFI_SYSTEM_TABLE *) system_table, error);
-        return error;
-    }
+//     status = system_table->BootServices->LocateProtocol(&gop_guid, NULL, (void **) &gop);
+//     if (status != EFI_SUCCESS || gop == NULL || gop->Mode == NULL || gop->Mode->Info == NULL) {
+//         system_table->BootServices->FreePool(info->ke_segments);
+//         ErrorStatus error = {.error_code = EFI_ERR(EFI_LOAD_ERROR), .status = Framebuffer_PrepareFailed};
+//         throw_error((EFI_SYSTEM_TABLE *) system_table, error);
+//         return error;
+//     }
 
-    // Finds the highest supported graphic mode and switches to it. Now we can REALLY say caught in 4K!
-    UINTN graphic_mode = 0;
-    fetch_gop_highest_mode(gop, &graphic_mode, system_table);
-    status = gop->SetMode(gop, graphic_mode);
-    if (status != EFI_SUCCESS) {
-        system_table->BootServices->FreePool(info->ke_segments);
-        ErrorStatus error = {.error_code = status, .status = Framebuffer_ModeFetchFailed};
-        throw_error((EFI_SYSTEM_TABLE *) system_table, error);
-        return error;
-    }
+//     // Finds the highest supported graphic mode and switches to it. Now we can REALLY say caught in 4K!
+//     UINTN graphic_mode = 0;
+//     fetch_gop_highest_mode(gop, &graphic_mode, system_table);
+//     status = gop->SetMode(gop, graphic_mode);
+//     if (status != EFI_SUCCESS) {
+//         system_table->BootServices->FreePool(info->ke_segments);
+//         ErrorStatus error = {.error_code = status, .status = Framebuffer_ModeFetchFailed};
+//         throw_error((EFI_SYSTEM_TABLE *) system_table, error);
+//         return error;
+//     }
 
-    info->ke_framebuffer.kf_base = (uint64_t) gop->Mode->FrameBufferBase;
-    info->ke_framebuffer.kf_size = (uint64_t) gop->Mode->FrameBufferSize;
-    info->ke_framebuffer.kf_width = gop->Mode->Info->HorizontalResolution;
-    info->ke_framebuffer.kf_height = gop->Mode->Info->VerticalResolution;
-    info->ke_framebuffer.kf_pixels_per_scanline = gop->Mode->Info->PixelsPerScanLine;
-    info->ke_framebuffer.kf_pixel_format = (uint32_t) gop->Mode->Info->PixelFormat;
-    info->ke_framebuffer.kf_red_mask = gop->Mode->Info->PixelInformation.RedMask;
-    info->ke_framebuffer.kf_green_mask = gop->Mode->Info->PixelInformation.GreenMask;
-    info->ke_framebuffer.kf_blue_mask = gop->Mode->Info->PixelInformation.BlueMask;
-    info->ke_framebuffer.kf_reserved_mask = gop->Mode->Info->PixelInformation.ReservedMask;
+//     info->ke_framebuffer.kf_base = (uint64_t) gop->Mode->FrameBufferBase;
+//     info->ke_framebuffer.kf_size = (uint64_t) gop->Mode->FrameBufferSize;
+//     info->ke_framebuffer.kf_width = gop->Mode->Info->HorizontalResolution;
+//     info->ke_framebuffer.kf_height = gop->Mode->Info->VerticalResolution;
+//     info->ke_framebuffer.kf_pixels_per_scanline = gop->Mode->Info->PixelsPerScanLine;
+//     info->ke_framebuffer.kf_pixel_format = (uint32_t) gop->Mode->Info->PixelFormat;
+//     info->ke_framebuffer.kf_red_mask = gop->Mode->Info->PixelInformation.RedMask;
+//     info->ke_framebuffer.kf_green_mask = gop->Mode->Info->PixelInformation.GreenMask;
+//     info->ke_framebuffer.kf_blue_mask = gop->Mode->Info->PixelInformation.BlueMask;
+//     info->ke_framebuffer.kf_reserved_mask = gop->Mode->Info->PixelInformation.ReservedMask;
 
-    ErrorStatus success = {.error_code = EFI_SUCCESS, .status = Success};
-    return success;
-}
+//     ErrorStatus success = {.error_code = EFI_SUCCESS, .status = Success};
+//     return success;
+// }
 
 // This function loads the executable into memory
 // after calling, the `info` arg will point to KuroExecutableInfo. The segment field is heap-allocated, managed by the
@@ -327,11 +327,11 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         return errStatus;
     }
 
-    errStatus = prepare_framebuffer(&executable_info, system_table);
-    if (errStatus.status != Success) {
-        file_protocol->Close(file_protocol);
-        return errStatus;
-    }
+    // errStatus = prepare_framebuffer(&executable_info, system_table);
+    // if (errStatus.status != Success) {
+    //     file_protocol->Close(file_protocol);
+    //     return errStatus;
+    // }
 
     to_hex(executable_info.ke_entry_point, str);
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"Jumping to: ");

@@ -52,7 +52,7 @@ typedef struct {
     uint64_t ke_stack_start;
     uint64_t ke_stack_end;
     uint64_t ke_stack_size;
-    KuroFramebuffer ke_framebuffer;
+    // KuroFramebuffer ke_framebuffer;
 } KuroExecutableInfo;
 
 ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);
