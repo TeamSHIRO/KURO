@@ -557,6 +557,8 @@ half to ensure that the UEFI Runtime Services are usable.
 
 The executable memory and the memory layout are laid out as shown in the following diagram:
 
+error in diagram, please fix.
+
 ![Executable memory layout](res/kuro_memlayout.png)
 
 Each region is separated by a page boundary, and each region is defined in order from high to low as follows:
