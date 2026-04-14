@@ -1,22 +1,79 @@
 # KURO Config
 
-Instead of having a separate configuration file, KURO has a configuration at the end of the KURO executable itself.
+KURO stores its configuration at the end of the executable instead of using a separate configuration file.
 
-The configuration is appended to the end of the executable. It is a binary blob that contains the following information:
+The configuration is appended to the executable as a binary blob with the following layout:
 
-Total size: 554 bytes.
-
+**Total size:** 48 bytes
 ```c++
 typedef struct {
     uint8_t has_public_key;
     uint8_t aslr_enabled;
     uint8_t public_key[32];
-    uint16_t executable_path[256];
+    char padding[2];
+    uint32_t str_offset;
     KuroIdentifier identifier;
 } KuroConfig;
 ```
+## Fields
 
-#### identifier
+### `has_public_key`
+
+- `1` if KURO has a public key
+- `0` otherwise
+
+If KURO has no public key, it enters insecure mode and does not verify the executable signature.  
+This is useful for development but should not be used in production.
+
+Insecure mode is not allowed when secure boot is enabled.
+
+### `aslr_enabled`
+
+- `1` to enable ASLR
+- `0` to disable ASLR
+
+When enabled, KURO loads the executable at a random physical address each time it boots.
+
+### `public_key`
+
+The Ed25519 public key is used to verify the executable signature.
+
+If `has_public_key` is `0`, this field is ignored.
+
+### `str_offset`
+
+Relative offset to the string table.
+
+`EOF - 48 - str_offset = String Table`
+
+> [!NOTE]
+> 48 is the size of the `KuroConfig` struct.
+
+## String Table
+
+The string table appears before the KURO configuration blob and contains the following strings in order:
+
+1. Path to the executable
+2. Path to the module
+3. Command-line arguments
+
+All strings are null-terminated UTF-8 strings.
+
+Example:
+
+All three strings are:
+- `\kuro`
+- `\mod`
+- `arg1 arg2`
+
+| Offset  | `0x00` | `0x01` | `0x02` | `0x03` | `0x04` | `0x05` | `0x06` | `0x07` | `0x08` | `0x09` | `0x0A` | `0x0B` | `0x0C` | `0x0D` | `0x0E` | `0x0F` | `0x10` |
+|---------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+| String  | `\`    | `k`    | `u`    | `r`    | `o`    | `\0`   | `\`    | `m`    | `o`    | `d`    | `\0`   | `-`    | `a`    | `r`    | `g`    | `s`    | `\0`   |
+
+> [!IMPORTANT]
+> If a string is empty, its place must be occupied by a null terminator (`\0`).
+
+## `KuroIdentifier`
 
 ```c++
 typedef struct {
@@ -26,18 +83,19 @@ typedef struct {
     char k_magic3;
     char k_magic4;
     uint8_t k_version;
-    uint16_t k_reserved;
+    char k_reserved[2];
 } KuroIdentifier;
 ```
+### `k_magic`
 
-#### k_magic
+The magic value is a fixed sequence of bytes:
 
-The first five bytes of the KURO identifier are used to identify the executable as a KURO executable. The magic number
-is a unique sequence of bytes that is used to identify the executable as a KURO executable. The magic number is `0x7F`
-followed by `KURO` in ASCII, which is `0x4B 0x55 0x52 0x4F` in hexadecimal.
-
-The bootloader must verify that the magic number in the KURO identifier matches the expected value before loading the
-executable. If the magic number does not match, the bootloader must reject the executable and not load it.
+- `0x7F`
+- `KURO` in ASCII, which corresponds to:
+  - `0x4B`
+  - `0x55`
+  - `0x52`
+  - `0x4F`
 
 | Byte     | Value  |
 |----------|--------|
@@ -47,39 +105,12 @@ executable. If the magic number does not match, the bootloader must reject the e
 | k_magic3 | `0x52` |
 | k_magic4 | `0x4F` |
 
-#### k_version
+### `k_version`
 
-Any other undefined version number is considered reserved for future use.
+Any undefined version number is reserved for future use.
 
 | Version | Description                      |
 |---------|----------------------------------|
-| `0`     | Invalid version (never used)     |
+| `0`     | Invalid version                  |
 | `1`     | KURO Configuration Version `1.0` |
-
-#### has_public_key
-
-`1` if the KURO has a public key, `0` otherwise.
-
-If KURO has no public key, it will enter insecure mode and will not verify the executable's signature. This is useful
-for development purposes but should not be used in production.
-
-Insecure mode is not allowed when secure boot is enabled.
-
-#### aslr_enabled
-
-`1` if ASLR should be enabled, `0` otherwise. If ASLR is enabled, KURO will load the executable at a random address each
-time it is booted. This is a security feature that makes it harder for attackers to exploit vulnerabilities in the
-executable.
-
-#### public_key
-
-Ed25519 public key of the executable. Used for signature verification. If `has_public_key` is `0`, this field is
-ignored.
-
-#### executable_path
-
-A 256-byte array containing the path to the executable which is null-terminated.
-
-The character stored in this array must be UTF-16 encoded.
-
-Path separators are `\` following the UEFI specification, the path is case-insensitive.
+| `2`     | KURO Configuration Version `2.0` |
