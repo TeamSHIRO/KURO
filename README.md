@@ -13,16 +13,15 @@ A minimal secure UEFI bootloader to load executables in the ELF format using KUR
 
 ## Features
 
-- Loads ELF executables using the KURO booting convention
-- Minimal and secure codebase
+- Loads ELF executables using the KURO boot protocol 
+- Modern and secure design
 - UEFI specification compliant
-- Monolithic design for simplicity and performance
-- Customizable for kernel developers
+- Monolithic design for security, simplicity, and performance
 
 ## For Developers
 
 Please read the [**KURO boot protocol**](docs/kuro_boot_protocol.md) for details on how to develop an
-application that uses KURO booting convention.
+application that uses KURO boot protocol.
 
 ## Building
 
