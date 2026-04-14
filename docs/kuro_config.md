@@ -58,6 +58,7 @@ The string table appears before the KURO configuration blob and contains the fol
 3. Command-line arguments
 
 All strings are null-terminated UTF-8 strings.
+Path separators are always `\`.
 
 Example:
 
