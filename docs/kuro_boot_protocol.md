@@ -201,6 +201,8 @@ As before the bootloader transfers control to the entry point of the executable,
 boot information structure and pass it to the executable following the ABI/calling convention in the register for each
 architecture.
 
+The return address must be null at the time the control is transferred to the executable.
+
 ### 5.1 x86-64 Registers
 
 Following the System V AMD64 ABI[^4].
@@ -453,22 +455,22 @@ Points to an array of `KuroSegmentInfo` structures as defined in [section 10.1](
 
 Specifies the top of the stack at the time the control is transferred to the executable in virtual address.
 
-Following the ABI/calling convention, the alignment of the stack must be misaligned by at least eight bytes as shown in
+##### x86-64
+
+Following the System V ABI, the alignment of the stack must be misaligned by at least eight bytes as shown in
 the following formula:
 
 ```text
 ke_stack_start % 16 = 8
 ```
 
+##### ARM64
+
+for ARM64 however, the `ke_stack_start` must be aligned to `16` bytes.
+
 #### ke_stack_size
 
-This field contains the remaining size of the stack counting from the `ke_stack_start` address.
-
-The following formula must always be true at the time the control is transferred to the executable:
-
-```text
-(ke_stack_start - the end of the program stack region) % 16 = 8
-```
+This field contains the remaining size of the stack counting from the `ke_stack_start` address to the end of the program stack region.
 
 ### 10.1 KuroSegmentInfo
 
@@ -542,7 +544,7 @@ The executable region must contain the executable code and data.
 
 The program stack must be located below the executable code and data pages.
 
-Below the program stack is the boot information region which must contain the information that is passed to the
+Below the program stack is the boot information region which must contain the information passed to the
 executable both explicitly and implicitly, including but not limited to:
 
 - KuroBootInfo
