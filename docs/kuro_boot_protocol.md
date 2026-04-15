@@ -255,8 +255,6 @@ Even though the system table is a pointer that points to the EFI system table in
 the system table will be handed to the executable as-is, which means that the executable must fix the pointers inside
 the system table to be in the higher half of the address space by offsetting them by the `km_higher_half_base` value.
 
-The bootloader must call `ExitBootServices()` before tranferring control to the executable.
-
 #### kb_memory_map
 
 Pointer to the memory map structure.
@@ -569,18 +567,16 @@ Each region is separated by a page boundary, and each region is defined in order
 
 Each region must not overlap and must be big enough to contain the contents of the region.
 
-The program stack is located below the executable code and data pages.
+The executable region must contain the executable code and data.
+
+The program stack must be located below the executable code and data pages.
 
 Below the program stack is the boot information region which must contain the information that is passed to the
-executable, including but not limited to memory map, module, framebuffer, and executable information.
-An exception to this is the `EFI_SYSTEM_TABLE` which may be located anywhere in the memory, not limited to the boot
-information region but must not be inside the executable, program stack, or the region that is not considered free
-in the EFI memory map.
+executable, including but not limited to memory map, module, framebuffer, EFI system table, and executable information.
 
 The executable memory is contiguous and must not have any gap between regions.
 
-The executable memory should be placed at the highest address in the memory as possible. ASLR wise, the executable
-memory should be placed at the overall high address in the memory.
+The executable memory should be placed at the highest address in the memory as possible and all of the region must be null-initialized.
 
 The executable memory must not be placed in the memory not considered free in the EFI memory map. It is recommended to
 use the EFI allocators to allocate the executable memory.
