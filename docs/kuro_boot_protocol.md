@@ -7,7 +7,7 @@
 
 ***Revision `1` Errata `A`***
 
-**2026-04-14**
+**2026-04-15**
 
 ## Table of Contents
 
@@ -28,8 +28,6 @@
 7. [KURO Memory Map](#7-kuro-memory-map)
 8. [KURO Module](#8-kuro-module)
 9. [KURO Framebuffer](#9-kuro-framebuffer)
-    1. [KURO Pixel Format](#91-kuro-pixel-format)
-    2. [KURO Pixel Information](#92-kuro-pixel-information)
 10. [KURO Executable Information](#10-kuro-executable-information)
     1. [KuroSegmentInfo](#101-kurosegmentinfo)
 11. [Memory Layout](#11-memory-layout)
@@ -291,10 +289,10 @@ typedef struct {
     uint64_t km_desc_size;
     uint32_t km_desc_version;
     uintptr_t km_higher_half_base;
-    uintptr_t km_execmem_base;
     uint64_t km_execmem_size;
     uint64_t km_progstack_size;
     uint64_t km_bootinfo_size;
+    uintptr_t km_bootinfo_base;
 } KuroMemoryMap;
 ```
 
@@ -324,27 +322,22 @@ Specifies the version of the memory descriptor structure as defined in the UEFI 
 Specifies the base address of the higher half.
 See [section 11.3](#113-higher-half) for more information.
 
-#### km_execmem_base
-
-Specifies the base address of the executable region in the virtual address.
-See [section 11.1](#111-executable-memory) for more information.
-
-This field must be aligned to the page boundary (`km_executable_mem_base % 0x1000 == 0`).
-
 #### km_execmem_size
 
 Specifies the size of the executable region in bytes.
-This field must be divisible by the page size (`km_execmem_size % 0x1000 == 0`).
 
 #### km_progstack_size
 
 Specifies the size of the program stack region in bytes.
-This field must be divisible by the page size (`km_progstack_size % 0x1000 == 0`).
 
 #### km_bootinfo_size
 
 Specifies the size of the boot information region in bytes.
-This field must be divisible by the page size (`km_bootinfo_size % 0x1000 == 0`).
+
+#### km_bootinfo_base
+
+Specifies the base address of the boot information region in the virtual address.
+See [section 11.1](#111-executable-memory) for more information.
 
 ## 8. KURO Module
 
@@ -391,10 +384,13 @@ typedef struct {
     uint32_t kf_width;
     uint32_t kf_height;
     uint32_t kf_pixels_per_scanline;
-    KuroPixelFormat kf_pixel_format;
-    KuroPixelInfo kf_pixel_info;
+    EFI_GRAPHICS_PIXEL_FORMAT kf_pixel_format;
+    EFI_PIXEL_BITMASK kf_pixel_info;
 } KuroFramebuffer;
 ```
+
+> [!TIP]
+> This structure is heavily dependent on the UEFI specification[^2],
 
 #### kf_base
 
@@ -418,40 +414,11 @@ Specifies the number of pixels per scanline.
 
 #### kf_pixel_format
 
-As described in [section 9.1](#91-kuro-pixel-format).
+As defined in the UEFI specification[^2].
 
 #### kf_pixel_info
 
-As described in [section 9.2](#92-kuro-pixel-information).
-
-### 9.1 KURO Pixel Format
-
-```c++
-typedef enum {
-    PixelRedGreenBlueReserved8BitPerColor,
-    PixelBlueGreenRedReserved8BitPerColor,
-    PixelBitMask,
-    PixelBltOnly,
-    PixelFormatMax
-} KuroPixelFormat;
-```
-
-> [!NOTE]
-> Please refer to the UEFI specification[^2] for more information about `EFI_GRAPHICS_PIXEL_FORMAT`
-
-### 9.2 KURO Pixel Information
-
-```c++
-typedef struct {
-    uint32_t kp_red_mask;
-    uint32_t kp_green_mask;
-    uint32_t kp_blue_mask;
-    uint32_t kp_reserved_mask;
-} KuroPixelInfo;
-```
-
-> [!NOTE]
-> Please refer to the UEFI specification[^2] for more information about `EFI_PIXEL_BITMASK`
+As defined in the UEFI specification[^2].
 
 ## 10. KURO Executable Information
 
@@ -555,8 +522,6 @@ half to ensure that the UEFI Runtime Services are usable.
 
 The executable memory and the memory layout are laid out as shown in the following diagram:
 
-error in diagram, please fix.
-
 ![Executable memory layout](res/kuro_memlayout.png)
 
 Each region is separated by a page boundary, and each region is defined in order from high to low as follows:
@@ -572,11 +537,17 @@ The executable region must contain the executable code and data.
 The program stack must be located below the executable code and data pages.
 
 Below the program stack is the boot information region which must contain the information that is passed to the
-executable, including but not limited to memory map, module, framebuffer, EFI system table, and executable information.
+executable both explicitly and implicitly, including but not limited to:
+- Memory map
+- Module
+- Framebuffer
+- EFI system table
+- Executable information
 
 The executable memory is contiguous and must not have any gap between regions.
 
-The executable memory should be placed at the highest address in the memory as possible and all of the region must be null-initialized.
+The executable memory should be placed at the highest address in the memory as possible, and all the regions must be
+null-initialized.
 
 The executable memory must not be placed in the memory not considered free in the EFI memory map. It is recommended to
 use the EFI allocators to allocate the executable memory.
@@ -587,15 +558,15 @@ This region must not be mapped to any physical address when the control is trans
 
 ### 11.3 Higher Half
 
-This region is mapped to every physical address with an offset.
-
-The offset is the base address of the higher half.
+This region is mapped to every physical address with an offset, and the offset is the base address of the higher half.
 
 The bootloader must configure the paging table to only allow privileged access to the higher half.
 
-This formula must always be true at the entry point of the executable:
+This formula must always be true at the time the control is transferred to the executable:
 
-`Virtual Address = Physical Address + Higher Half Base`
+```text
+Virtual Address = Physical Address + Higher Half Base
+```
 
 The offset can be obtained from the `kb_memory_map` structure as described in [section 7](#7-kuro-memory-map).
 
@@ -619,7 +590,7 @@ should never be used. Those revisions are now considered legacy and the count is
 
 ## Appendix C: Changes
 
-- `Legacy 1.0` - Initial release.
+- `Legacy 1.0` – Initial release.
 - `Legacy 2.0`
     - Added support for passing arbitrary data to the executable. This allows the bootloader to pass data depending on
       the bootloader implementation.
@@ -671,17 +642,11 @@ https://github.com/TeamSHIRO/KURO/blob/main/docs/kuro_boot_protocol.md.
 
 Copyright 2026 TheMonHub
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This work is licensed under a
+[Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/) License.
 
-       http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+![CC](https://mirrors.creativecommons.org/presskit/icons/cc.png)
+![BY](https://mirrors.creativecommons.org/presskit/icons/by.png)
 
 ## References
 
