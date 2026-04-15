@@ -559,6 +559,7 @@ executable both explicitly and implicitly, including but not limited to:
 - KuroFramebuffer
 - KuroExecutableInfo
 - EFI_SYSTEM_TABLE
+- Page table
 
 The executable memory should be placed at the highest address in the memory as possible, and all the regions must be
 null-initialized first beforehand.
