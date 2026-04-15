@@ -499,7 +499,7 @@ More information about the flags can be found in the ELF specification[^1].
 
 #### ks_address
 
-Specifies the address of the segment in physical address.
+Specifies the address of the segment in virtual address.
 
 #### ks_size
 
