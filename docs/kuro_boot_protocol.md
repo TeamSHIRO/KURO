@@ -110,6 +110,10 @@ The following diagram shows an example structure of a KURO executable:
 
 - The executable must be a position-independent executable (PIE) with ELF header field `e_type` set to `ET_DYN`.
 - The executable must contain a KURO footer at the end of the file.
+- Every `p_align` field must be one of the following:
+    - `0`
+    - `1`
+    - `0x1000`
 
 The bootloader must verify the ELF header and KURO footer to ensure that the executable is a valid KURO executable.
 
