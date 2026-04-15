@@ -328,24 +328,24 @@ See [section 11.3](#113-higher-half) for more information.
 
 #### km_execmem_base
 
-Specifies the base address of the executable memory in the virtual address.
+Specifies the base address of the executable region in the virtual address.
 See [section 11.1](#111-executable-memory) for more information.
 
 This field must be aligned to the page boundary (`km_executable_mem_base % 0x1000 == 0`).
 
 #### km_execmem_size
 
-Specifies the size of the executable memory in bytes.
+Specifies the size of the executable region in bytes.
 This field must be divisible by the page size (`km_execmem_size % 0x1000 == 0`).
 
 #### km_progstack_size
 
-Specifies the size of the program stack in bytes.
+Specifies the size of the program stack region in bytes.
 This field must be divisible by the page size (`km_progstack_size % 0x1000 == 0`).
 
 #### km_bootinfo_size
 
-Specifies the size of the boot information structure in bytes.
+Specifies the size of the boot information region in bytes.
 This field must be divisible by the page size (`km_bootinfo_size % 0x1000 == 0`).
 
 ## 8. KURO Module
