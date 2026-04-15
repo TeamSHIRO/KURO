@@ -98,6 +98,8 @@ All the fields must not be null or 0 unless stated otherwise.
 
 All the pointers are fixed to be in the higher half of the address space by the bootloader unless stated otherwise.
 
+Any type that starts with `EFI_` is an UEFI type and is defined in the UEFI specification[^2].
+
 ## 2. Executable Structure
 
 A valid KURO executable must be a Position-independent executable (PIE).
@@ -324,20 +326,20 @@ See [section 11.3](#113-higher-half) for more information.
 
 #### km_execmem_size
 
-Specifies the size of the executable region in bytes.
+Specifies the size of the executable region in pages.
+For more information about this field and the three other fields below, see [section 11.1](#111-executable-memory).
 
 #### km_progstack_size
 
-Specifies the size of the program stack region in bytes.
+Specifies the size of the program stack region in pages.
 
 #### km_bootinfo_size
 
-Specifies the size of the boot information region in bytes.
+Specifies the size of the boot information region in pages.
 
 #### km_bootinfo_base
 
 Specifies the base address of the boot information region in the virtual address.
-See [section 11.1](#111-executable-memory) for more information.
 
 ## 8. KURO Module
 
@@ -390,7 +392,7 @@ typedef struct {
 ```
 
 > [!TIP]
-> This structure is heavily dependent on the UEFI specification[^2],
+> This structure is heavily dependent on the UEFI specification[^2].
 
 #### kf_base
 
@@ -449,12 +451,24 @@ Points to an array of `KuroSegmentInfo` structures as defined in [section 10.1](
 
 #### ke_stack_start
 
-Specifies the top of the stack at the time the control is transferred to the executable.
+Specifies the top of the stack at the time the control is transferred to the executable in virtual address.
+
+Following the ABI/calling convention, the alignment of the stack must be misaligned by at least eight bytes as shown in
+the following formula:
+
+```text
+ke_stack_start % 16 = 8
+```
 
 #### ke_stack_size
 
-Specifies the size of the stack in bytes available at the entry point. The stack size is implementation-defined but must
-be the multiple of the page size.
+This field contains the remaining size of the stack counting from the `ke_stack_start` address.
+
+The following formula must always be true at the time the control is transferred to the executable:
+
+```text
+(ke_stack_start - the end of the program stack region) % 16 = 8
+```
 
 ### 10.1 KuroSegmentInfo
 
@@ -473,20 +487,11 @@ typedef struct {
 ```
 
 > [!TIP]
-> This structure depends heavily on the ELF program header structure, so it is recommended to read the ELF
-> specification[^1] to understand how the ELF program header structure is used.
+> This structure depends heavily on the ELF program header in the ELF specification[^1].
 
 #### ks_flags
 
-Specifies the permissions of the segment. The permissions are defined as follows:
-
-| Name        | Value        | Meaning     |
-|-------------|--------------|-------------|
-| PF_X        | `0x1`        | Execute     |
-| PF_W        | `0x2`        | Write       |
-| PF_R        | `0x4`        | Read        |
-| PF_MASKOS   | `0x0FF00000` | Unspecified |
-| PF_MASKPROC | `0xF0000000` | Unspecified |
+Specifies the permissions of the segment.
 
 More information about the flags can be found in the ELF specification[^1].
 
@@ -516,7 +521,7 @@ The bootloader must set the page size to `4` KiB.
 The permissions must be set to `RWX` for all pages.
 
 The bootloader must set the virtual address map in UEFI Virtual Memory Services (`SetVirtualAddressMap()`) to the higher
-half to ensure that the UEFI Runtime Services are usable.
+half to ensure that the UEFI Runtime Services are usable at the time the control is transferred to the executable.
 
 ### 11.1 Executable Memory
 
@@ -524,13 +529,14 @@ The executable memory and the memory layout are laid out as shown in the followi
 
 ![Executable memory layout](res/kuro_memlayout.png)
 
-Each region is separated by a page boundary, and each region is defined in order from high to low as follows:
+Each region is separated by a page boundary, and each region is defined in order from top to bottom as follows:
 
 - **Executable region** – Contains executable code and data
 - **Program stack region** – Contains program stack
 - **Boot information region** – Contains information that is being passed to the executable from the bootloader
 
 Each region must not overlap and must be big enough to contain the contents of the region.
+It must be contiguous and must not have gaps in between any of the regions.
 
 The executable region must contain the executable code and data.
 
@@ -538,16 +544,18 @@ The program stack must be located below the executable code and data pages.
 
 Below the program stack is the boot information region which must contain the information that is passed to the
 executable both explicitly and implicitly, including but not limited to:
-- Memory map
-- Module
-- Framebuffer
-- EFI system table
-- Executable information
 
-The executable memory is contiguous and must not have any gap between regions.
+- KuroBootInfo
+- `kb_cmdline`
+- `kb_boot_id`
+- KuroMemoryMap
+- KuroModule
+- KuroFramebuffer
+- KuroExecutableInfo
+- EFI_SYSTEM_TABLE
 
 The executable memory should be placed at the highest address in the memory as possible, and all the regions must be
-null-initialized.
+null-initialized first beforehand.
 
 The executable memory must not be placed in the memory not considered free in the EFI memory map. It is recommended to
 use the EFI allocators to allocate the executable memory.
@@ -655,7 +663,7 @@ in this document:
 
 [^1]: **ELF Executable and Linkable Format, Xinuos** – https://gabi.xinuos.com/elf/
 
-[^2]: **Unified Extensible Firmware Interface Specification, Version 2.11** – https://uefi.org/specs/UEFI/2.11/
+[^2]: **Unified Extensible Firmware Interface Specification, Version 2.11** – https://uefi.org/sites/default/files/resources/UEFI_Spec_Final_2.11.pdf
 
 [^3]: **Ed25519, Wikipedia** – https://en.wikipedia.org/wiki/EdDSA#Ed25519
 
