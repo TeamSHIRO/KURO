@@ -5,6 +5,7 @@ KURO stores its configuration at the end of the executable instead of using a se
 The configuration is appended to the executable as a binary blob with the following layout:
 
 **Total size:** 48 bytes
+
 ```c++
 typedef struct {
     uint8_t has_public_key;
@@ -15,9 +16,8 @@ typedef struct {
     KuroIdentifier identifier;
 } KuroConfig;
 ```
-## Fields
 
-### `has_public_key`
+#### has_public_key
 
 - `1` if KURO has a public key
 - `0` otherwise
@@ -27,20 +27,20 @@ This is useful for development but should not be used in production.
 
 Insecure mode is not allowed when secure boot is enabled.
 
-### `aslr_enabled`
+#### aslr_enabled
 
 - `1` to enable ASLR
 - `0` to disable ASLR
 
 When enabled, KURO loads the executable at a random physical address each time it boots.
 
-### `public_key`
+#### public_key
 
 The Ed25519 public key is used to verify the executable signature.
 
 If `has_public_key` is `0`, this field is ignored.
 
-### `str_offset`
+#### str_offset
 
 Relative offset to the string table.
 
@@ -65,7 +65,7 @@ Example:
 All three strings are:
 - `\kuro`
 - `\mod`
-- `arg1 arg2`
+- `-args`
 
 | Offset  | `0x00` | `0x01` | `0x02` | `0x03` | `0x04` | `0x05` | `0x06` | `0x07` | `0x08` | `0x09` | `0x0A` | `0x0B` | `0x0C` | `0x0D` | `0x0E` | `0x0F` | `0x10` |
 |---------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
@@ -74,7 +74,7 @@ All three strings are:
 > [!IMPORTANT]
 > If a string is empty, its place must be occupied by a null terminator (`\0`).
 
-## `KuroIdentifier`
+## KuroIdentifier
 
 ```c++
 typedef struct {
@@ -87,7 +87,7 @@ typedef struct {
     char k_reserved[2];
 } KuroIdentifier;
 ```
-### `k_magic`
+#### k_magic
 
 The magic value is a fixed sequence of bytes:
 
@@ -106,7 +106,7 @@ The magic value is a fixed sequence of bytes:
 | k_magic3 | `0x52` |
 | k_magic4 | `0x4F` |
 
-### `k_version`
+#### k_version
 
 Any undefined version number is reserved for future use.
 
