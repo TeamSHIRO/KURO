@@ -441,7 +441,7 @@ typedef struct {
 
 #### ke_entry_point
 
-This field contains the address to the entry point of the executable in physical address.
+This field contains the address to the entry point of the executable in virtual address.
 
 #### ke_segment_count
 
