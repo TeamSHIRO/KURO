@@ -34,6 +34,12 @@ typedef struct {
 } ErrorStatus;
 
 const CHAR16 *status_to_str(ErrorStatus status);
-void throw_error(EFI_SYSTEM_TABLE *system_table, ErrorStatus error);
+
+void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error);
+
+void k_warning(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message);
+void k_debug(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message);
+void k_info(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message);
+void k_success(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message);
 
 #endif // ERROR_H

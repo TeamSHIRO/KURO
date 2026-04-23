@@ -17,10 +17,6 @@ LOCAL_OVMF_CODE_PATH="ignore_automated/ovmf/OVMF_CODE.fd"
 REMOTE_OVMF_CODE_PATH="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
 BOOT_DIRECTORY="ignore_automated/esp/EFI/BOOT"
 BUILD_FILE_NAME="KUROX64"
-KERNEL_SOURCE_DIR="test-kernel"
-KERNEL_OUTPUT_FILE="test-kernel/build/kernel.bin"
-KERNEL_ESP_PATH="ignore_automated/esp/shiro.kernel"
-
 
 # Foreground colors
 T_BLACK='\033[0;30m'
@@ -69,16 +65,9 @@ else
     cp build/$BUILD_FILE_NAME.EFI $BOOT_DIRECTORY/BOOTX64.EFI
 fi
 
-cd "$PROJECT_ROOT/test_kernel" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-
 cd "$PROJECT_ROOT" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
 
 mkdir -p ignore_automated/esp
-
-
-cp test_kernel/build/kernel ignore_automated/esp/kernel
 
 echo -e "${B_BLUE} INFO ${A_RESET} Build completed. Attempting to launch QEMU..."
 
