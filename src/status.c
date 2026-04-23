@@ -114,10 +114,10 @@ const CHAR16 *efi_status_to_str(EFI_STATUS status) {
     }
 }
 
-void throw_error(EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
+void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_RED | EFI_WHITE);
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" ERR! ");
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTRED);
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_WHITE);
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" ");
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) status_to_str(error));
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTGRAY);
@@ -128,5 +128,41 @@ void throw_error(EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" (");
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) efi_status_to_str(error.error_code));
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L")\n\r");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTGRAY);
+}
+
+void k_warning(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_RED | EFI_YELLOW);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" WARN ");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, message);
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTGRAY);
+}
+
+void k_debug(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_LIGHTGRAY | EFI_BLACK);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" DBUG ");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, message);
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTGRAY);
+}
+
+void k_info(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLUE | EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" INFO ");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, message);
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTGRAY);
+}
+
+void k_success(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_GREEN | EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"  OK  ");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, message);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_BACKGROUND_BLACK | EFI_LIGHTGRAY);
 }
