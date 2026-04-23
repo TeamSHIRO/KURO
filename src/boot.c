@@ -130,7 +130,7 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
         }
     }
 
-    return (ErrorStatus) {.error_code = EFI_SUCCESS, .status = Success};
+    return (ErrorStatus){.error_code = EFI_SUCCESS, .status = Success};
 }
 
 // Fetches the current memory map to obtain a valid map key, then calls ExitBootServices.
@@ -162,7 +162,7 @@ static ErrorStatus exit_boot_services(EFI_HANDLE image_handle, const EFI_SYSTEM_
 
         status = bs->AllocatePool(EfiLoaderData, map_size, (void **) &map);
         if (status != EFI_SUCCESS) {
-            return (ErrorStatus) {.error_code = status, .status = System_AllocationFailed};
+            return (ErrorStatus){.error_code = status, .status = System_AllocationFailed};
         }
 
         // Second call: populate the map and obtain the current map key.
@@ -173,7 +173,7 @@ static ErrorStatus exit_boot_services(EFI_HANDLE image_handle, const EFI_SYSTEM_
         }
         if (status != EFI_SUCCESS) {
             bs->FreePool(map);
-            return (ErrorStatus) {.error_code = status, .status = System_AllocationFailed};
+            return (ErrorStatus){.error_code = status, .status = System_AllocationFailed};
         }
 
         // ExitBootServices returns EFI_INVALID_PARAMETER if the map key is already stale.
@@ -182,10 +182,10 @@ static ErrorStatus exit_boot_services(EFI_HANDLE image_handle, const EFI_SYSTEM_
         if (status != EFI_SUCCESS) {
             // ExitBootServices failed for some other reason.
             bs->FreePool(map);
-            return (ErrorStatus) {.error_code = status, .status = System_ExitBootServicesFailed};
+            return (ErrorStatus){.error_code = status, .status = System_ExitBootServicesFailed};
         }
 
-        return (ErrorStatus) {.error_code = EFI_SUCCESS, .status = Success};
+        return (ErrorStatus){.error_code = EFI_SUCCESS, .status = Success};
     }
 }
 
