@@ -5,12 +5,11 @@
 #include "elf.h"
 #include "file.h"
 #include "protocol/efi-fp.h"
-#include "protocol/efi-gop.h"
 #include "status.h"
 #include "string.h"
 #include "transfer_control.h"
 
-const char *boot_id = "KURO";
+const char *g_boot_id = "KURO";
 
 static void set_ident(KuroIdentifier *ident) {
     ident->k_magic0 = 0x7f;
@@ -22,30 +21,11 @@ static void set_ident(KuroIdentifier *ident) {
     ident->k_reserved = 0;
 }
 
-static void fetch_gop_highest_mode(EFI_GRAPHICS_OUTPUT_PROTOCOL *gop, UINTN *mode_buffer,
-                                   const EFI_SYSTEM_TABLE *system_table) {
-    UINTN max_width = 0;
-    UINTN max_height = 0;
-
-    for (UINTN i = 0; i < gop->Mode->MaxMode; ++i) {
-        EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info;
-        UINTN info_size;
-        if (gop->QueryMode(gop, i, &info_size, &info) == EFI_SUCCESS) {
-            if ((UINTN) info->HorizontalResolution * (UINTN) info->VerticalResolution > max_width * max_height) {
-                max_width = info->HorizontalResolution;
-                max_height = info->VerticalResolution;
-                *mode_buffer = i;
-            }
-            system_table->BootServices->FreePool(info);
-        }
-    }
-}
-
 // This function loads the executable into memory
 // after calling, the `info` arg will point to KuroExecutableInfo. The segment field is heap-allocated, managed by the
 // callee and automatically free on failure.
 static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, const EFI_SYSTEM_TABLE *system_table,
-                             const Elf64_Ehdr *ehdr, KuroExecutableInfo *info, const size_t alloc_size,
+                             const Elf64_Ehdr *ehdr, KuroExecutableInfo *info, const size_t ALLOC_SIZE,
                              size_t start_mem) {
     const char *kernel_addr = (char *) base_addr + STACK_SIZE;
 
@@ -62,11 +42,11 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
     k_debug(system_table, (CHAR16 *) L"Stack memory at: ");
     system_table->ConOut->OutputString(system_table->ConOut, str);
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"\r\n");
-    system_table->BootServices->SetMem((void *) base_addr, alloc_size, 0);
+    system_table->BootServices->SetMem((void *) base_addr, ALLOC_SIZE, 0);
 
     Elf64_Phdr phdr;
     size_t phdr_size = sizeof(Elf64_Phdr);
-    const size_t phdr_size_on_disk = ehdr->e_phentsize;
+    const size_t PHDR_SIZE_ON_DISK = ehdr->e_phentsize;
 
     set_ident(&info->ke_identifier);
 
@@ -78,26 +58,35 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
     info->ke_segment_count = ehdr->e_phnum;
 
     EFI_STATUS status = system_table->BootServices->AllocatePool(
-            EfiLoaderData, sizeof(KuroSegmentInfo) * info->ke_segment_count, (void **) &info->ke_segments);
+        EfiLoaderData, sizeof(KuroSegmentInfo) * info->ke_segment_count, (void **) &info->ke_segments);
     if (status != EFI_SUCCESS) {
-        ErrorStatus error = {.error_code = status, .status = System_AllocationFailed};
+        ErrorStatus error = {
+            .error_code = status,
+            .status = System_AllocationFailed,
+        };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
     }
 
     for (size_t i = 0; i < ehdr->e_phnum; i++) {
         phdr_size = sizeof(Elf64_Phdr);
-        status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * phdr_size_on_disk);
+        status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * PHDR_SIZE_ON_DISK);
         if (status != EFI_SUCCESS) {
             system_table->BootServices->FreePool(info->ke_segments);
-            ErrorStatus error = {.error_code = status, .status = Elf_FailedSetPos};
+            ErrorStatus error = {
+                .error_code = status,
+                .status = Elf_FailedSetPos,
+            };
             k_error((EFI_SYSTEM_TABLE *) system_table, error);
             return error;
         }
         status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
         if (status != EFI_SUCCESS) {
             system_table->BootServices->FreePool(info->ke_segments);
-            ErrorStatus error = {.error_code = status, .status = Elf_Unreadable};
+            ErrorStatus error = {
+                .error_code = status,
+                .status = Elf_Unreadable,
+            };
             k_error((EFI_SYSTEM_TABLE *) system_table, error);
             return error;
         }
@@ -112,7 +101,7 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
             continue;
         }
         const char *load_addr = (const char *) seg->ks_address;
-        const size_t file_size = phdr.p_filesz;
+        const size_t FILE_SIZE = phdr.p_filesz;
 
         status = file->SetPosition((EFI_FILE_PROTOCOL *) file, phdr.p_offset);
         if (status != EFI_SUCCESS) {
@@ -121,7 +110,7 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
             k_error((EFI_SYSTEM_TABLE *) system_table, error);
             return error;
         }
-        status = file->Read((EFI_FILE_PROTOCOL *) file, (UINTN *) &file_size, (void *) load_addr);
+        status = file->Read((EFI_FILE_PROTOCOL *) file, (UINTN *) &FILE_SIZE, (void *) load_addr);
         if (status != EFI_SUCCESS) {
             system_table->BootServices->FreePool(info->ke_segments);
             ErrorStatus error = {.error_code = status, .status = Elf_Unreadable};
@@ -130,70 +119,17 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
         }
     }
 
-    return (ErrorStatus){.error_code = EFI_SUCCESS, .status = Success};
-}
-
-// Fetches the current memory map to obtain a valid map key, then calls ExitBootServices.
-// If the map key is stale (firmware updated the map between the two calls), the loop
-// retries automatically until ExitBootServices succeeds.
-// On success, boot services are no longer available and the map buffer is intentionally
-// not freed (it cannot be freed after ExitBootServices).
-static ErrorStatus exit_boot_services(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
-    EFI_BOOT_SERVICES *bs = system_table->BootServices;
-    EFI_MEMORY_DESCRIPTOR *map = NULL;
-    UINTN map_size = 0;
-    UINTN map_key = 0;
-    UINTN desc_size = 0;
-    UINT32 desc_version = 0;
-    EFI_STATUS status;
-
-    for (;;) {
-        if (map != NULL) {
-            bs->FreePool(map);
-            map = NULL;
-        }
-        map_size = 0;
-
-        // First call: retrieves required buffer size (returns EFI_BUFFER_TOO_SMALL).
-        bs->GetMemoryMap(&map_size, NULL, &map_key, &desc_size, &desc_version);
-
-        // Add slack: the AllocatePool call below may itself introduce new map entries.
-        map_size += 2 * desc_size;
-
-        status = bs->AllocatePool(EfiLoaderData, map_size, (void **) &map);
-        if (status != EFI_SUCCESS) {
-            return (ErrorStatus){.error_code = status, .status = System_AllocationFailed};
-        }
-
-        // Second call: populate the map and obtain the current map key.
-        status = bs->GetMemoryMap(&map_size, map, &map_key, &desc_size, &desc_version);
-        if (status == EFI_BUFFER_TOO_SMALL) {
-            // Slack was insufficient — retry with a larger allocation.
-            continue;
-        }
-        if (status != EFI_SUCCESS) {
-            bs->FreePool(map);
-            return (ErrorStatus){.error_code = status, .status = System_AllocationFailed};
-        }
-
-        // ExitBootServices returns EFI_INVALID_PARAMETER if the map key is already stale.
-        // Boot services remain fully available in that case, so it is safe to loop.
-        status = bs->ExitBootServices(image_handle, map_key);
-        if (status != EFI_SUCCESS) {
-            // ExitBootServices failed for some other reason.
-            bs->FreePool(map);
-            return (ErrorStatus){.error_code = status, .status = System_ExitBootServicesFailed};
-        }
-
-        return (ErrorStatus){.error_code = EFI_SUCCESS, .status = Success};
-    }
+    return (ErrorStatus) {
+        .error_code = EFI_SUCCESS,
+        .status = Success,
+    };
 }
 
 ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
     EFI_FILE_PROTOCOL *file_protocol;
-    const EFI_STATUS volume_open_status = volume_open(image_handle, system_table, &file_protocol);
-    if (volume_open_status != EFI_SUCCESS) {
-        ErrorStatus error = {.error_code = volume_open_status, .status = System_CannotOpenVolume};
+    const EFI_STATUS VOLUME_OPEN_STATUS = volume_open(image_handle, system_table, &file_protocol);
+    if (VOLUME_OPEN_STATUS != EFI_SUCCESS) {
+        ErrorStatus error = {.error_code = VOLUME_OPEN_STATUS, .status = System_CannotOpenVolume};
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
     }
@@ -235,7 +171,10 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     status = get_mem_info_and_verify(file, &ehdr, &mem_size, &mem_start);
     if (status != EFI_SUCCESS) {
         file_protocol->Close(file_protocol);
-        ErrorStatus error = {.error_code = EFI_ERR(EFI_LOAD_ERROR), .status = Elf_InvalidProgramHeader};
+        ErrorStatus error = {
+            .error_code = EFI_ERR(EFI_LOAD_ERROR),
+            .status = Elf_InvalidProgramHeader,
+        };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
     }
@@ -245,7 +184,10 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     status = check_for_rel_section(&ehdr, system_table, file);
     if (status != EFI_SUCCESS) {
         file_protocol->Close(file_protocol);
-        ErrorStatus error = {.error_code = EFI_ERR(EFI_LOAD_ERROR), .status = Elf_ContainsRelocation};
+        ErrorStatus error = {
+            .error_code = EFI_ERR(EFI_LOAD_ERROR),
+            .status = Elf_ContainsRelocation,
+        };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
     }
@@ -260,15 +202,18 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         return error;
     }
 
-    const size_t total_page_needed = (mem_size + 0xfff) / PAGE_SIZE;
+    const size_t TOTAL_PAGE_NEEDED = (mem_size + 0xfff) / PAGE_SIZE;
 
     EFI_PHYSICAL_ADDRESS addr = HIGH_ADDR;
 
     status = system_table->BootServices->AllocatePages(AllocateMaxAddress, EfiLoaderData,
-                                                       total_page_needed + STACK_SIZE_PAGE, &addr);
+                                                       TOTAL_PAGE_NEEDED + STACK_SIZE_PAGE, &addr);
     if (status != EFI_SUCCESS) {
         file_protocol->Close(file_protocol);
-        ErrorStatus error = {.error_code = status, .status = System_AllocationFailed};
+        ErrorStatus error = {
+            .error_code = status,
+            .status = System_AllocationFailed,
+        };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
     }
@@ -280,12 +225,12 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"\n\r");
 
     KuroExecutableInfo executable_info;
-    ErrorStatus errStatus;
-    errStatus = load_exec((char *) addr, file, system_table, &ehdr, &executable_info,
-                          (total_page_needed + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
-    if (errStatus.status != Success) {
+    ErrorStatus err_status;
+    err_status = load_exec((char *) addr, file, system_table, &ehdr, &executable_info,
+                           (TOTAL_PAGE_NEEDED + STACK_SIZE_PAGE) * PAGE_SIZE, mem_start);
+    if (err_status.status != Success) {
         file_protocol->Close(file_protocol);
-        return errStatus;
+        return err_status;
     }
 
     to_hex(executable_info.ke_entry_point, str);
@@ -295,13 +240,6 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"\n\r");
 
     file_protocol->Close(file_protocol);
-
-    errStatus = exit_boot_services(image_handle, system_table);
-    if (errStatus.status != Success) {
-        file_protocol->Close(file_protocol);
-        return errStatus;
-    }
-
-    transfer_control(&executable_info, NULL, NULL, NULL, (char *) boot_id, executable_info.ke_stack_start,
+    transfer_control(&executable_info, NULL, NULL, NULL, (char *) g_boot_id, executable_info.ke_stack_start,
                      executable_info.ke_entry_point);
 }

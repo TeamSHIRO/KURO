@@ -62,7 +62,7 @@ static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, con
     size_t shdr_size = sizeof(Elf64_Shdr);
 
     EFI_STATUS status =
-            file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + strtab_index * header->e_shentsize);
+        file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + strtab_index * header->e_shentsize);
     if (status != EFI_SUCCESS) {
         return CHECK_FAILED;
     }
@@ -148,24 +148,24 @@ int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file)
 
 EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
                                  const EFI_FILE_PROTOCOL *file) {
-    const size_t section_num = get_section_num(header, file);
-    if (section_num == 0) {
+    const size_t SECTION_NUM = get_section_num(header, file);
+    if (SECTION_NUM == 0) {
         system_table->ConOut->OutputString(system_table->ConOut,
                                            (CHAR16 *) L"This ELF file does not contain any section! Skipping...\r\n");
         return EFI_ERR(EFI_LOAD_ERROR);
     }
-    const Elf64_Word strtab_index = get_strtab_index(header, file);
+    const Elf64_Word STRTAB_INDEX = get_strtab_index(header, file);
 
     // Without string table, it's very unlikely for dynamic section to exist.
-    if (strtab_index == 0) {
+    if (STRTAB_INDEX == 0) {
         system_table->ConOut->OutputString(
-                system_table->ConOut, (CHAR16 *) L"This ELF file does not contain any string table! Skipping...\r\n");
+            system_table->ConOut, (CHAR16 *) L"This ELF file does not contain any string table! Skipping...\r\n");
         return EFI_ERR(EFI_LOAD_ERROR);
     }
 
     size_t shdr_size_on_disk = header->e_shentsize;
 
-    for (int i = 0; i < section_num; i++) {
+    for (int i = 0; i < SECTION_NUM; i++) {
         Elf64_Shdr shdr;
         size_t shdr_size = sizeof(Elf64_Shdr);
         EFI_STATUS status = file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + i * shdr_size_on_disk);
@@ -177,7 +177,7 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
             return status;
         }
         if (shdr.sh_type == SHT_REL || shdr.sh_type == SHT_RELA || shdr.sh_type == SHT_RELR) {
-            if (is_section_dyn(header, strtab_index, file, system_table, shdr.sh_name) == CHECK_FAILED) {
+            if (is_section_dyn(header, STRTAB_INDEX, file, system_table, shdr.sh_name) == CHECK_FAILED) {
                 return EFI_ERR(EFI_LOAD_ERROR);
             }
         }
@@ -189,13 +189,13 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
 // This is made to optimize the read calls
 EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
                                    size_t *out_start_mem) {
-    const Elf64_Half phnum = ehdr->e_phnum;
+    const Elf64_Half PHNUM = ehdr->e_phnum;
     Elf64_Phdr phdr;
     size_t phdr_size = sizeof(Elf64_Phdr);
     size_t phdr_size_on_disk = ehdr->e_phentsize;
     size_t start_mem = -1;
     size_t end_mem = 0;
-    for (size_t i = 0; i < phnum; i++) {
+    for (size_t i = 0; i < PHNUM; i++) {
         EFI_STATUS status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * phdr_size_on_disk);
         if (status != EFI_SUCCESS) {
             return status;

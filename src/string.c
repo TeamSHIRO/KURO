@@ -12,9 +12,9 @@ void to_wchar(const char *src, CHAR16 *dest, size_t max_len) {
     dest[i] = L'\0';
 }
 
-void to_hex(uint64_t value, CHAR16 *dest) {
-    const CHAR16 *hex_digits = (CHAR16 *) L"0123456789ABCDEF";
+static const char HEX_DIGITS[16] = "0123456789ABCDEF";
 
+void to_hex(uint64_t value, CHAR16 *dest) {
     dest[0] = '0';
     dest[1] = 'x';
 
@@ -28,7 +28,7 @@ void to_hex(uint64_t value, CHAR16 *dest) {
     size_t i = 0;
 
     while (value != 0) {
-        temp[i++] = hex_digits[value & 0xF];
+        temp[i++] = (CHAR16) HEX_DIGITS[value & 0xF];
         value >>= 4;
     }
 
@@ -40,8 +40,6 @@ void to_hex(uint64_t value, CHAR16 *dest) {
 }
 
 void to_hex_char(uint64_t value, char *dest) {
-    const char *hex_digits = "0123456789ABCDEF";
-
     dest[0] = '0';
     dest[1] = 'x';
 
@@ -55,7 +53,7 @@ void to_hex_char(uint64_t value, char *dest) {
     size_t i = 0;
 
     while (value != 0) {
-        temp[i++] = hex_digits[value & 0xF];
+        temp[i++] = HEX_DIGITS[value & 0xF];
         value >>= 4;
     }
 
