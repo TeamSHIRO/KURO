@@ -287,13 +287,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         file_protocol->Close(file_protocol);
         return errStatus;
     }
-
-    // errStatus = prepare_framebuffer(&executable_info, system_table);
-    // if (errStatus.status != Success) {
-    //     file_protocol->Close(file_protocol);
-    //     return errStatus;
-    // }
-
+    
     to_hex(executable_info.ke_entry_point, str);
 
     k_debug(system_table, (CHAR16 *) L"Jumping to: ");
