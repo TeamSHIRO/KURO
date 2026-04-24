@@ -3,9 +3,9 @@
 #include "string.h"
 
 EFI_STATUS main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
-    const EFI_STATUS disable_wd = system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
-    if (disable_wd != EFI_SUCCESS) {
-        return disable_wd;
+    const EFI_STATUS DISABLE_WD = system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
+    if (DISABLE_WD != EFI_SUCCESS) {
+        return DISABLE_WD;
     }
 
     k_info(system_table, (CHAR16 *) L"KURO bootloader v.");
@@ -25,10 +25,10 @@ EFI_STATUS main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
 }
 
 EFI_STATUS efi_main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
-    const EFI_STATUS status = main(image_handle, system_table);
+    const EFI_STATUS STATUS = main(image_handle, system_table);
 
     CHAR16 status_str[HEX_BUFFER_SIZE];
-    to_hex(status, status_str);
+    to_hex(STATUS, status_str);
 
     k_warning(system_table, (CHAR16 *) L"Boot failed with status: ");
     system_table->ConOut->OutputString(system_table->ConOut, status_str);
@@ -38,5 +38,5 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tabl
     EFI_EVENT wait_for_key = system_table->ConIn->WaitForKey;
     system_table->BootServices->WaitForEvent(1, wait_for_key, NULL);
 
-    return status;
+    return STATUS;
 }
