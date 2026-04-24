@@ -58,9 +58,12 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
     info->ke_segment_count = ehdr->e_phnum;
 
     EFI_STATUS status = system_table->BootServices->AllocatePool(
-            EfiLoaderData, sizeof(KuroSegmentInfo) * info->ke_segment_count, (void **) &info->ke_segments);
+        EfiLoaderData, sizeof(KuroSegmentInfo) * info->ke_segment_count, (void **) &info->ke_segments);
     if (status != EFI_SUCCESS) {
-        ErrorStatus error = {.error_code = status, .status = System_AllocationFailed};
+        ErrorStatus error = {
+            .error_code = status,
+            .status = System_AllocationFailed,
+        };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
     }
@@ -70,14 +73,20 @@ static ErrorStatus load_exec(const char *base_addr, EFI_FILE_PROTOCOL *file, con
         status = file->SetPosition((EFI_FILE_PROTOCOL *) file, ehdr->e_phoff + i * PHDR_SIZE_ON_DISK);
         if (status != EFI_SUCCESS) {
             system_table->BootServices->FreePool(info->ke_segments);
-            ErrorStatus error = {.error_code = status, .status = Elf_FailedSetPos};
+            ErrorStatus error = {
+                .error_code = status,
+                .status = Elf_FailedSetPos,
+            };
             k_error((EFI_SYSTEM_TABLE *) system_table, error);
             return error;
         }
         status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
         if (status != EFI_SUCCESS) {
             system_table->BootServices->FreePool(info->ke_segments);
-            ErrorStatus error = {.error_code = status, .status = Elf_Unreadable};
+            ErrorStatus error = {
+                .error_code = status,
+                .status = Elf_Unreadable,
+            };
             k_error((EFI_SYSTEM_TABLE *) system_table, error);
             return error;
         }
@@ -164,7 +173,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         file_protocol->Close(file_protocol);
         ErrorStatus error = {
             .error_code = EFI_ERR(EFI_LOAD_ERROR),
-            .status = Elf_InvalidProgramHeader
+            .status = Elf_InvalidProgramHeader,
         };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
@@ -177,7 +186,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         file_protocol->Close(file_protocol);
         ErrorStatus error = {
             .error_code = EFI_ERR(EFI_LOAD_ERROR),
-            .status = Elf_ContainsRelocation
+            .status = Elf_ContainsRelocation,
         };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
@@ -203,7 +212,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         file_protocol->Close(file_protocol);
         ErrorStatus error = {
             .error_code = status,
-            .status = System_AllocationFailed
+            .status = System_AllocationFailed,
         };
         k_error((EFI_SYSTEM_TABLE *) system_table, error);
         return error;
