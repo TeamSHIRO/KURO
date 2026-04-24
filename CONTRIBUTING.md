@@ -36,7 +36,6 @@ Please look at the [**building**](docs/building.md) section of the documentation
 the necessary tools and dependencies to build the project. To submit a pull request, you must have a **GitHub** account.
 
 Additionally, you would need these tools to run the checks:
-- clang-format
 - clang-tidy
 
 There are no explicit version requirements; however, you should ensure that every configuration works with your current tool version.
@@ -65,9 +64,8 @@ We recommend naming a branch to be descriptive of the feature or bug fix you are
 ### Pull Request Checklist
 
 To ensure that your pull request is pass the checks, please ensure that you have completed the following:
-- [ ] You have signed the Developer Certificate of Origin (DCO) for all your commits.
-- [ ] You have run clang-format and clang-tidy on your code, and it passes all checks.
-- [ ] All files should be in lowercase when applicable. Preferably snake_case. 
+- [ ] You have run clang-tidy on your code, and it passes all checks.
+- [ ] All files should be in the lowercase when applicable. Preferably snake_case. 
 
 ---
 
