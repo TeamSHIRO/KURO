@@ -11,11 +11,6 @@ EFI_STATUS main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
     k_info(system_table, (CHAR16 *) L"KURO bootloader v.");
     system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) PROJECT_VERSION);
 
-    // I believe we can do better with error handling.
-    // Currently, it does not tell us anything whether what it fails. It tells only the EFI_STATUS.
-    // Perhaps we could use some struct that bundles both EFI_STATUS and our own error code?
-    // - TheMonHub
-
     ErrorStatus boot_status = boot_elf(image_handle, system_table);
     if (boot_status.status != Success) {
         return boot_status.error_code;
