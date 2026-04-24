@@ -69,7 +69,6 @@ Checks: -*,
   readability-string-compare,
   readability-use-anyofallof,
   google-readability-todo,
-  readability-function-cognitive-complexity,
   readability-identifier-naming
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^src/.*\.h$'
