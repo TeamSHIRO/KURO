@@ -9,7 +9,7 @@ AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
 BreakBeforeBraces: Attach
 ColumnLimit: 0
-ContinuationIndentWidth: 8
+ContinuationIndentWidth: 4
 IncludeCategories:
   - Regex: '^<.*'
     Priority: 1
