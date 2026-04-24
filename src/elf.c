@@ -62,7 +62,7 @@ static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, con
     size_t shdr_size = sizeof(Elf64_Shdr);
 
     EFI_STATUS status =
-            file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + strtab_index * header->e_shentsize);
+        file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + strtab_index * header->e_shentsize);
     if (status != EFI_SUCCESS) {
         return CHECK_FAILED;
     }
@@ -159,7 +159,7 @@ EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABL
     // Without string table, it's very unlikely for dynamic section to exist.
     if (STRTAB_INDEX == 0) {
         system_table->ConOut->OutputString(
-                system_table->ConOut, (CHAR16 *) L"This ELF file does not contain any string table! Skipping...\r\n");
+            system_table->ConOut, (CHAR16 *) L"This ELF file does not contain any string table! Skipping...\r\n");
         return EFI_ERR(EFI_LOAD_ERROR);
     }
 

@@ -15,8 +15,8 @@ EFI_STATUS volume_open(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_t
     EFI_LOADED_IMAGE_PROTOCOL *loaded_image;
 
     const EFI_STATUS GET_LIP_SUCCESS =
-            system_table->BootServices->OpenProtocol(image_handle, (EFI_GUID *) &LIP_GUID, (void **) &loaded_image,
-                                                     image_handle, NULL, EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
+        system_table->BootServices->OpenProtocol(image_handle, (EFI_GUID *) &LIP_GUID, (void **) &loaded_image,
+                                                 image_handle, NULL, EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
 
     if (GET_LIP_SUCCESS != EFI_SUCCESS) {
         return GET_LIP_SUCCESS;
@@ -25,8 +25,8 @@ EFI_STATUS volume_open(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_t
     EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *file_system;
 
     const EFI_STATUS GET_SFSP_SUCCESS = system_table->BootServices->OpenProtocol(
-            loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, (void **) &file_system, image_handle, NULL,
-            EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
+        loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, (void **) &file_system, image_handle, NULL,
+        EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
 
     if (GET_SFSP_SUCCESS != EFI_SUCCESS) {
         system_table->BootServices->CloseProtocol(loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, image_handle,
