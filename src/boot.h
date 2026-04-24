@@ -32,19 +32,6 @@ typedef struct {
 } KuroSegmentInfo;
 
 typedef struct {
-    uint64_t kf_base;
-    uint64_t kf_size;
-    uint32_t kf_width;
-    uint32_t kf_height;
-    uint32_t kf_pixels_per_scanline;
-    uint32_t kf_pixel_format;
-    uint32_t kf_red_mask;
-    uint32_t kf_green_mask;
-    uint32_t kf_blue_mask;
-    uint32_t kf_reserved_mask;
-} KuroFramebuffer;
-
-typedef struct {
     KuroIdentifier ke_identifier;
     uint64_t ke_entry_point;
     uint64_t ke_segment_count;
@@ -52,7 +39,6 @@ typedef struct {
     uint64_t ke_stack_start;
     uint64_t ke_stack_end;
     uint64_t ke_stack_size;
-    // KuroFramebuffer ke_framebuffer;
 } KuroExecutableInfo;
 
 ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);

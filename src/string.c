@@ -3,23 +3,6 @@
 #include <protocol/efi-fp.h>
 #include <stddef.h>
 
-void *memset(void *s, int c, size_t n) {
-    unsigned char *p = (unsigned char *) s;
-    while (n--) {
-        *p++ = (unsigned char) c;
-    }
-    return s;
-}
-
-void *memcpy(void *dest, const void *src, size_t n) {
-    unsigned char *d = (unsigned char *) dest;
-    const unsigned char *s2 = (const unsigned char *) src;
-    while (n--) {
-        *d++ = *s2++;
-    }
-    return dest;
-}
-
 void to_wchar(const char *src, CHAR16 *dest, size_t max_len) {
     size_t i = 0;
     while (src[i] != '\0' && i < max_len - 1) {
