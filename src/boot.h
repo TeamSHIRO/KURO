@@ -2,6 +2,7 @@
 #define BOOT_H
 #include "efi-st.h"
 #include "efi.h"
+#include "status.h"
 
 #define PAGE_SIZE 4096
 
@@ -40,6 +41,6 @@ typedef struct {
     uint64_t ke_stack_size;
 } KuroExecutableInfo;
 
-EFI_STATUS boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);
+ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);
 
 #endif // BOOT_H

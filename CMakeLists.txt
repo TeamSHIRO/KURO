@@ -57,6 +57,7 @@ set(KURO_BOOTLOADER_SOURCES
         src/efi_helper.h
         src/transfer_control.h
         src/transfer_control.asm
+        src/status.c
 )
 
 add_executable(KUROX64
