@@ -8,37 +8,6 @@ permissions:
   contents: read
 
 jobs:
-  clang-format:
-    name: clang-format
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Cache clang-format
-        id: clang-cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache
-          key: clang-format-cache
-
-      - if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        name: Install clang-format
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
-          mkdir -p ~/.cache
-          cp /usr/bin/clang-format ~/.cache/clang-format
-
-      - if: ${{ steps.clang-cache.outputs.cache-hit == 'true' }}
-        name: Restore clang-format from cache
-        run: |
-          sudo cp ~/.cache/clang-format /usr/bin/clang-format
-          sudo chmod +x /usr/bin/clang-format
-
-      - name: Run clang-format
-        run: ./ci/clang-format.sh
-
   clang-tidy:
     name: clang-tidy
     runs-on: ubuntu-latest

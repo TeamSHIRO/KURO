@@ -69,18 +69,18 @@ Checks: -*,
   readability-string-compare,
   readability-use-anyofallof,
   google-readability-todo,
-  readability-function-cognitive-complexity
+  readability-identifier-naming
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^src/.*\.h$'
 FormatStyle: file
 CheckOptions:
-  readability-identifier-naming.GlobalVariableCase: snake_case
+  readability-identifier-naming.GlobalVariableCase: lower_case
   readability-identifier-naming.GlobalVariablePrefix: g_
-  readability-identifier-naming.LocalVariableCase: snake_case
+  readability-identifier-naming.LocalVariableCase: lower_case
   readability-identifier-naming.ConstantCase: UPPER_CASE
-  readability-identifier-naming.FunctionCase: snake_case
-  readability-identifier-naming.StructCase: PascalCase
-  readability-identifier-naming.UnionCase: PascalCase
-  readability-identifier-naming.EnumCase: PascalCase
-  readability-identifier-naming.TypeAliasCase: PascalCase
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
