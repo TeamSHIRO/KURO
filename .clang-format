@@ -21,7 +21,7 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
 BreakBeforeBraces: Custom
-ColumnLimit: 120
+ColumnLimit: 0
 ContinuationIndentWidth: 8
 IncludeCategories:
   - Regex: '^<.*'
