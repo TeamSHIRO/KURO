@@ -2,22 +2,25 @@
 
 KURO stores its configuration at the end of the executable instead of using a separate configuration file.
 
+By default, if KURO cannot find the configuration, KURO will print an error message to the console and return.
+
 The configuration is appended to the executable as a binary blob with the following layout:
 
 **Total size:** 48 bytes
 
 ```c++
 typedef struct {
-    uint8_t has_public_key;
+    uint8_t secure_mode;
     uint8_t aslr_enabled;
     uint8_t public_key[32];
-    char padding[2];
+    uint8_t log_level;
+    uint8_t console_log_level;
     uint32_t str_offset;
-    KuroIdentifier identifier;
+    KuroConfigIdentifier identifier;
 } KuroConfig;
 ```
 
-#### has_public_key
+#### secure_mode
 
 - `1` if KURO has a public key
 - `0` otherwise
@@ -40,14 +43,30 @@ The Ed25519 public key is used to verify the executable signature.
 
 If `has_public_key` is `0`, this field is ignored.
 
+#### log_level
+
+- `0` for disabled logging
+- `1` for ERROR level
+- `2` for WARNING level
+- `3` for INFO level
+- `4` for DEBUG level
+
+When logging is enabled, only messages with a level less than or equal to the configured log level are logged.
+
+If logging is disabled, KURO will not save any log file (kuro_log.txt) to the root directory of the ESP partition where
+it is located.
+
+#### console_log_level
+
+Same as `log_level` but affects the console output (UEFI ConOut) instead of the log file.
+
+If disabled, KURO will clear the screen once at the early part of the logic and not print any messages to the console.
+
 #### str_offset
 
 Relative offset to the string table.
 
-`EOF - 48 - str_offset = String Table`
-
-> [!NOTE]
-> 48 is the size of the `KuroConfig` struct.
+$ EOF - sizeof(KuroConfig) - str\_offset = String Table $
 
 ## String Table
 
@@ -74,7 +93,7 @@ All three strings are:
 > [!IMPORTANT]
 > If a string is empty, its place must be occupied by a null terminator (`\0`).
 
-## KuroIdentifier
+## KuroConfigIdentifier
 
 ```c++
 typedef struct {
@@ -85,7 +104,7 @@ typedef struct {
     char k_magic4;
     uint8_t k_version;
     char k_reserved[2];
-} KuroIdentifier;
+} KuroConfigIdentifier;
 ```
 #### k_magic
 
@@ -114,4 +133,3 @@ Any undefined version number is reserved for future use.
 |---------|----------------------------------|
 | `0`     | Invalid version                  |
 | `1`     | KURO Configuration Version `1.0` |
-| `2`     | KURO Configuration Version `2.0` |

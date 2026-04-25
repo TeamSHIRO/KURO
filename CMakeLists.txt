@@ -5,6 +5,23 @@
 #
 # Build options:
 # Name - Description
+# KURO_NO_CONFIG - Disable configuration support (only for testing)
+
+# Default Config when KURO_NO_CONFIG is ON:
+# KuroConfig default_config = {
+#     .secure_mode = 0,
+#     .aslr_enabled = 1,
+#     // .public_key is set to all zeros.
+#     .log_enabled = 1,
+#     .log_level = 3,
+#     .console_log_level = 4,
+#     // .str_offset is not defined
+#     // Default is:
+#     // Executable path: \kernel
+#     // No module
+#     // Command-line arguments is empty
+#     .identifier = // identification stuff yk the deal
+# };
 
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
@@ -44,6 +61,8 @@ set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:
 # End of EFI toolchain setup
 # =========================================
 
+option(KURO_NO_CONFIG "Disable configuration support (only for testing)" OFF)
+
 set(KURO_BOOTLOADER_SOURCES
     src/main.c
         src/boot.c
@@ -55,16 +74,19 @@ set(KURO_BOOTLOADER_SOURCES
         src/elf.h
         src/elf.c
         src/efi_helper.h
-        src/transfer_control.h
-        src/transfer_control.asm
         src/status.c
         src/status.h
-        src/memory.c
-        src/memory.h
+        include/kuro_conf.h
+        src/aslr.c
+        src/aslr.h
 )
 
 add_executable(KUROX64
         ${KURO_BOOTLOADER_SOURCES}
 )
-target_include_directories(KUROX64 SYSTEM PRIVATE _deps/efi)
-target_compile_definitions(KUROX64 PRIVATE PROJECT_VERSION=L"${CMAKE_PROJECT_VERSION}\\r\\n")
+
+target_include_directories(KUROX64 SYSTEM PRIVATE _deps/efi _deps/kuro/include include)
+target_compile_definitions(KUROX64 PRIVATE PROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
+if (KURO_NO_CONFIG)
+    target_compile_definitions(KUROX64 PRIVATE KURO_NO_CONFIG=1)
+endif()
