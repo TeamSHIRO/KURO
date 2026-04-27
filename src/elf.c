@@ -83,7 +83,7 @@ EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Eh
             return EFI_ERR(EFI_LOAD_ERROR);
         }
 
-        if (phdr.p_align % PAGE_SIZE != 0 && phdr.p_vaddr != 0 && phdr.p_vaddr != 1) {
+        if (phdr.p_align != 0x1000 && phdr.p_align != 0 && phdr.p_align != 1) {
             return EFI_ERR(EFI_LOAD_ERROR);
         }
 

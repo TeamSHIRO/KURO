@@ -110,22 +110,24 @@ void get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, K
     exec_file->Read(exec_file, &str_config_size, str_config);
 
     size_t exec_len = strlen(str_config);
-    if (exec_len == str_config_size - 3) {
+    if (exec_len > str_config_size - 3) {
         goto error;
     }
     char *exec_off = str_config;
 
     size_t module_len = strlen(exec_off + 1);
-    if (module_len == str_config_size - exec_len - 3) {
+    if (module_len > str_config_size - exec_len - 3) {
         goto error;
     }
     char *module_off = exec_off + 1 + exec_len;
 
     size_t cmd_len = strlen(module_off + 1);
-    if (cmd_len == str_config_size - exec_len - module_len - 3) {
+    if (cmd_len > str_config_size - exec_len - module_len - 3) {
         goto error;
     }
     char *cmd_off = module_off + 1 + cmd_len;
+
+    // TODO: use null Incase when the path is empty but not for exec_path as it is mandatory
 
     config->exec_path = exec_off;
     config->module_path = module_off;
