@@ -3,6 +3,44 @@
 #include <protocol/efi-fp.h>
 #include <stddef.h>
 
+void strncpy(char *dest, const char *src, size_t n) {
+    size_t i = 0;
+    while (i < n && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    if (i < n) {
+        dest[i] = '\0';
+    }
+}
+
+void wstrncpy(CHAR16 *dest, const CHAR16 *src, size_t n) {
+    size_t i = 0;
+    while (i < n && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    if (i < n) {
+        dest[i] = '\0';
+    }
+}
+
+int strlen(const char *str) {
+    int i = 0;
+    while (str[i] != '\0') {
+        i++;
+    }
+    return i;
+}
+
+int wstrlen(const CHAR16 *str) {
+    int i = 0;
+    while (str[i] != '\0') {
+        i++;
+    }
+    return i;
+}
+
 void to_wchar(const char *src, CHAR16 *dest, size_t max_len) {
     size_t i = 0;
     while (src[i] != '\0' && i < max_len - 1) {
@@ -109,3 +147,30 @@ void to_str_char(uint64_t value, char *buffer) {
 
     buffer[j] = '\0';
 }
+
+void *memset(void *dest, int c, size_t n) {
+    unsigned char *p = dest;
+    while (n--) {
+        *p++ = (unsigned char) c;
+    }
+    return dest;
+}
+
+void *memcpy(void *dest, const void *src, size_t n) {
+    unsigned char *d = dest;
+    const unsigned char *s2 = src;
+    while (n--) {
+        *d++ = *s2++;
+    }
+    return dest;
+}
+
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const unsigned char *p1 = s1;
+    const unsigned char *p2 = s2;
+    for (size_t i = 0; i < n; i++) {
+        if (p1[i] != p2[i]) {
+            return p1[i] - p2[i];
+        }
+    }
+    return 0;}

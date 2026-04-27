@@ -71,7 +71,6 @@ Checks: -*,
   google-readability-todo,
   readability-identifier-naming
 WarningsAsErrors: '*'
-HeaderFilterRegex: '^src/.*\.h$'
 FormatStyle: file
 CheckOptions:
   readability-identifier-naming.GlobalVariableCase: lower_case

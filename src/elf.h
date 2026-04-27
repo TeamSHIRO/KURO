@@ -6,8 +6,12 @@
 
 #include "protocol/efi-fp.h"
 
-#define CHECK_PASSED 1
-#define CHECK_FAILED 0
+#define MINIMUM_ELF_SIZE 128
+
+typedef enum {
+    CHECK_FAILED = 0,
+    CHECK_PASSED = 1
+} CheckResult;
 
 #define EI_NIDENT 16
 
@@ -60,7 +64,7 @@ typedef struct {
     Elf64_Xword sh_entsize;
 } Elf64_Shdr;
 
-enum segment_type {
+typedef enum {
     PT_NULL = 0,
     PT_LOAD = 1,
     PT_DYNAMIC = 2,
@@ -73,9 +77,9 @@ enum segment_type {
     PT_HIOS = 0x6fffffff,
     PT_LOPROC = 0x70000000,
     PT_HIPROC = 0x7fffffff
-};
+} SegmentType;
 
-enum object_file_type {
+typedef enum {
     ET_NONE = 0,
     ET_REL = 1,
     ET_EXEC = 2,
@@ -85,9 +89,9 @@ enum object_file_type {
     ET_HIOS = 0xfeff,
     ET_LOPROC = 0xff00,
     ET_HIPROC = 0xffff
-};
+} ObjectFileType;
 
-enum section_type {
+typedef enum {
     SHT_NULL = 0,
     SHT_PROGBITS = 1,
     SHT_SYMTAB = 2,
@@ -110,9 +114,9 @@ enum section_type {
     SHT_HIOS = 0x6fffffff,
     SHT_LOPROC = 0x70000000,
     SHT_HIPROC = 0x7fffffff
-};
+} SectionType;
 
-enum special_section_type {
+typedef enum {
     SHN_UNDEF = 0,
     SHN_LORESERVE = 0xff00,
     SHN_LOPROC = 0xff00,
@@ -123,17 +127,23 @@ enum special_section_type {
     SHN_COMMON = 0xfff2,
     SHN_XINDEX = 0xffff,
     SHN_HIRESERVE = 0xffff
-};
+} SpecialSectionType;
 
-enum machine_type {
+typedef enum {
     EM_NONE = 0,
     EM_X86_64 = 62
     // More if needed
-};
+} MachineType;
+
+typedef enum {
+    PF_X = 1,
+    PF_W = 2,
+    PF_R = 4,
+    PF_MASKOS = 0x0ff00000,
+    PF_MASKPROC = 0xf0000000
+} SegmentFlag;
 
 int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
-EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
-                                 const EFI_FILE_PROTOCOL *file);
 EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
                                    size_t *out_start_mem);
 

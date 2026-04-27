@@ -12,8 +12,7 @@
 #     .secure_mode = 0,
 #     .aslr_enabled = 1,
 #     // .public_key is set to all zeros.
-#     .log_enabled = 1,
-#     .log_level = 3,
+#     .log_level = 4,
 #     .console_log_level = 4,
 #     // .str_offset is not defined
 #     // Default is:
@@ -79,6 +78,13 @@ set(KURO_BOOTLOADER_SOURCES
         include/kuro_conf.h
         src/aslr.c
         src/aslr.h
+        src/conf.c
+        src/conf.h
+        src/efi_dptt.h
+        src/kuro_const.h
+        src/kuro_const.c
+        src/boot_info.c
+        src/boot_info.h
 )
 
 add_executable(KUROX64

@@ -1,37 +1,30 @@
 #include <efi.h>
 #include "boot.h"
-#include "string.h"
+#include "conf.h"
 
-EFI_STATUS main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
+ErrorStatus main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
+    system_table->ConOut->ClearScreen(system_table->ConOut);
+
+    KuroConfigInternal config;
+    get_config(system_table, image_handle, &config);
+
     const EFI_STATUS DISABLE_WD = system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
     if (DISABLE_WD != EFI_SUCCESS) {
-        return DISABLE_WD;
+        return (ErrorStatus) {
+            .error_code = DISABLE_WD,
+            .status = WATCHDOG_DISABLE_FAILED
+        };
     }
 
-    k_info(system_table, (CHAR16 *) L"KURO bootloader v.");
-    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) PROJECT_VERSION);
+    k_info(system_table, L"KURO bootloader v" PROJECT_VERSION "\r\n");
 
-    ErrorStatus boot_status = boot_elf(image_handle, system_table);
-    if (boot_status.status != Success) {
-        return boot_status.error_code;
-    }
-
-    return EFI_SUCCESS;
+    return boot_elf(image_handle, system_table, &config);
 }
 
 EFI_STATUS efi_main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
-    const EFI_STATUS STATUS = main(image_handle, system_table);
+    const ErrorStatus STATUS = main(image_handle, system_table);
 
-    CHAR16 status_str[HEX_BUFFER_SIZE];
-    to_hex(STATUS, status_str);
+    k_error(system_table, STATUS);
 
-    k_warning(system_table, (CHAR16 *) L"Boot failed with status: ");
-    system_table->ConOut->OutputString(system_table->ConOut, status_str);
-    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"\r\n");
-    k_warning(system_table, (CHAR16 *) L"Press any key to continue...\r\n");
-
-    EFI_EVENT wait_for_key = system_table->ConIn->WaitForKey;
-    system_table->BootServices->WaitForEvent(1, wait_for_key, NULL);
-
-    return STATUS;
+    return STATUS.error_code;
 }

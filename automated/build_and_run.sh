@@ -50,7 +50,7 @@ A_UNDERLINE='\033[4m'
 echo -e "${B_BLUE} INFO ${A_RESET} Starting build process..."
 
 cd "$PROJECT_ROOT" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DKURO_NO_CONFIG=ON
 cmake --build build
 mkdir -p ignore_automated
 

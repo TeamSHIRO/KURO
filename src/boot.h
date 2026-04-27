@@ -1,46 +1,26 @@
 #ifndef BOOT_H
 #define BOOT_H
+#include "conf.h"
 #include "efi-st.h"
 #include "efi.h"
+#include "kuro.h"
 #include "status.h"
 
 #define PAGE_SIZE 4096
 
-// Configurable
 #define STACK_SIZE_PAGE 3
 
 #define STACK_SIZE (STACK_SIZE_PAGE * PAGE_SIZE)
-#define HIGH_ADDR 0xffffffffffffffff
-#define LOW_ADDR 0x0
 
 typedef struct {
-    char k_magic0;
-    char k_magic1;
-    char k_magic2;
-    char k_magic3;
-    char k_magic4;
-    uint8_t k_version;
-    uint16_t k_reserved;
-} KuroIdentifier;
+    EFI_MEMORY_DESCRIPTOR *MemoryMap;
+    UINTN *MapKey;
+    UINTN *DescriptorSize;
+    UINT32 *DescriptorVersion;
+} MemoryMap;
 
-typedef struct {
-    uint32_t ks_flags;
-    char pad[4];
-    uint64_t ks_address;
-    uint64_t ks_size;
-    uint64_t ks_align;
-} KuroSegmentInfo;
+void set_ident(KuroIdentifier *ident);
 
-typedef struct {
-    KuroIdentifier ke_identifier;
-    uint64_t ke_entry_point;
-    uint64_t ke_segment_count;
-    KuroSegmentInfo *ke_segments;
-    uint64_t ke_stack_start;
-    uint64_t ke_stack_end;
-    uint64_t ke_stack_size;
-} KuroExecutableInfo;
-
-ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);
+ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table, const KuroConfigInternal *config);
 
 #endif // BOOT_H

@@ -9,6 +9,8 @@
 // Encouraged to read ELF specifications
 // Specifically https://gabi.xinuos.com/elf
 
+// TODO: Add filesize check!!!
+
 static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
     if (header->e_shnum != 0) {
         return header->e_shnum;
@@ -25,108 +27,6 @@ static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROT
         return 0;
     }
     return shdr.sh_size;
-}
-
-static Elf64_Word get_strtab_index(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
-    Elf64_Word str_index = header->e_shstrndx;
-    if (str_index == SHN_UNDEF) {
-        return 0;
-    }
-
-    if (str_index != 0xffff) {
-        return str_index;
-    }
-
-    Elf64_Shdr shdr;
-    size_t shdr_size = sizeof(Elf64_Shdr);
-    if (file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff) != EFI_SUCCESS) {
-        return 0;
-    }
-    if (file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &shdr) != EFI_SUCCESS) {
-        return 0;
-    }
-
-    if (shdr.sh_link < 0xff00) {
-        return 0;
-    }
-
-    return shdr.sh_link;
-}
-
-static int is_section_dyn(const Elf64_Ehdr *header, Elf64_Word strtab_index, const EFI_FILE_PROTOCOL *file,
-                          const EFI_SYSTEM_TABLE *system_table, Elf64_Word index) {
-    if (index == 0) {
-        return CHECK_FAILED;
-    }
-    Elf64_Shdr strtab_shdr;
-    size_t shdr_size = sizeof(Elf64_Shdr);
-
-    EFI_STATUS status =
-        file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + strtab_index * header->e_shentsize);
-    if (status != EFI_SUCCESS) {
-        return CHECK_FAILED;
-    }
-
-    status = file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &strtab_shdr);
-    if (status != EFI_SUCCESS) {
-        return CHECK_FAILED;
-    }
-
-    if (strtab_shdr.sh_size == 0) {
-        return CHECK_FAILED;
-    }
-
-    char *strtab;
-    UINTN strtab_size = strtab_shdr.sh_size;
-    status = system_table->BootServices->AllocatePool(EfiLoaderData, strtab_size, (void **) &strtab);
-    if (status != EFI_SUCCESS) {
-        return CHECK_FAILED;
-    }
-
-    status = file->SetPosition((EFI_FILE_PROTOCOL *) file, strtab_shdr.sh_offset);
-    if (status != EFI_SUCCESS) {
-        goto error;
-    }
-
-    strtab_size = strtab_shdr.sh_size;
-
-    status = file->Read((EFI_FILE_PROTOCOL *) file, &strtab_size, strtab);
-    if (status != EFI_SUCCESS) {
-        goto error;
-    }
-
-    if (index + 4 >= strtab_size) {
-        goto error;
-    }
-
-    const char *name = strtab + index;
-    // The maximum scan length is 16 characters. 12 + 4 forward check.
-    for (size_t i = 0; name[i] != '\0' && name[i + 1] != '\0' && name[i + 2] != '\0' && name[i + 3] != '\0' &&
-                       index + i + 3 < strtab_size && i < 12;
-         i++) {
-        if (name[i] != '.') {
-            continue;
-        }
-        if ((name[i + 1] == 'p' && name[i + 2] == 'l' && name[i + 3] == 't') ||
-            (name[i + 1] == 'g' && name[i + 2] == 'o' && name[i + 3] == 't') ||
-            (name[i + 1] == 'd' && name[i + 2] == 'y' && name[i + 3] == 'n')) {
-            system_table->ConOut->OutputString(system_table->ConOut,
-                                               (CHAR16 *) L"This ELF file contains PLT, GOT, or DYNAMIC section: ");
-            CHAR16 str[32];
-            to_wchar(name, str, 32);
-            system_table->ConOut->OutputString(system_table->ConOut, str);
-            system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) L"\r\nIgnoring...\r\n");
-            goto pos;
-        }
-    }
-
-error:
-    system_table->BootServices->FreePool(strtab);
-    return CHECK_FAILED;
-
-pos:
-    system_table->BootServices->FreePool(strtab);
-    return CHECK_PASSED;
 }
 
 // You're welcome. I know this is very beautiful.
@@ -146,45 +46,7 @@ int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file)
     return CHECK_FAILED;
 }
 
-EFI_STATUS check_for_rel_section(const Elf64_Ehdr *header, const EFI_SYSTEM_TABLE *system_table,
-                                 const EFI_FILE_PROTOCOL *file) {
-    const size_t SECTION_NUM = get_section_num(header, file);
-    if (SECTION_NUM == 0) {
-        system_table->ConOut->OutputString(system_table->ConOut,
-                                           (CHAR16 *) L"This ELF file does not contain any section! Skipping...\r\n");
-        return EFI_ERR(EFI_LOAD_ERROR);
-    }
-    const Elf64_Word STRTAB_INDEX = get_strtab_index(header, file);
-
-    // Without string table, it's very unlikely for dynamic section to exist.
-    if (STRTAB_INDEX == 0) {
-        system_table->ConOut->OutputString(
-            system_table->ConOut, (CHAR16 *) L"This ELF file does not contain any string table! Skipping...\r\n");
-        return EFI_ERR(EFI_LOAD_ERROR);
-    }
-
-    size_t shdr_size_on_disk = header->e_shentsize;
-
-    for (int i = 0; i < SECTION_NUM; i++) {
-        Elf64_Shdr shdr;
-        size_t shdr_size = sizeof(Elf64_Shdr);
-        EFI_STATUS status = file->SetPosition((EFI_FILE_PROTOCOL *) file, header->e_shoff + i * shdr_size_on_disk);
-        if (status != EFI_SUCCESS) {
-            return status;
-        }
-        status = file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &shdr);
-        if (status != EFI_SUCCESS) {
-            return status;
-        }
-        if (shdr.sh_type == SHT_REL || shdr.sh_type == SHT_RELA || shdr.sh_type == SHT_RELR) {
-            if (is_section_dyn(header, STRTAB_INDEX, file, system_table, shdr.sh_name) == CHECK_FAILED) {
-                return EFI_ERR(EFI_LOAD_ERROR);
-            }
-        }
-    }
-    return EFI_SUCCESS;
-}
-
+// TODO: Also get segment info and rename to get_elf_info
 // This is a combination of the old function get_mem_size and get_start_mem and also verify phdr
 // This is made to optimize the read calls
 EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
@@ -209,6 +71,10 @@ EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Eh
             continue;
         }
 
+        if ((phdr.p_flags & (PF_W | PF_X)) == (PF_W | PF_X)) {
+            return EFI_ERR(EFI_LOAD_ERROR);
+        }
+
         if (phdr.p_filesz > phdr.p_memsz) {
             return EFI_ERR(EFI_LOAD_ERROR);
         }
@@ -217,8 +83,7 @@ EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Eh
             return EFI_ERR(EFI_LOAD_ERROR);
         }
 
-        // Currently, we only support p_align modulo page size (0x1000) == 0, which is 4096 bytes page size
-        if (phdr.p_align % PAGE_SIZE != 0) {
+        if (phdr.p_align % PAGE_SIZE != 0 && phdr.p_vaddr != 0 && phdr.p_vaddr != 1) {
             return EFI_ERR(EFI_LOAD_ERROR);
         }
 

@@ -51,11 +51,7 @@ typedef enum {
 } KuroConfigVersion;
 
 typedef struct {
-    char k_magic0;
-    char k_magic1;
-    char k_magic2;
-    char k_magic3;
-    char k_magic4;
+    char k_magic[KURO_MAGIC_LEN];
     uint8_t k_version;
     char k_reserved[2];
 } KuroConfigIdentifier;
