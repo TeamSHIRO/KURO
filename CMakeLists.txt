@@ -11,7 +11,7 @@
 # KuroConfig default_config = {
 #     .secure_mode = 0,
 #     .aslr_enabled = 1,
-#     // .public_key is set to all zeros.
+#     // .public_key is not defined
 #     .log_level = 4,
 #     .console_log_level = 4,
 #     // .str_offset is not defined

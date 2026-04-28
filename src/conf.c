@@ -28,20 +28,6 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     config->module_path = NULL;
     config->cmd_arg = NULL;
 
-    uint8_t secure_boot;
-    int secure_boot_passed = 1;
-    UINTN secure_boot_size = sizeof(secure_boot);
-    EFI_STATUS status = system_table->RuntimeServices->GetVariable(L"SecureBoot", (EFI_GUID *) &GLOBAL_VARIABLE_GUID, NULL, &secure_boot_size, &secure_boot);
-    if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_GET_VARIABLE
-        });
-
-        secure_boot = 0;
-        secure_boot_passed = 0;
-    }
-
 #ifdef KURO_NO_CONFIG
     config->free = 0;
 
@@ -67,15 +53,6 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     }
 
     k_debug_num(system_table, L"Secure boot variable", secure_boot);
-
-    if (secure_boot == 1) {
-        k_info(system_table, L"Secure boot is enabled!\r\n");
-        k_info(system_table, L"Forcing secure mode...\r\n");
-        config->secure_mode = 1;
-    } else {
-        k_info(system_table, L"Secure boot is disabled!\r\n");
-        config->secure_mode = 0;
-    }
 
     k_success(system_table, L"Finished reading config!");
 
@@ -221,7 +198,16 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     k_success(system_table, L"Config found!\r\n");
     k_info(system_table, L"Reading config...\r\n");
 
-    if (secure_boot_passed == 0) {
+    uint8_t secure_boot;
+    UINTN secure_boot_size = sizeof(secure_boot);
+    EFI_STATUS status = system_table->RuntimeServices->GetVariable(L"SecureBoot", (EFI_GUID *) &GLOBAL_VARIABLE_GUID, NULL, &secure_boot_size, &secure_boot);
+    if (status != EFI_SUCCESS) {
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_VARIABLE
+        });
+
+        secure_boot = 0;
         k_warning(system_table, L"Failed to get secure boot variable, assuming it's disabled\r\n");
     }
 

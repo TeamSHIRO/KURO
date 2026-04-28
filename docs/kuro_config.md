@@ -22,10 +22,10 @@ typedef struct {
 
 #### secure_mode
 
-- `1` if KURO has a public key
-- `0` otherwise
+- `1` true
+- `0` false
 
-If KURO has no public key, it enters insecure mode and does not verify the executable signature.  
+If false, enters insecure mode and does not verify the executable signature.  
 This is useful for development but should not be used in production.
 
 Insecure mode is not allowed when secure boot is enabled.
@@ -41,7 +41,7 @@ When enabled, KURO loads the executable at a random physical address each time i
 
 The Ed25519 public key is used to verify the executable signature.
 
-If `has_public_key` is `0`, this field is ignored.
+If `secure_mode` is `0`, this field is ignored.
 
 #### log_level
 
@@ -100,12 +100,11 @@ All three strings are:
 ## KuroConfigIdentifier
 
 ```c++
+#define KURO_MAGIC {0x7F, 0x4B, 0x55, 0x52, 0x4F}
+#define KURO_MAGIC_LEN 5
+
 typedef struct {
-    char k_magic0;
-    char k_magic1;
-    char k_magic2;
-    char k_magic3;
-    char k_magic4;
+    char k_magic[KURO_MAGIC_LEN];
     uint8_t k_version;
     char k_reserved[2];
 } KuroConfigIdentifier;

@@ -24,8 +24,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef KURO_CONF_H
-#define KURO_CONF_H
+#ifndef _KURO_CONF_H
+#define _KURO_CONF_H
 
 #include <stdint.h>
 
@@ -66,4 +66,4 @@ typedef struct {
     KuroConfigIdentifier identifier;
 } KuroConfig;
 
-#endif //KURO_CONF_H
+#endif // _KURO_CONF_H
