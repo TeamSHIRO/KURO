@@ -24,8 +24,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef KURO_BOOT_H
-#define KURO_BOOT_H
+#ifndef _KURO_BOOT_H
+#define _KURO_BOOT_H
 
 #include "kuro.h"
 
@@ -74,7 +74,6 @@ typedef struct {
 } KuroSegmentInfo;
 
 typedef struct {
-    uintptr_t ke_entry_point;
     uint64_t ke_segment_count;
     KuroSegmentInfo* ke_segments;
     uint64_t ke_stack_start;
@@ -92,4 +91,4 @@ typedef struct {
     KuroExecutableInfo *kb_executable_info;
 } KuroBootInfo;
 
-#endif //KURO_BOOT_H
+#endif // _KURO_BOOT_H

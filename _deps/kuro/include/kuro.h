@@ -24,8 +24,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef KURO_H
-#define KURO_H
+#ifndef _KURO_H
+#define _KURO_H
 
 #include <stdint.h>
 
@@ -43,4 +43,4 @@ typedef struct {
     char k_reserved[2];
 } KuroIdentifier;
 
-#endif //KURO_H
+#endif // _KURO_H

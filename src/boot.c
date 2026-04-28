@@ -10,6 +10,7 @@
 #include "file.h"
 #include "protocol/efi-fp.h"
 #include "status.h"
+#include "verify.h"
 
 void set_ident(KuroIdentifier *ident) {
     static const char G_MAGIC[] = KURO_MAGIC;
@@ -140,11 +141,22 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         return error;
     }
 
-    // TODO: mono - Verify KuroFooter
+    const ErrorStatus SIGN_STATUS = verify_footer(file, file_size, config->public_key);
+    if (SIGN_STATUS.error_code != EFI_SUCCESS) {
+        file->Close(file);
+        return SIGN_STATUS;
+    }
+    k_success(system_table, L"The executable signature is valid!\r\n");
 
     Elf64_Ehdr ehdr;
     UINTN ehdr_size = sizeof(ehdr);
 
+    status = file->SetPosition(file, 0);
+    if (status != EFI_SUCCESS) {
+        ErrorStatus error = {.error_code = status, .status = ELF_UNREADABLE};
+        file->Close(file);
+        return error;
+    }
     status = file->Read(file, &ehdr_size, &ehdr);
     if (status != EFI_SUCCESS) {
         ErrorStatus error = {.error_code = status, .status = ELF_UNREADABLE};

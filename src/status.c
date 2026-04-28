@@ -34,6 +34,10 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"ELF file has an invalid memory size";
         case LOAD_FAILED:
             return L"Failed to load the executable";
+        case FOOTER_UNREADABLE:
+            return L"Footer is unreadable";
+        case SIGNATURE_INVALID:
+            return L"Invalid signature";
         case FRAMEBUFFER_MODE_FETCH_FAILED:
             return L"Failed to fetch framebuffer mode";
         case FRAMEBUFFER_PREPARE_FAILED:

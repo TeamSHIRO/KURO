@@ -62,6 +62,19 @@ set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:
 
 option(KURO_NO_CONFIG "Disable configuration support (only for testing)" OFF)
 
+set(ED25519_LIBRARY_SOURCES
+        _deps/ed25519/src/add_scalar.c
+        _deps/ed25519/src/fe.c
+        _deps/ed25519/src/ge.c
+        _deps/ed25519/src/key_exchange.c
+        _deps/ed25519/src/keypair.c
+        _deps/ed25519/src/sc.c
+        _deps/ed25519/src/seed.c
+        _deps/ed25519/src/sha512.c
+        _deps/ed25519/src/sign.c
+        _deps/ed25519/src/verify.c
+)
+
 set(KURO_BOOTLOADER_SOURCES
         src/main.c
         src/boot.c
@@ -82,14 +95,23 @@ set(KURO_BOOTLOADER_SOURCES
         src/conf.h
         src/kuro_const.h
         src/kuro_const.c
+        src/verify.c
+        src/verify.h
 )
+
+add_library(ed25519 STATIC
+        ${ED25519_LIBRARY_SOURCES}
+)
+
+target_compile_definitions(ed25519 PRIVATE ED25519_NO_SEED)
 
 add_executable(KUROX64
         ${KURO_BOOTLOADER_SOURCES}
 )
 
-target_include_directories(KUROX64 SYSTEM PRIVATE _deps/efi _deps/kuro/include include)
+target_include_directories(KUROX64 PRIVATE _deps/efi _deps/kuro/include include _deps/ed25519/src)
 target_compile_definitions(KUROX64 PRIVATE PROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
 if (KURO_NO_CONFIG)
     target_compile_definitions(KUROX64 PRIVATE KURO_NO_CONFIG=1)
 endif()
+target_link_libraries(KUROX64 ed25519)

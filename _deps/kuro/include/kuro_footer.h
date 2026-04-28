@@ -24,8 +24,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef KURO_FOOTER_H
-#define KURO_FOOTER_H
+#ifndef _KURO_FOOTER_H
+#define _KURO_FOOTER_H
 
 #include "kuro.h"
 
@@ -36,4 +36,4 @@ typedef struct {
     KuroIdentifier k_identifier;
 } KuroFooter;
 
-#endif //KURO_FOOTER_H
+#endif // _KURO_FOOTER_H
