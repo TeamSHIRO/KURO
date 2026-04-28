@@ -43,11 +43,34 @@ int wstrlen(const CHAR16 *str) {
 
 void to_wchar(const char *src, CHAR16 *dest, size_t max_len) {
     size_t i = 0;
-    while (src[i] != '\0' && i < max_len - 1) {
+    while (i + 1 < max_len && src[i] != 0) {
         dest[i] = (CHAR16) src[i];
         i++;
     }
     dest[i] = L'\0';
+}
+
+void to_char(const CHAR16 *src, char *dest, size_t max_len) {
+    size_t i = 0;
+    while (i + 1 < max_len && src[i] != 0) {
+        dest[i] = (char) src[i];
+        i++;
+    }
+    dest[i] = '\0';
+}
+
+void clean_newline(char *str, size_t max_len) {
+    size_t i = 0;
+    while (i + 1 < max_len && str[i] != 0) {
+        if (str[i + 1] == '\0' && str[i] == '\n') {
+            str[i] = '\0';
+            return;
+        }
+        if (str[i] == '\r') {
+            str[i] = str[i + 1];
+        }
+        i++;
+    }
 }
 
 static const char HEX_DIGITS[16] = "0123456789ABCDEF";

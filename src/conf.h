@@ -5,6 +5,10 @@
 
 #include "efi-st.h"
 #include "kuro_conf.h"
+#include "status.h"
+
+extern const EFI_GUID DPTT_GUID;
+extern const EFI_GUID GLOBAL_VARIABLE_GUID;
 
 typedef struct {
     uint8_t secure_mode;
@@ -15,8 +19,9 @@ typedef struct {
     char *exec_path;
     char *module_path;
     char *cmd_arg;
+    uint8_t free;
 } KuroConfigInternal;
 
-void get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, KuroConfigInternal *config);
+ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, KuroConfigInternal *config);
 
 #endif //CONF_H

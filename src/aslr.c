@@ -8,5 +8,5 @@ EFI_STATUS alloc_prog(size_t page_needed, AslrConfig aslr_enabled, EFI_PHYSICAL_
     if (aslr_enabled == ASLR_DISABLED) {
 
     }
-    return EFI_ERR(EFI_UNSUPPORTED); // TODO: TheMonHub - Add ASLR
+    return EFI_ERR(EFI_UNSUPPORTED); // TODO: mono - Add ASLR
 }

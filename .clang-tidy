@@ -73,6 +73,7 @@ Checks: -*,
 WarningsAsErrors: '*'
 FormatStyle: file
 CheckOptions:
+  google-readability-todo.Style: Hyphen
   readability-identifier-naming.GlobalVariableCase: lower_case
   readability-identifier-naming.GlobalVariablePrefix: g_
   readability-identifier-naming.LocalVariableCase: lower_case

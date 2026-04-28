@@ -9,8 +9,6 @@
 // Encouraged to read ELF specifications
 // Specifically https://gabi.xinuos.com/elf
 
-// TODO: Add filesize check!!!
-
 static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
     if (header->e_shnum != 0) {
         return header->e_shnum;
@@ -23,6 +21,9 @@ static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROT
     if (file->Read((EFI_FILE_PROTOCOL *) file, &shdr_size, &shdr) != EFI_SUCCESS) {
         return 0;
     }
+    if (shdr_size != sizeof(Elf64_Shdr)) {
+        return 0;
+    }
     if (shdr.sh_size < 0xff00) {
         return 0;
     }
@@ -31,11 +32,23 @@ static Elf64_Xword get_section_num(const Elf64_Ehdr *header, const EFI_FILE_PROT
 
 // You're welcome. I know this is very beautiful.
 int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file) {
-    if (header->e_ident[0] == 0x7f && header->e_ident[1] == 'E' && header->e_ident[2] == 'L' &&
-        header->e_ident[3] == 'F' && header->e_ident[4] == 2 && header->e_ident[5] == 1 && header->e_ident[6] == 1 &&
+    if (header->e_ident[0] == 0x7f&&
+        header->e_ident[1] == 'E' &&
+        header->e_ident[2] == 'L' &&
+        header->e_ident[3] == 'F' &&
+        header->e_ident[4] == 2 &&
+        header->e_ident[5] == 1 &&
+        header->e_ident[6] == 1 &&
 
-        header->e_type == ET_DYN && header->e_machine == EM_X86_64 && header->e_version == 1 && header->e_entry != 0 &&
-        header->e_phoff != 0 && header->e_phentsize >= sizeof(Elf64_Phdr) && header->e_phnum != 0) {
+        header->e_type == ET_DYN &&
+        header->e_machine == EM_X86_64 &&
+        header->e_version == 1 &&
+        header->e_entry != 0 &&
+        header->e_phoff != 0 &&
+        header->e_phentsize >= sizeof(Elf64_Phdr) &&
+        header->e_phnum != 0) {
+
+        // Validate section if it has any
         if (header->e_shoff != 0) {
             if (get_section_num(header, file) == 0 || header->e_shentsize < sizeof(Elf64_Shdr)) {
                 return CHECK_FAILED;
@@ -46,10 +59,11 @@ int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file)
     return CHECK_FAILED;
 }
 
-// TODO: Also get segment info and rename to get_elf_info
 // This is a combination of the old function get_mem_size and get_start_mem and also verify phdr
 // This is made to optimize the read calls
-EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
+// New addition: get all information needed to boot
+// TODO: mono - Do This
+EFI_STATUS get_elf_info(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
                                    size_t *out_start_mem) {
     const Elf64_Half PHNUM = ehdr->e_phnum;
     Elf64_Phdr phdr;
@@ -64,6 +78,9 @@ EFI_STATUS get_mem_info_and_verify(const EFI_FILE_PROTOCOL *file, const Elf64_Eh
         }
         phdr_size = sizeof(Elf64_Phdr);
         status = file->Read((EFI_FILE_PROTOCOL *) file, &phdr_size, &phdr);
+        if (phdr_size != sizeof(Elf64_Phdr)) {
+            return EFI_ERR(EFI_LOAD_ERROR);
+        }
         if (status != EFI_SUCCESS) {
             return status;
         }

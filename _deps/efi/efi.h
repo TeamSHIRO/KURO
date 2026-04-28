@@ -60,7 +60,7 @@
 #endif
 
 #ifndef CONST
-#define CONST
+#define CONST const
 #endif
 
 #ifndef EFIAPI

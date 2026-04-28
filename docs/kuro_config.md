@@ -76,7 +76,7 @@ The string table appears before the KURO configuration blob and contains the fol
 2. Path to the module
 3. Command-line arguments
 
-All strings are null-terminated UTF-8 strings.
+All strings are null-terminated ASCII strings.
 Path separators are always `\`.
 
 Example:
@@ -92,6 +92,10 @@ All three strings are:
 
 > [!IMPORTANT]
 > If a string is empty, its place must be occupied by a null terminator (`\0`).
+> All path must start with `\` and cannot end with `\`.
+
+> [!CAUTION]
+> Path to the executable must not be empty!
 
 ## KuroConfigIdentifier
 

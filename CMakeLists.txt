@@ -63,7 +63,7 @@ set(CMAKE_C_LINK_EXECUTABLE "lld -flavor link -subsystem:efi_application -entry:
 option(KURO_NO_CONFIG "Disable configuration support (only for testing)" OFF)
 
 set(KURO_BOOTLOADER_SOURCES
-    src/main.c
+        src/main.c
         src/boot.c
         src/boot.h
         src/file.c
@@ -80,11 +80,8 @@ set(KURO_BOOTLOADER_SOURCES
         src/aslr.h
         src/conf.c
         src/conf.h
-        src/efi_dptt.h
         src/kuro_const.h
         src/kuro_const.c
-        src/boot_info.c
-        src/boot_info.h
 )
 
 add_executable(KUROX64

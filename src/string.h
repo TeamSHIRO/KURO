@@ -12,6 +12,8 @@ void wstrncpy(CHAR16 *dest, const CHAR16 *src, size_t n);
 int strlen(const char *str);
 int wstrlen(const CHAR16 *str);
 void to_wchar(const char *src, CHAR16 *dest, size_t max_len);
+void to_char(const CHAR16 *src, char *dest, size_t max_len);
+void clean_newline(char *str, size_t max_len);
 void to_hex(uint64_t value, CHAR16 *dest);
 void to_hex_char(uint64_t value, char *dest);
 void to_str(uint64_t value, CHAR16 *buffer);
