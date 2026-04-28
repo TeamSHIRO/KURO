@@ -9,7 +9,7 @@
 [![GitHub license](https://img.shields.io/github/license/TeamSHIRO/KURO.svg)](LICENSE)
 [![Build](https://github.com/teamSHIRO/KURO/actions/workflows/build.yml/badge.svg)](https://github.com/TeamSHIRO/KURO/actions)
 
-A minimal secure UEFI bootloader to load executables in the ELF format using KURO booting convention. It is notably used to load the SHIRO kernel.
+A minimal secure UEFI bootloader to load executables in the ELF format using KURO boot protocol. It is notably used to load the SHIRO kernel.
 
 ## Features
 
