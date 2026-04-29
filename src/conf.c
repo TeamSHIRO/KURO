@@ -339,7 +339,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     }
 
     char *cmd_off = module_off + module_len + 1;
-    size_t cmd_len = len_n_verify(cmd_off, &is_valid, IS_PATH_FILE);
+    size_t cmd_len = len_n_verify(cmd_off, &is_valid, IS_CMD_ARG);
     remaining_len -= module_len;
     if (cmd_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
