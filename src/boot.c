@@ -13,7 +13,7 @@
 static ErrorStatus exit_boot(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, MemoryMap *memory_map) {
     k_info(system_table, L"Exiting UEFI Boot Services...\r\n");
     fini_log_file(system_table);
-    // TODO: mono - Actually do that
+    // TODO(mono): Actually do that
     return (ErrorStatus) {
         .error_code = EFI_SUCCESS,
         .status = SUCCESS
@@ -239,7 +239,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
 
     k_br(system_table, KURO_LOG_LEVEL_DEBUG);
 
-    // TODO: mono - Get framebuffer
+    // TODO(mono): Get framebuffer
 
     MemoryMap memory_map;
     const ErrorStatus EXIT_STATUS = exit_boot(system_table, image_handle, &memory_map);
