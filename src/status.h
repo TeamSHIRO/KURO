@@ -4,6 +4,8 @@
 #include "efi.h"
 #include "kuro_conf.h"
 
+#define INITIAL_STR_HEAP 32
+
 enum KuroStatus {
     WATCHDOG_DISABLE_FAILED,
 
@@ -11,6 +13,7 @@ enum KuroStatus {
     INVALID_STRING_CONFIG,
 
     LOG_INIT_FAILED,
+    INIT_STR_HEAP_FAILED,
 
     ELF_FILE_NOT_FOUND,
     ELF_UNREADABLE,
@@ -28,12 +31,15 @@ enum KuroStatus {
     FRAMEBUFFER_PREPARE_FAILED,
 
     SYSTEM_OUT_OF_MEMORY,
-    SYSTEM_ALLOCATION_FAILED,
     SYSTEM_EXIT_BOOT_SERVICES_FAILED,
     SYSTEM_CANNOT_OPEN_VOLUME,
     SYSTEM_CANNOT_READ_FILESIZE,
     SYSTEM_CANNOT_OPEN_PROTOCOL,
     SYSTEM_CANNOT_GET_VARIABLE,
+    SYSTEM_CANNOT_GET_FILE,
+    SYSTEM_CANNOT_GET_FILE_INFO,
+    SYSTEM_CANNOT_SET_FILE_INFO,
+    SYSTEM_CANNOT_GET_TIME,
 
     UNKNOWN,
     SUCCESS
@@ -47,8 +53,9 @@ typedef struct {
 const CHAR16 *status_to_str(ErrorStatus status);
 
 extern KuroLogLevel g_console_log_level;
+extern KuroLogLevel g_file_log_level;
 
-EFI_STATUS init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);
+ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table);
 void fini_log_file(const EFI_SYSTEM_TABLE *system_table);
 
 void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error);

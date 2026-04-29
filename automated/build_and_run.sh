@@ -13,10 +13,13 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 ALLOCATED_MEMORY=1G
 EXTRA_QEMU_ARGS="" # You can add extra arguments for QEMU here if needed
-LOCAL_OVMF_CODE_PATH="ignore_automated/ovmf/OVMF_CODE.secboot.fd"
-REMOTE_OVMF_CODE_PATH="/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd"
-LOCAL_OVMF_VAR_PATH="ignore_automated/ovmf/OVMF_VARS.secboot.fd"
-REMOTE_OVMF_VAR_PATH="/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"
+OMVF_SUBDIR="ovmf"
+OVMF_SUFFIX=".secboot"
+OVMF_PREFIX="OVMF_"
+LOCAL_OVMF_CODE_PATH="ignore_automated/ovmf/${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd"
+REMOTE_OVMF_CODE_PATH="/usr/share/edk2/${OMVF_SUBDIR}/${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd"
+LOCAL_OVMF_VAR_PATH="ignore_automated/ovmf/${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd"
+REMOTE_OVMF_VAR_PATH="/usr/share/edk2/${OMVF_SUBDIR}/${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd"
 BOOT_DIRECTORY="ignore_automated/esp/EFI/BOOT"
 BUILD_FILE_NAME="KUROX64"
 
@@ -74,21 +77,21 @@ mkdir -p ignore_automated/ovmf
 echo -e "${B_BLUE} INFO ${A_RESET} Build completed. Attempting to launch QEMU..."
 
 if [ ! -f "$LOCAL_OVMF_CODE_PATH" ] && [ -f "$REMOTE_OVMF_VAR_PATH" ]; then
-    echo -e "${B_YELLOW} WARN ${A_RESET} OVMF_CODE.secboot.fd not found in the 'ovmf' directory"
+    echo -e "${B_YELLOW} WARN ${A_RESET} ${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd not found in the 'ovmf' directory"
     read -p "       Do you wish to move automatically $REMOTE_OVMF_CODE_PATH to the 'ovmf' directory? (y/n): " yn
     case $yn in
         [Yy]* ) cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH; echo -e "${B_GREEN}  OK  ${A_RESET} Moved.";;
         * ) echo -e "${B_YELLOW} WARN ${A_RESET} Cancelled. Run 'cp $REMOTE_OVMF_CODE_PATH $LOCAL_OVMF_CODE_PATH' manually if needed."; exit 1;;
     esac
 elif [ ! -f "$LOCAL_OVMF_CODE_PATH" ] && [ ! -f "$REMOTE_OVMF_VAR_PATH" ]; then
-  echo -e "${B_YELLOW} WARN ${A_RESET} OVMF_CODE.secboot.fd not found in the 'ovmf' directory"
-  echo -e "${B_YELLOW} WARN ${A_RESET} Cannot find OVMF_CODE.secboot.fd automatically, please find and copy it to $LOCAL_OVMF_CODE_PATH manually."; exit 1
+  echo -e "${B_YELLOW} WARN ${A_RESET} ${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd not found in the 'ovmf' directory"
+  echo -e "${B_YELLOW} WARN ${A_RESET} Cannot find ${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd automatically, please find and copy it to $LOCAL_OVMF_CODE_PATH manually."; exit 1
 fi
 
 if [ -f "$LOCAL_OVMF_VAR_PATH" ]; then
     echo -e "${B_BLUE} INFO ${A_RESET} Launching QEMU with local OVMF..."
 elif [ -f "$REMOTE_OVMF_VAR_PATH" ]; then
-    echo -e "${B_YELLOW} WARN ${A_RESET} OVMF_VARS.secboot.fd not found in the 'ovmf' directory"
+    echo -e "${B_YELLOW} WARN ${A_RESET} ${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd not found in the 'ovmf' directory"
     read -p "       Do you wish to move automatically $REMOTE_OVMF_VAR_PATH to the 'ovmf' directory? (y/n): " yn
     case $yn in
         [Yy]* ) cp $REMOTE_OVMF_VAR_PATH $LOCAL_OVMF_VAR_PATH; echo -e "${B_GREEN}  OK  ${A_RESET} Moved.";;
@@ -96,8 +99,8 @@ elif [ -f "$REMOTE_OVMF_VAR_PATH" ]; then
     esac
     read -s -n 1 -p "If no bootable option or device was found, please go to the EFI Firmware Setup and disable the secure boot. Press any key to continue."
 elif [ ! -f "$REMOTE_OVMF_VAR_PATH" ]; then
-  echo -e "${B_YELLOW} WARN ${A_RESET} OVMF_VARS.secboot.fd not found in the 'ovmf' directory"
-  echo -e "${B_YELLOW} WARN ${A_RESET} Cannot find OVMF_VARS.secboot.fd automatically, please find and copy it to $LOCAL_OVMF_VAR_PATH manually."; exit 1
+  echo -e "${B_YELLOW} WARN ${A_RESET} ${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd not found in the 'ovmf' directory"
+  echo -e "${B_YELLOW} WARN ${A_RESET} Cannot find ${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd automatically, please find and copy it to $LOCAL_OVMF_VAR_PATH manually."; exit 1
 fi
 
 

@@ -14,58 +14,41 @@
 const EFI_GUID DPTT_GUID = EFI_DEVICE_PATH_TO_TEXT_PROTOCOL_GUID;
 const EFI_GUID GLOBAL_VARIABLE_GUID = EFI_GLOBAL_VARIABLE;
 
-// This function automatically set the log level for the console print
-// May output dangling pointer on failure
-//
-// Please free the exec_path using FreePool if you don't need it anymore, since it might be allocated using AllocatePool
-// ONLY IF free == 1
-ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, KuroConfigInternal *config) {
-    config->secure_mode = 0;
-    config->aslr_enabled = 1;
-    config->log_level = KURO_LOG_LEVEL_DEBUG;
-    config->console_log_level = KURO_LOG_LEVEL_DEBUG;
-    config->exec_path = "\\kernel";
-    config->module_path = NULL;
-    config->cmd_arg = NULL;
+typedef enum {
+    IS_PATH_FILE,
+    IS_CMD_ARG
+} IsPath;
 
-#ifdef KURO_NO_CONFIG
-    config->free = 0;
+static size_t len_n_verify(const char *str, int *is_valid, IsPath is_path) {
+    size_t i = 0;
+    *is_valid = 1;
 
-    k_info(system_table, L"KURO bootloader v" PROJECT_VERSION "\r\n");
-    k_info(system_table, L"Copyright (c) KURO Contributors\r\n");
-    k_info(system_table, L"Licensed under the Apache License, Version 2.0\r\n");
-    k_br(system_table, KURO_LOG_LEVEL_INFO);
-    k_info(system_table, L"KURO_NO_CONFIG defined, using default configuration\r\n");
-
-    status = init_log_file(image_handle, system_table);
-    if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = LOG_INIT_FAILED
-        });
-        k_warning(system_table, L"There will be no file logging!\r\n");
+    if (is_path == IS_PATH_FILE) {
+        if (str[0] != '\\') {
+            *is_valid = 0;
+            return 0;
+        }
+    }
+    while (str[i] != '\0') {
+        i++;
+        // Not ASCII
+        if (is_path == IS_PATH_FILE && str[i] > 127 && *is_valid == 1) {
+            *is_valid = 0;
+        }
     }
 
-    k_br(system_table, KURO_LOG_LEVEL_INFO);
-
-    if (secure_boot_passed == 0) {
-        k_warning(system_table, L"Failed to get secure boot variable, assuming it's disabled\r\n");
+    if (is_path == IS_PATH_FILE && str[i - 1] == '\\') {
+        *is_valid = 0;
     }
-
-    k_debug_num(system_table, L"Secure boot variable", secure_boot);
-
-    k_success(system_table, L"Finished reading config!");
-
-    return (ErrorStatus) {
-        .error_code = EFI_SUCCESS,
-        .status = SUCCESS
-    };
+    if (is_path == IS_PATH_FILE && i < 2 ) {
+        *is_valid = 0;
+    }
+    return i;
 }
-#else
 
-    config->free = 1;
+static ErrorStatus get_bootloader_file(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **exec_file, CHAR16 **path_text) {
     EFI_FILE_PROTOCOL *file_protocol;
-    status = cached_volume_open(image_handle, system_table, &file_protocol);
+    EFI_STATUS status = cached_volume_open(image_handle, system_table, &file_protocol);
     if (status != EFI_SUCCESS) {
         return (ErrorStatus) {
             .error_code = status,
@@ -97,7 +80,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         };
     }
 
-    CHAR16 *path_text = device_path_to_text->ConvertDevicePathToText(
+    *path_text = device_path_to_text->ConvertDevicePathToText(
         loaded_image->FilePath,
         1,
         1
@@ -112,9 +95,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
 
     system_table->BootServices->CloseProtocol(image_handle, (EFI_GUID *) &LIP_GUID, image_handle, NULL);
 
-    EFI_FILE_PROTOCOL *exec_file;
-
-    status = file_protocol->Open(file_protocol, &exec_file, path_text, EFI_FILE_MODE_READ, 0);
+    status = file_protocol->Open(file_protocol, exec_file, *path_text, EFI_FILE_MODE_READ, 0);
 
     if (status != EFI_SUCCESS) {
         system_table->BootServices->FreePool(path_text);
@@ -123,15 +104,130 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
             .status = CONFIG_LOAD_FAILED
         };
     }
+    return (ErrorStatus) {
+        .error_code = EFI_SUCCESS,
+        .status = SUCCESS
+    };
+}
+
+static void setup_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, const KuroConfig *kuro_config, CHAR16 *path_text, KuroConfigInternal *config) {
+    if (kuro_config != NULL) {
+        g_console_log_level = kuro_config->console_log_level;
+        g_file_log_level = kuro_config->log_level;
+        if (kuro_config->console_log_level > KURO_LOG_LEVEL_DEBUG) {
+            g_console_log_level = KURO_LOG_LEVEL_DEBUG;
+        }
+        if (kuro_config->log_level > KURO_LOG_LEVEL_DEBUG) {
+            g_file_log_level = KURO_LOG_LEVEL_DEBUG;
+        }
+    }
+
+    k_info(system_table, L"KURO bootloader v" PROJECT_VERSION "\r\n");
+    k_info(system_table, L"Copyright (c) KURO Contributors\r\n");
+    k_info(system_table, L"Licensed under the Apache License, Version 2.0\r\n");
+    k_br(system_table, KURO_LOG_LEVEL_INFO);
+    if (path_text != NULL) {
+        k_debug_str(system_table, L"Bootloader path", path_text);
+        system_table->BootServices->FreePool(path_text);
+    }
+
+    const ErrorStatus LOG_STATUS = init_log_file(image_handle, system_table);
+    if (LOG_STATUS.error_code != EFI_SUCCESS) {
+        k_error(system_table, LOG_STATUS);
+        k_warning(system_table, L"There will be no file logging!\r\n");
+    }
+    k_br(system_table, KURO_LOG_LEVEL_INFO);
+
+    k_success(system_table, L"Config found!\r\n");
+    k_info(system_table, L"Reading config...\r\n");
+
+    uint8_t secure_boot;
+    UINTN secure_boot_size = sizeof(secure_boot);
+    EFI_STATUS status = system_table->RuntimeServices->GetVariable(L"SecureBoot", (EFI_GUID *) &GLOBAL_VARIABLE_GUID, NULL, &secure_boot_size, &secure_boot);
+    if (status != EFI_SUCCESS) {
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_VARIABLE
+        });
+        secure_boot = 0;
+        k_warning(system_table, L"Failed to get secure boot variable, assuming it's disabled\r\n");
+    }
+
+    k_debug_num(system_table, L"Secure boot variable", secure_boot);
+
+    if (secure_boot == 1) {
+        k_debug(system_table, L"Secure boot is enabled!\r\n");
+        k_debug(system_table, L"Forcing secure mode...\r\n");
+        config->secure_mode = 1;
+    } else {
+        k_debug(system_table, L"Secure boot is disabled!\r\n");
+        if (kuro_config != NULL) {
+            config->secure_mode = kuro_config->secure_mode;
+        }
+    }
+
+    k_br(system_table, KURO_LOG_LEVEL_WARNING);
+    if (config->secure_mode == 0) {
+        k_warning(system_table, L"Secure mode is disabled!\r\n");
+    }
+
+    if (kuro_config != NULL) {
+        config->aslr_enabled = kuro_config->aslr_enabled;
+        if (config->secure_mode == 1) {
+            memcpy(config->public_key, kuro_config->public_key, 32);
+        }
+    }
+}
+
+// This function automatically set the log level for the console print
+// May output dangling pointer on failure
+//
+// Please free the exec_path using FreePool if you don't need it anymore, since it might be allocated using AllocatePool
+// ONLY IF free == 1
+ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_handle, KuroConfigInternal *config) {
+    config->secure_mode = 0;
+    config->aslr_enabled = 1;
+    config->exec_path = "\\kernel";
+    config->module_path = NULL;
+    config->cmd_arg = NULL;
+
+#ifdef KURO_NO_CONFIG
+    config->free = 0;
+
+    setup_config(system_table, image_handle, NULL, NULL, config);
+
+    return (ErrorStatus) {
+        .error_code = EFI_SUCCESS,
+        .status = SUCCESS
+    };
+}
+#else
+
+    config->free = 1;
+
+    EFI_FILE_PROTOCOL *exec_file = 0;
+    CHAR16 *path_text = 0;
+
+    ErrorStatus get_boot_status = get_bootloader_file(system_table, image_handle, &exec_file, &path_text);
+    if (get_boot_status.error_code != EFI_SUCCESS) {
+        return get_boot_status;
+    }
 
     UINTN file_size = 0;
-    get_file_size(system_table, exec_file, &file_size);
+    EFI_STATUS status = get_file_size(system_table, exec_file, &file_size);
+    if (status != EFI_SUCCESS) {
+        exec_file->Close(exec_file);
+        return (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_READ_FILESIZE
+        };
+    }
 
     UINTN config_size = sizeof(KuroConfig);
     KuroConfig kuro_config;
 
-    // The bootloader should probably not be malicious except for the config, so I won't do file size check or anything
     // The bootloader can boot, and that already proves that it's big enough
+    // No point for underflow check here
     status = exec_file->SetPosition(exec_file, file_size - sizeof(KuroConfig));
 
     if (status != EFI_SUCCESS) {
@@ -162,70 +258,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         };
     }
 
-    KuroLogLevel log_level_con = kuro_config.console_log_level;
-    KuroLogLevel log_level_file = kuro_config.log_level;
-
-    if (log_level_con > KURO_LOG_LEVEL_DEBUG) {
-        log_level_con = KURO_LOG_LEVEL_DEBUG;
-    }
-    if (log_level_file > KURO_LOG_LEVEL_DEBUG) {
-        log_level_file = KURO_LOG_LEVEL_DEBUG;
-    }
-
-    kuro_config.console_log_level = log_level_con;
-    kuro_config.log_level = log_level_file;
-    g_console_log_level = log_level_con;
-
-    k_info(system_table, L"KURO bootloader v" PROJECT_VERSION "\r\n");
-    k_info(system_table, L"Copyright (c) KURO Contributors\r\n");
-    k_info(system_table, L"Licensed under the Apache License, Version 2.0\r\n");
-    k_br(system_table, KURO_LOG_LEVEL_INFO);
-    k_debug_str(system_table, L"Bootloader path", path_text);
-    system_table->BootServices->FreePool(path_text);
-
-    if (log_level_file != KURO_LOG_LEVEL_NONE) {
-        status = init_log_file(image_handle, system_table);
-        if (status != EFI_SUCCESS) {
-            k_error(system_table, (ErrorStatus) {
-                .error_code = status,
-                .status = LOG_INIT_FAILED
-            });
-            k_warning(system_table, L"There will be no file logging!\r\n");
-        }
-    }
-    k_br(system_table, KURO_LOG_LEVEL_INFO);
-
-    k_success(system_table, L"Config found!\r\n");
-    k_info(system_table, L"Reading config...\r\n");
-
-    uint8_t secure_boot;
-    UINTN secure_boot_size = sizeof(secure_boot);
-    EFI_STATUS status = system_table->RuntimeServices->GetVariable(L"SecureBoot", (EFI_GUID *) &GLOBAL_VARIABLE_GUID, NULL, &secure_boot_size, &secure_boot);
-    if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_GET_VARIABLE
-        });
-
-        secure_boot = 0;
-        k_warning(system_table, L"Failed to get secure boot variable, assuming it's disabled\r\n");
-    }
-
-    k_debug_num(system_table, L"Secure boot variable", secure_boot);
-
-    if (secure_boot == 1) {
-        k_info(system_table, L"Secure boot is enabled!\r\n");
-        k_info(system_table, L"Forcing secure mode...\r\n");
-        config->secure_mode = 1;
-    } else {
-        k_info(system_table, L"Secure boot is disabled!\r\n");
-        config->secure_mode = kuro_config.secure_mode;
-    }
-
-    config->aslr_enabled = kuro_config.aslr_enabled;
-    if (config->secure_mode == 1) {
-        memcpy(config->public_key, kuro_config.public_key, 32);
-    }
+    setup_config(system_table, image_handle, &kuro_config, path_text, config);
 
     config->exec_path = NULL;
 
@@ -281,12 +314,13 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
             .status = CONFIG_LOAD_FAILED
         };
     }
+    exec_file->Close(exec_file);
 
-    size_t exec_len = strlen(str_config);
+    int is_valid;
+    size_t exec_len = len_n_verify(str_config, &is_valid, IS_PATH_FILE);
     size_t remaining_len = str_config_size - 2;
-    if (exec_len + 1 > remaining_len) {
+    if (exec_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
-        exec_file->Close(exec_file);
         return (ErrorStatus) {
             .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
             .status = INVALID_STRING_CONFIG
@@ -294,11 +328,10 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     }
 
     char *module_off = str_config + exec_len + 1;
-    size_t module_len = strlen(module_off);
+    size_t module_len = len_n_verify(module_off, &is_valid, IS_PATH_FILE);
     remaining_len -= exec_len;
-    if (module_len + 1 > remaining_len) {
+    if (module_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
-        exec_file->Close(exec_file);
         return (ErrorStatus) {
             .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
             .status = INVALID_STRING_CONFIG
@@ -306,11 +339,10 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     }
 
     char *cmd_off = module_off + module_len + 1;
-    size_t cmd_len = strlen(cmd_off);
+    size_t cmd_len = len_n_verify(cmd_off, &is_valid, IS_PATH_FILE);
     remaining_len -= module_len;
-    if (cmd_len + 1 > remaining_len) {
+    if (cmd_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
-        exec_file->Close(exec_file);
         return (ErrorStatus) {
             .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
             .status = INVALID_STRING_CONFIG
@@ -320,7 +352,6 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     if (exec_len >= 2) {
         if (str_config[0] != '\\') {
             system_table->BootServices->FreePool(str_config);
-            exec_file->Close(exec_file);
             return (ErrorStatus) {
                 .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
                 .status = INVALID_STRING_CONFIG
@@ -329,7 +360,6 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         config->exec_path = str_config;
     } else {
         system_table->BootServices->FreePool(str_config);
-        exec_file->Close(exec_file);
         return (ErrorStatus) {
             .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
             .status = INVALID_STRING_CONFIG
@@ -339,19 +369,18 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     if (module_len != 0) {
         if (module_off[0] != '\\') {
             system_table->BootServices->FreePool(str_config);
-            exec_file->Close(exec_file);
             return (ErrorStatus) {
                 .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
                 .status = INVALID_STRING_CONFIG
             };
         }
+
         config->module_path = module_off;
     }
     if (cmd_len != 0) {
         config->cmd_arg = cmd_off;
     }
 
-    exec_file->Close(exec_file);
     k_success(system_table, L"Finished reading config!");
     return (ErrorStatus) {
         .error_code = EFI_SUCCESS,

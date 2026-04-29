@@ -14,8 +14,6 @@ typedef struct {
     uint8_t secure_mode;
     uint8_t aslr_enabled;
     uint8_t public_key[32];
-    KuroLogLevel log_level;
-    KuroLogLevel console_log_level;
     char *exec_path;
     char *module_path;
     char *cmd_arg;

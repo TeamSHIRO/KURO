@@ -62,7 +62,7 @@ int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file)
 // This is a combination of the old function get_mem_size and get_start_mem and also verify phdr
 // This is made to optimize the read calls
 // New addition: get all information needed to boot
-// TODO: mono - Do This
+// TODO: mono - scrap
 EFI_STATUS get_elf_info(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
                                    size_t *out_start_mem) {
     const Elf64_Half PHNUM = ehdr->e_phnum;

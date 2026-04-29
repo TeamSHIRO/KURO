@@ -25,16 +25,16 @@ void wstrncpy(CHAR16 *dest, const CHAR16 *src, size_t n) {
     }
 }
 
-int strlen(const char *str) {
-    int i = 0;
+size_t strlen(const char *str) {
+    size_t i = 0;
     while (str[i] != '\0') {
         i++;
     }
     return i;
 }
 
-int wstrlen(const CHAR16 *str) {
-    int i = 0;
+size_t wstrlen(const CHAR16 *str) {
+    size_t i = 0;
     while (str[i] != '\0') {
         i++;
     }
@@ -188,7 +188,7 @@ void *memcpy(void *dest, const void *src, size_t n) {
     return dest;
 }
 
-int memcmp(const void *s1, const void *s2, size_t n) {
+size_t memcmp(const void *s1, const void *s2, size_t n) {
     const unsigned char *p1 = s1;
     const unsigned char *p2 = s2;
     for (size_t i = 0; i < n; i++) {
@@ -196,4 +196,5 @@ int memcmp(const void *s1, const void *s2, size_t n) {
             return p1[i] - p2[i];
         }
     }
-    return 0;}
+    return 0;
+}

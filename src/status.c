@@ -18,6 +18,8 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"Invalid string table inside the configuration";
         case LOG_INIT_FAILED:
             return L"Failed to initialize file logging";
+        case INIT_STR_HEAP_FAILED:
+            return L"Failed to initialize string heap";
         case ELF_FILE_NOT_FOUND:
             return L"ELF file not found";
         case ELF_UNREADABLE:
@@ -33,7 +35,7 @@ const CHAR16 *status_to_str(ErrorStatus status) {
         case ELF_INVALID_MEMORY_SIZE:
             return L"ELF file has an invalid memory size";
         case LOAD_FAILED:
-            return L"Failed to load the executable";
+            return L"Failed to load the file";
         case FOOTER_UNREADABLE:
             return L"Footer is unreadable";
         case SIGNATURE_INVALID:
@@ -43,9 +45,7 @@ const CHAR16 *status_to_str(ErrorStatus status) {
         case FRAMEBUFFER_PREPARE_FAILED:
             return L"Failed to prepare framebuffer";
         case SYSTEM_OUT_OF_MEMORY:
-            return L"System is out of memory";
-        case SYSTEM_ALLOCATION_FAILED:
-            return L"System memory allocation failed";
+            return L"Cannot allocate memory";
         case SYSTEM_EXIT_BOOT_SERVICES_FAILED:
             return L"Failed to exit boot services";
         case SYSTEM_CANNOT_OPEN_VOLUME:
@@ -56,6 +56,14 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"Cannot open or locate a protocol";
         case SYSTEM_CANNOT_GET_VARIABLE:
             return L"Cannot get a system variable";
+        case SYSTEM_CANNOT_GET_FILE:
+            return L"Cannot get a file";
+        case SYSTEM_CANNOT_GET_FILE_INFO:
+            return L"Cannot get file info";
+        case SYSTEM_CANNOT_SET_FILE_INFO:
+            return L"Cannot set file info";
+        case SYSTEM_CANNOT_GET_TIME:
+            return L"Cannot get time";
         case SUCCESS:
             return L"Success";
         case UNKNOWN:
@@ -138,104 +146,197 @@ const CHAR16 *efi_status_to_str(EFI_STATUS status) {
 
 // Bad idea, but who's seriously going to change this except the conf?
 KuroLogLevel g_console_log_level = KURO_LOG_LEVEL_DEBUG;
+KuroLogLevel g_file_log_level = KURO_LOG_LEVEL_DEBUG;
 
-static EFI_FILE_INFO *g_file_info = NULL;
 static UINTN g_file_info_size = 80 + 26; // Base size + "kuro_log.txt\0"
 
 static EFI_FILE_PROTOCOL *g_log_file = NULL;
 
-EFI_STATUS init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
-    k_br(system_table, KURO_LOG_LEVEL_INFO);
-    k_info(system_table, L"Initializing log file...\r\n");
+// Heap allocation is expensive, dud
+static char* g_temp_message = NULL;
+static size_t g_temp_message_size = 0;
+
+static EFI_FILE_INFO *g_file_info;
+
+static size_t g_log_size = 0;
+
+ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
+    if (g_file_log_level == KURO_LOG_LEVEL_NONE) {
+        return (ErrorStatus) {
+            .error_code = EFI_SUCCESS,
+            .status = SUCCESS
+        };
+    }
+    k_info(system_table, L"Initializing the log file...\r\n");
     EFI_FILE_PROTOCOL *volume;
     EFI_STATUS status = cached_volume_open(image_handle, system_table, &volume);
     if (status != EFI_SUCCESS) {
-        return status;
+        return (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_OPEN_VOLUME
+        };
     }
 
-    k_info(system_table, L"Searching for log file...\r\n");
-    status = volume->Open(volume, &g_log_file, L"\\kuro_log.txt", EFI_FILE_MODE_READ, 0);
+    k_info(system_table, L"Searching for the log file...\r\n");
+    status = volume->Open(volume, &g_log_file, L"\\kuro_log.txt", EFI_FILE_MODE_WRITE | EFI_FILE_MODE_READ, 0);
     if (status == EFI_ERR(EFI_NOT_FOUND)) {
         k_info(system_table, L"No log file found! Creating a new one...\r\n");
         status = volume->Open(volume, &g_log_file, L"\\kuro_log.txt", EFI_FILE_MODE_WRITE | EFI_FILE_MODE_READ | EFI_FILE_MODE_CREATE, 0);
         if (status != EFI_SUCCESS) {
-            g_log_file->Close(g_log_file);
-            g_log_file = NULL;
-            return status;
+            system_table->BootServices->FreePool(g_file_info);
+            return (ErrorStatus) {
+                .error_code = status,
+                .status = SYSTEM_CANNOT_GET_FILE
+            };
         }
-        k_success(system_table, L"Initialized log file!\r\n");
-        return EFI_SUCCESS;
+        goto skip_info;
     }
     if (status != EFI_SUCCESS) {
-        return status;
+        return (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_FILE
+        };
     }
+
     k_info(system_table, L"Log file found! Cleaning up logs...\r\n");
 
     status = system_table->BootServices->AllocatePool(EfiLoaderData, g_file_info_size, (void **) &g_file_info);
     if (status != EFI_SUCCESS) {
-        return status;
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_OUT_OF_MEMORY
+        });
+        goto skip_info;
     }
     status = g_log_file->GetInfo(g_log_file, (EFI_GUID *) &FI_ID, &g_file_info_size, g_file_info);
     if (status != EFI_SUCCESS) {
         system_table->BootServices->FreePool(g_file_info);
-        g_log_file->Close(g_log_file);
-        g_log_file = NULL;
-        return status;
+        g_file_info = NULL;
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_FILE_INFO
+        });
     }
+    g_log_size = 0;
 
-    g_log_file->Delete(g_log_file);
-    g_log_file = NULL;
+    skip_info:
 
-    status = volume->Open(volume, &g_log_file, L"\\kuro_log.txt", EFI_FILE_MODE_WRITE | EFI_FILE_MODE_READ | EFI_FILE_MODE_CREATE, 0);
+    k_success(system_table, L"Initialized the log file!\r\n");
+    k_info(system_table, L"Allocating initial string heap...\r\n");
+    status = system_table->BootServices->AllocatePool(EfiLoaderData, INITIAL_STR_HEAP, (void **) &g_temp_message);
+    g_temp_message_size = INITIAL_STR_HEAP;
     if (status != EFI_SUCCESS) {
-        system_table->BootServices->FreePool(g_file_info);
-        return status;
+        g_temp_message_size = 0;
+        g_temp_message = NULL;
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = INIT_STR_HEAP_FAILED
+        });
     }
-    k_success(system_table, L"Initialized log file!\r\n");
-    return EFI_SUCCESS;
+    k_success(system_table, L"Allocated initial string heap!\r\n");
+    return (ErrorStatus) {
+        .error_code = EFI_SUCCESS,
+        .status = SUCCESS
+    };
 }
 
 void fini_log_file(const EFI_SYSTEM_TABLE *system_table) {
     if (g_log_file == NULL) {
-        k_info(system_table, L"No log file to finalize!\r\n");
+        k_info(system_table, L"No log file to finalize! Skipping...\r\n");
         return;
     }
-    k_info(system_table, L"Finalizing log file...\r\n");
+    k_info(system_table, L"Finalizing the log file...\r\n");
 
     EFI_TIME g_current_time;
-    if (system_table->RuntimeServices->GetTime(&g_current_time, NULL) == EFI_SUCCESS && g_file_info != NULL) {
+    if (g_file_info == NULL) {
+        goto skip_info;
+    }
+
+    EFI_STATUS status = system_table->RuntimeServices->GetTime(&g_current_time, NULL);
+    if (status == EFI_SUCCESS) {
         g_file_info->LastAccessTime = g_current_time;
         g_file_info->ModificationTime = g_current_time;
-        g_log_file->SetInfo(g_log_file, (EFI_GUID *) &FI_ID, g_file_info_size, g_file_info);
+        g_file_info->FileSize = g_log_size;
+        status = g_log_file->SetInfo(g_log_file, (EFI_GUID *) &FI_ID, g_file_info_size, g_file_info);
+        if (status != EFI_SUCCESS) {
+            system_table->BootServices->FreePool(g_file_info);
+            g_file_info = NULL;
+            k_error(system_table, (ErrorStatus) {
+                .error_code = status,
+                .status = SYSTEM_CANNOT_SET_FILE_INFO
+            });
+        }
+    } else {
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_TIME
+        });
     }
+
+    skip_info:
     if (g_file_info != NULL) {
         system_table->BootServices->FreePool(g_file_info);
     }
 
     // Finalize = Setting the time metadata, not closing and flushing :sob:
-    k_success(system_table, L"Finalized log file!\r\n");
+    k_success(system_table, L"Finalized the log file!\r\n");
     g_log_file->Flush(g_log_file);
+    if (g_temp_message != NULL) {
+        system_table->BootServices->FreePool(g_temp_message);
+        g_temp_message = NULL;
+        g_temp_message_size = 0;
+    }
     g_log_file->Close(g_log_file);
     g_log_file = NULL;
 }
 
-static void print(const EFI_SYSTEM_TABLE *system_table, CHAR16 *string) {
+static void k_warning_no_file(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
+    if (g_console_log_level < KURO_LOG_LEVEL_WARNING) {
+        return;
+    }
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_YELLOW);
+    system_table->ConOut->OutputString(system_table->ConOut, L"[WARN]");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, message);
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
+}
+
+static void print(const EFI_SYSTEM_TABLE *system_table, CHAR16 *string, KuroLogLevel level) {
     system_table->ConOut->OutputString(system_table->ConOut, string);
 
     if (g_log_file == NULL) {
         return;
     }
-    size_t string_len = wstrlen(string);
-    char *string_short;
-    EFI_STATUS status = system_table->BootServices->AllocatePool(EfiLoaderData, string_len + 1, (void **) &string_short);
-    if (status != EFI_SUCCESS) {
+    if (g_file_log_level < level) {
         return;
     }
-    to_char(string, string_short, string_len + 1);
-    clean_newline(string_short, string_len + 1);
-    size_t new_len = strlen(string_short);
-    g_log_file->Write(g_log_file, &new_len, string_short);
-    system_table->BootServices->FreePool(string_short);
+
+    size_t string_len = wstrlen(string);
+
+    // Assuming g_temp_message will never be null if the size is not 0
+    if (g_temp_message_size >= string_len + 1) {
+        goto file_print;
+    }
+    if (g_temp_message != NULL) {
+        system_table->BootServices->FreePool(g_temp_message);
+        g_temp_message = NULL;
+    }
+    g_temp_message_size = string_len + 1;
+    EFI_STATUS status = system_table->BootServices->AllocatePool(EfiLoaderData, string_len + 1, (void **) &g_temp_message);
+    if (status != EFI_SUCCESS) {
+        g_temp_message_size = 0;
+        g_temp_message = NULL;
+        k_warning_no_file(system_table, L"Failed to allocate memory for log file!\r\n");
+        return;
+    }
+
+    file_print:
+    to_char(string, g_temp_message, string_len + 1);
+    clean_newline(g_temp_message, string_len + 1);
+    size_t new_len = strlen(g_temp_message);
+    g_log_size += new_len;
+    g_log_file->Write(g_log_file, &new_len, g_temp_message);
 }
 
 void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
@@ -243,18 +344,22 @@ void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
         return;
     }
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_RED);
-    print(system_table, L"[ERR!]");
+    print(system_table, L"[ERR!]", KURO_LOG_LEVEL_ERROR);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    print(system_table, L" ");
-    print(system_table, (CHAR16 *) status_to_str(error));
+    print(system_table, L" ", KURO_LOG_LEVEL_ERROR);
+    print(system_table, (CHAR16 *) status_to_str(error), KURO_LOG_LEVEL_ERROR);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    print(system_table, L"\n\r       EFI Error code: ");
+    if (error.error_code == 0) {
+        print(system_table, L"\n\r", KURO_LOG_LEVEL_ERROR);
+        return;
+    }
+    print(system_table, L"\n\r       EFI Error code: ", KURO_LOG_LEVEL_ERROR);
     CHAR16 hex_code[HEX_BUFFER_SIZE];
     to_hex(error.error_code, hex_code);
-    print(system_table, hex_code);
-    print(system_table, L" (");
-    print(system_table, (CHAR16 *) efi_status_to_str(error.error_code));
-    print(system_table, L")\n\r");
+    print(system_table, hex_code, KURO_LOG_LEVEL_ERROR);
+    print(system_table, L" (", KURO_LOG_LEVEL_ERROR);
+    print(system_table, (CHAR16 *) efi_status_to_str(error.error_code), KURO_LOG_LEVEL_ERROR);
+    print(system_table, L")\n\r", KURO_LOG_LEVEL_ERROR);
 }
 
 void k_warning(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
@@ -262,17 +367,17 @@ void k_warning(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
         return;
     }
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_YELLOW);
-    print(system_table, L"[WARN]");
+    print(system_table, L"[WARN]", KURO_LOG_LEVEL_WARNING);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    print(system_table, L" ");
-    print(system_table, message);
+    print(system_table, L" ", KURO_LOG_LEVEL_WARNING);
+    print(system_table, message, KURO_LOG_LEVEL_WARNING);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
 }
 
 static void k_debug_prefix(const EFI_SYSTEM_TABLE *system_table) {
-    print(system_table, L"[DBUG]");
+    print(system_table, L"[DBUG]", KURO_LOG_LEVEL_WARNING);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    print(system_table, L" ");
+    print(system_table, L" ", KURO_LOG_LEVEL_WARNING);
 }
 
 void k_debug(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
@@ -280,7 +385,7 @@ void k_debug(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
         return;
     }
     k_debug_prefix(system_table);
-    print(system_table, message);
+    print(system_table, message, KURO_LOG_LEVEL_DEBUG);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
 }
 
@@ -289,13 +394,13 @@ void k_debug_hex(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message, uint64_t
         return;
     }
     k_debug_prefix(system_table);
-    print(system_table, message);
+    print(system_table, message, KURO_LOG_LEVEL_DEBUG);
     CHAR16 hex_code[HEX_BUFFER_SIZE];
     to_hex(value, hex_code);
-    print(system_table, L": ");
+    print(system_table, L": ", KURO_LOG_LEVEL_DEBUG);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    print(system_table, hex_code);
-    print(system_table, L"\n\r");
+    print(system_table, hex_code, KURO_LOG_LEVEL_DEBUG);
+    print(system_table, L"\n\r", KURO_LOG_LEVEL_DEBUG);
 
 }
 
@@ -304,13 +409,13 @@ void k_debug_num(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message, uint64_t
         return;
     }
     k_debug_prefix(system_table);
-    print(system_table, message);
+    print(system_table, message, KURO_LOG_LEVEL_DEBUG);
     CHAR16 str_code[STR_BUFFER_SIZE];
     to_str(value, str_code);
-    print(system_table, L": ");
+    print(system_table, L": ", KURO_LOG_LEVEL_DEBUG);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    print(system_table, str_code);
-    print(system_table, L"\n\r");
+    print(system_table, str_code, KURO_LOG_LEVEL_DEBUG);
+    print(system_table, L"\n\r", KURO_LOG_LEVEL_DEBUG);
 }
 
 void k_debug_str(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message, CHAR16 *info) {
@@ -318,11 +423,11 @@ void k_debug_str(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message, CHAR16 *
         return;
     }
     k_debug_prefix(system_table);
-    print(system_table, message);
-    print(system_table, L": ");
+    print(system_table, message, KURO_LOG_LEVEL_DEBUG);
+    print(system_table, L": ", KURO_LOG_LEVEL_DEBUG);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    print(system_table, info);
-    print(system_table, L"\n\r");
+    print(system_table, info, KURO_LOG_LEVEL_DEBUG);
+    print(system_table, L"\n\r", KURO_LOG_LEVEL_DEBUG);
 }
 
 void k_info_str(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message, CHAR16 *info) {
@@ -330,14 +435,14 @@ void k_info_str(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message, CHAR16 *i
         return;
     }
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_CYAN);
-    print(system_table, L"[INFO]");
+    print(system_table, L"[INFO]", KURO_LOG_LEVEL_INFO);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    print(system_table, L" ");
-    print(system_table, message);
-    print(system_table, L": ");
+    print(system_table, L" ", KURO_LOG_LEVEL_INFO);
+    print(system_table, message, KURO_LOG_LEVEL_INFO);
+    print(system_table, L": ", KURO_LOG_LEVEL_INFO);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    print(system_table, info);
-    print(system_table, L"\n\r");
+    print(system_table, info, KURO_LOG_LEVEL_INFO);
+    print(system_table, L"\n\r", KURO_LOG_LEVEL_INFO);
 }
 
 void k_info(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
@@ -345,10 +450,10 @@ void k_info(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
         return;
     }
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_CYAN);
-    print(system_table, L"[INFO]");
+    print(system_table, L"[INFO]", KURO_LOG_LEVEL_INFO);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    print(system_table, L" ");
-    print(system_table, message);
+    print(system_table, L" ", KURO_LOG_LEVEL_INFO);
+    print(system_table, message, KURO_LOG_LEVEL_INFO);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
 }
 
@@ -357,10 +462,10 @@ void k_success(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
         return;
     }
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_GREEN);
-    print(system_table, L"[ OK ]");
+    print(system_table, L"[ OK ]", KURO_LOG_LEVEL_INFO);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    print(system_table, L" ");
-    print(system_table, message);
+    print(system_table, L" ", KURO_LOG_LEVEL_INFO);
+    print(system_table, message, KURO_LOG_LEVEL_INFO);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
 }
 
@@ -368,5 +473,5 @@ void k_br(const EFI_SYSTEM_TABLE *system_table, KuroLogLevel level) {
     if (g_console_log_level < level) {
         return;
     }
-    print(system_table, L"\n\r");
+    print(system_table, L"\n\r", level);
 }

@@ -12,14 +12,14 @@
 
 #define STACK_SIZE (STACK_SIZE_PAGE * PAGE_SIZE)
 
+#define TO_PAGES(a) ((a + 0xfff) / PAGE_SIZE)
+
 typedef struct {
     EFI_MEMORY_DESCRIPTOR *MemoryMap;
     UINTN *MapKey;
     UINTN *DescriptorSize;
     UINT32 *DescriptorVersion;
 } MemoryMap;
-
-void set_ident(KuroIdentifier *ident);
 
 ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table, const KuroConfigInternal *config);
 

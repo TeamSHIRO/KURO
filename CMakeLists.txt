@@ -89,8 +89,6 @@ set(KURO_BOOTLOADER_SOURCES
         src/status.c
         src/status.h
         include/kuro_conf.h
-        src/aslr.c
-        src/aslr.h
         src/conf.c
         src/conf.h
         src/kuro_const.h
