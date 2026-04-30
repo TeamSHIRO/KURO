@@ -25,7 +25,7 @@ typedef struct {
 - `1` true
 - `0` false
 
-If false, enters insecure mode and does not verify the executable signature.  
+If false, it enters insecure mode and does not verify the executable signature.  
 This is useful for development but should not be used in production.
 
 Insecure mode is not allowed when secure boot is enabled.
@@ -76,7 +76,7 @@ The string table appears before the KURO configuration blob and contains the fol
 2. Path to the module
 3. Command-line arguments
 
-All strings are null-terminated ASCII strings.
+All strings are null-terminated ASCII strings except for the command-line arguments.
 Path separators are always `\`.
 
 Example:

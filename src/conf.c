@@ -188,8 +188,8 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     config->secure_mode = 0;
     config->aslr_enabled = 1;
     config->exec_path = "\\kernel";
-    config->module_path = NULL;
-    config->cmd_arg = NULL;
+    config->module_path = "\\module";
+    config->cmd_arg = "bootloader_test";
 
 #ifdef KURO_NO_CONFIG
     config->free = 0;
@@ -376,9 +376,14 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         }
 
         config->module_path = module_off;
+    } else {
+        config->module_path = NULL;
     }
+
     if (cmd_len != 0) {
         config->cmd_arg = cmd_off;
+    } else {
+        config->cmd_arg = NULL;
     }
 
     k_success(system_table, L"Finished reading config!");
