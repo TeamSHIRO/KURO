@@ -1,7 +1,7 @@
 #include "status.h"
 #include <efi.h>
 
-#include "efi_helper.h"
+#include "helper.h"
 #include "file.h"
 #include "string.h"
 #include "kuro_conf.h"
@@ -22,8 +22,6 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"Failed to write to log file";
         case INIT_STR_HEAP_FAILED:
             return L"Failed to initialize string heap";
-        case FILE_NOT_FOUND:
-            return L"File not found";
         case FILE_UNREADABLE:
             return L"File is unreadable";
         case FILE_FAILED_SET_POS:
@@ -88,9 +86,9 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"Cannot get time";
         case SYSTEM_CANNOT_FLUSH_FILE:
             return L"Cannot flush file";
-        case SUCCESS:
+        case K_SUCCESS:
             return L"Success";
-        case UNKNOWN:
+        case K_UNKNOWN:
         default:
             return L"An unexpected error occurred";
     }
@@ -184,6 +182,41 @@ static EFI_FILE_INFO *g_file_info;
 
 static size_t g_log_size = 0;
 
+static void k_error_no_file(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
+    if (g_console_log_level < KURO_LOG_LEVEL_ERROR) {
+        return;
+    }
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_RED);
+    system_table->ConOut->OutputString(system_table->ConOut, L"[ERR!]");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) status_to_str(error));
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
+    if (error.error_code == EFI_SUCCESS) {
+        system_table->ConOut->OutputString(system_table->ConOut, L"\n\r");
+        return;
+    }
+    system_table->ConOut->OutputString(system_table->ConOut, L"\n\r       EFI Error code: ");
+    CHAR16 hex_code[HEX_BUFFER_SIZE];
+    to_hex(error.error_code, hex_code);
+    system_table->ConOut->OutputString(system_table->ConOut, hex_code);
+    system_table->ConOut->OutputString(system_table->ConOut, L" (");
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) efi_status_to_str(error.error_code));
+    system_table->ConOut->OutputString(system_table->ConOut, L")\n\r");
+}
+
+static void k_warning_no_file(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
+    if (g_console_log_level < KURO_LOG_LEVEL_WARNING) {
+        return;
+    }
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_YELLOW);
+    system_table->ConOut->OutputString(system_table->ConOut, L"[WARN]");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, message);
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
+}
+
 ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
     static const char INITIAL[] = "[INFO] KURO bootloader v" PROJECT_VERSION "\n"
                           "[INFO] Copyright (c) KURO Contributors\n"
@@ -191,19 +224,13 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
     static const size_t INITIAL_LEN = sizeof(INITIAL) - 1;
 
     if (g_file_log_level == KURO_LOG_LEVEL_NONE) {
-        return (ErrorStatus) {
-            .error_code = EFI_SUCCESS,
-            .status = SUCCESS
-        };
+        return SUCCESS;
     }
     k_info(system_table, L"Initializing the log file...\r\n");
     EFI_FILE_PROTOCOL *volume;
     EFI_STATUS status = cached_volume_open(image_handle, system_table, &volume);
     if (status != EFI_SUCCESS) {
-        return (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_OPEN_VOLUME
-        };
+        return ERROR(status, SYSTEM_CANNOT_OPEN_VOLUME);
     }
 
     k_info(system_table, L"Searching for the log file...\r\n");
@@ -212,34 +239,22 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
         k_info(system_table, L"No log file found! Creating a new one...\r\n");
         status = volume->Open(volume, &g_log_file, L"\\kuro_log.txt", EFI_FILE_MODE_WRITE | EFI_FILE_MODE_READ | EFI_FILE_MODE_CREATE, 0);
         if (status != EFI_SUCCESS) {
-            return (ErrorStatus) {
-                .error_code = status,
-                .status = LOG_INIT_FAILED
-            };
+            return ERROR(status, LOG_INIT_FAILED);
         }
         status = g_log_file->Write(g_log_file, (UINTN *) &INITIAL_LEN, (VOID*) INITIAL);
         if (status != EFI_SUCCESS) {
-            k_error(system_table, (ErrorStatus) {
-                .error_code = status,
-                .status = LOG_WRITE_FAILED
-            });
+            k_error_no_file(system_table, ERROR(status, LOG_WRITE_FAILED));
         }
         g_log_size = INITIAL_LEN;
         goto skip_info;
     }
     if (status != EFI_SUCCESS) {
-        return (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_GET_FILE
-        };
+        return ERROR(status, SYSTEM_CANNOT_GET_FILE);
     }
 
     status = g_log_file->Write(g_log_file, (UINTN *) &INITIAL_LEN, (VOID*) INITIAL);
     if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = LOG_WRITE_FAILED
-        });
+        k_error_no_file(system_table, ERROR(status, LOG_WRITE_FAILED));
     }
     g_log_size = INITIAL_LEN;
 
@@ -247,22 +262,16 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
 
     status = system_table->BootServices->AllocatePool(EfiLoaderData, g_file_info_size, (void **) &g_file_info);
     if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_OUT_OF_MEMORY
-        });
-        k_warning(system_table, L"Failed to get file info! The log might be corrupted\r\n");
+        k_error_no_file(system_table, ERROR(status, SYSTEM_OUT_OF_MEMORY));
+        k_warning_no_file(system_table, L"Failed to get file info! The log might be corrupted\r\n");
         goto skip_info;
     }
     status = g_log_file->GetInfo(g_log_file, (EFI_GUID *) &FI_ID, &g_file_info_size, g_file_info);
     if (status != EFI_SUCCESS) {
         system_table->BootServices->FreePool(g_file_info);
         g_file_info = NULL;
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_GET_FILE_INFO
-        });
-        k_warning(system_table, L"Failed to get file info! The log might be corrupted\r\n");
+        k_error_no_file(system_table, ERROR(status, SYSTEM_CANNOT_GET_FILE_INFO));
+        k_warning_no_file(system_table, L"Failed to get file info! The log might be corrupted\r\n");
     }
 
     skip_info:;
@@ -274,18 +283,12 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
     if (status != EFI_SUCCESS) {
         g_temp_message_size = 0;
         g_temp_message = NULL;
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = INIT_STR_HEAP_FAILED
-        });
+        k_error_no_file(system_table, ERROR(status, INIT_STR_HEAP_FAILED));
     } else {
         k_success(system_table, L"Allocated initial string heap!\r\n");
     }
 
-    return (ErrorStatus) {
-        .error_code = EFI_SUCCESS,
-        .status = SUCCESS
-    };
+    return SUCCESS;
 }
 
 void fini_log_file(const EFI_SYSTEM_TABLE *system_table) {
@@ -325,41 +328,6 @@ void fini_log_file(const EFI_SYSTEM_TABLE *system_table) {
     }
     g_log_file->Close(g_log_file);
     g_log_file = NULL;
-}
-
-static void k_error_no_file(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
-    if (g_console_log_level < KURO_LOG_LEVEL_ERROR) {
-        return;
-    }
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_RED);
-    system_table->ConOut->OutputString(system_table->ConOut, L"[ERR!]");
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    system_table->ConOut->OutputString(system_table->ConOut, L" ");
-    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) status_to_str(error));
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    if (error.error_code == 0) {
-        system_table->ConOut->OutputString(system_table->ConOut, L"\n\r");
-        return;
-    }
-    system_table->ConOut->OutputString(system_table->ConOut, L"\n\r       EFI Error code: ");
-    CHAR16 hex_code[HEX_BUFFER_SIZE];
-    to_hex(error.error_code, hex_code);
-    system_table->ConOut->OutputString(system_table->ConOut, hex_code);
-    system_table->ConOut->OutputString(system_table->ConOut, L" (");
-    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) efi_status_to_str(error.error_code));
-    system_table->ConOut->OutputString(system_table->ConOut, L")\n\r");
-}
-
-static void k_warning_no_file(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
-    if (g_console_log_level < KURO_LOG_LEVEL_WARNING) {
-        return;
-    }
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_YELLOW);
-    system_table->ConOut->OutputString(system_table->ConOut, L"[WARN]");
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
-    system_table->ConOut->OutputString(system_table->ConOut, L" ");
-    system_table->ConOut->OutputString(system_table->ConOut, message);
-    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
 }
 
 static void print(const EFI_SYSTEM_TABLE *system_table, CHAR16 *string, KuroLogLevel level) {
@@ -427,7 +395,7 @@ void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
     print(system_table, L" ", KURO_LOG_LEVEL_ERROR);
     print(system_table, (CHAR16 *) status_to_str(error), KURO_LOG_LEVEL_ERROR);
     system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
-    if (error.error_code == 0) {
+    if (error.error_code == EFI_SUCCESS) {
         print(system_table, L"\n\r", KURO_LOG_LEVEL_ERROR);
         return;
     }

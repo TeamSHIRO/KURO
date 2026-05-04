@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 #include "efi.h"
-#include "efi_helper.h"
+#include "helper.h"
 #include "status.h"
 #include "protocol/efi-lip.h"
 #include "protocol/efi-sfsp.h"
@@ -20,80 +20,68 @@ This optimization is based on the assumption that the volume will not change dur
 reasonable assumption in most cases. If the volume does change, then this caching mechanism may lead to stale file
 protocol being used, but in a typical bootloader scenario, this should not be an issue.
 Do not close the file protocol unless you made sure that there are no other functions that still use it
+
+May return a dangling pointer on failure
  */
 EFI_STATUS cached_volume_open(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table, EFI_FILE_PROTOCOL **output) {
-    EFI_LOADED_IMAGE_PROTOCOL *loaded_image;
+    static EFI_LOADED_IMAGE_PROTOCOL *loaded_image = NULL;
     static EFI_FILE_PROTOCOL *file_protocol = NULL;
+    static EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *file_system = NULL;
+
     if (file_protocol != NULL) {
         *output = file_protocol;
         return EFI_SUCCESS;
     }
 
-    const EFI_STATUS GET_LIP_SUCCESS =
-        system_table->BootServices->OpenProtocol(image_handle, (EFI_GUID *) &LIP_GUID, (void **) &loaded_image,
+    EFI_STATUS status = system_table->BootServices->OpenProtocol(image_handle, (EFI_GUID *) &LIP_GUID, (void **) &loaded_image,
                                                  image_handle, NULL, EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
 
-    if (GET_LIP_SUCCESS != EFI_SUCCESS) {
-        return GET_LIP_SUCCESS;
+    if (status != EFI_SUCCESS) {
+        return status;
     }
 
-    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *file_system;
-
-    const EFI_STATUS GET_SFSP_SUCCESS = system_table->BootServices->OpenProtocol(
+    status = system_table->BootServices->OpenProtocol(
         loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, (void **) &file_system, image_handle, NULL,
         EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
 
-    if (GET_SFSP_SUCCESS != EFI_SUCCESS) {
-        system_table->BootServices->CloseProtocol(loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, image_handle,
-                                                  NULL);
-        return GET_SFSP_SUCCESS;
+    if (status != EFI_SUCCESS) {
+        goto cleanup;
     }
 
-    const EFI_STATUS OPEN_VOLUME_SUCCESS = file_system->OpenVolume(file_system, &file_protocol);
+    status = file_system->OpenVolume(file_system, &file_protocol);
 
-    if (OPEN_VOLUME_SUCCESS != EFI_SUCCESS) {
-        system_table->BootServices->CloseProtocol(loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, image_handle,
-                                                  NULL);
-        return OPEN_VOLUME_SUCCESS;
+    cleanup:
+    if (loaded_image != NULL) {
+        system_table->BootServices->CloseProtocol(image_handle, (EFI_GUID *) &LIP_GUID, image_handle, NULL);
     }
-
-    system_table->BootServices->CloseProtocol(loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, image_handle, NULL);
-    system_table->BootServices->CloseProtocol(image_handle, (EFI_GUID *) &LIP_GUID, image_handle, NULL);
+    if (file_system != NULL) {
+        system_table->BootServices->CloseProtocol(loaded_image->DeviceHandle, (EFI_GUID *) &SFSP_GUID, image_handle, NULL);
+    }
 
     *output = file_protocol;
-
-    return EFI_SUCCESS;
+    return status;
 }
 
 EFI_STATUS get_file_size(const EFI_SYSTEM_TABLE *system_table, EFI_FILE_PROTOCOL *file_protocol, UINTN *output) {
-    EFI_FILE_INFO *file_info = 0;
+    EFI_FILE_INFO *file_info = NULL;
     UINTN file_info_size = 0;
 
     EFI_STATUS status = file_protocol->GetInfo(file_protocol, (EFI_GUID *) &FI_ID,
                                                &file_info_size, NULL);
     if (status != EFI_ERR(EFI_BUFFER_TOO_SMALL)) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_GET_FILE_INFO
-        });
+        k_error(system_table, ERROR(status, SYSTEM_CANNOT_GET_FILE_INFO));
         goto fallback;
     }
 
     status = system_table->BootServices->AllocatePool(EfiLoaderData, file_info_size, (void **) &file_info);
     if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_OUT_OF_MEMORY
-        });
+        k_error(system_table, ERROR(status, SYSTEM_OUT_OF_MEMORY));
         goto fallback;
     }
     status = file_protocol->GetInfo(file_protocol, (EFI_GUID *) &FI_ID, &file_info_size,
                                     file_info);
     if (status != EFI_SUCCESS) {
-        k_error(system_table, (ErrorStatus) {
-            .error_code = status,
-            .status = SYSTEM_CANNOT_GET_FILE_INFO
-        });
+        k_error(system_table, ERROR(status, SYSTEM_CANNOT_GET_FILE_INFO));
         system_table->BootServices->FreePool(file_info);
         goto fallback;
     }

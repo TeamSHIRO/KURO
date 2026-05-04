@@ -73,7 +73,7 @@ static KuroStatus is_valid_elf_hdr(const Elf64_Ehdr *file, const size_t FILE_SIZ
     if (ph_end > FILE_SIZE) {
         return ELF_INVALID_HEADER;
     }
-    return SUCCESS;
+    return K_SUCCESS;
 }
 
 static KuroStatus parse_dyn(const unsigned char *file, const Elf64_Phdr *phdr, size_t FILE_SIZE, ExecPointOfInterest *out) {
@@ -228,12 +228,12 @@ static KuroStatus parse_dyn(const unsigned char *file, const Elf64_Phdr *phdr, s
         }
     }
 
-    return SUCCESS;
+    return K_SUCCESS;
 }
 
 KuroStatus parse_elf(const unsigned char *file, size_t FILE_SIZE, ExecPointOfInterest *out) {
     const KuroStatus IS_HDR_VALID = is_valid_elf_hdr((const Elf64_Ehdr*) file, FILE_SIZE);
-    if (IS_HDR_VALID != SUCCESS) {
+    if (IS_HDR_VALID != K_SUCCESS) {
         return IS_HDR_VALID;
     }
     size_t mem_start = SIZE_MAX;
@@ -255,7 +255,7 @@ KuroStatus parse_elf(const unsigned char *file, size_t FILE_SIZE, ExecPointOfInt
                 }
                 out->is_dyn = 1;
                 const KuroStatus DYN_STATUS = parse_dyn(file, phdr, FILE_SIZE, out);
-                if (DYN_STATUS != SUCCESS) {
+                if (DYN_STATUS != K_SUCCESS) {
                     return DYN_STATUS;
                 }
                 break;
@@ -310,5 +310,5 @@ KuroStatus parse_elf(const unsigned char *file, size_t FILE_SIZE, ExecPointOfInt
     }
     out->mem_start = mem_start;
     out->mem_end = mem_end;
-    return SUCCESS;
+    return K_SUCCESS;
 }

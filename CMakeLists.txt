@@ -85,7 +85,7 @@ set(KURO_BOOTLOADER_SOURCES
         src/string.h
         src/elf.h
         src/elf.c
-        src/efi_helper.h
+        src/helper.h
         src/status.c
         src/status.h
         include/kuro_conf.h
@@ -95,6 +95,8 @@ set(KURO_BOOTLOADER_SOURCES
         src/kuro_const.c
         src/verify.c
         src/verify.h
+        src/panic.h
+        src/panic.asm
 )
 
 add_library(ed25519 STATIC

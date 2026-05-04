@@ -1,7 +1,7 @@
 #include "verify.h"
 
 #include "ed25519.h"
-#include "efi_helper.h"
+#include "helper.h"
 #include "kuro_const.h"
 #include "kuro_footer.h"
 #include "string.h"
@@ -22,5 +22,5 @@ KuroStatus verify_footer(unsigned char *file, const size_t FILE_SIZE, const uint
         return SIGNATURE_INVALID;
     }
 
-    return SUCCESS;
+    return K_SUCCESS;
 }
