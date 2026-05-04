@@ -48,10 +48,10 @@ static ErrorStatus conf_to_wchar(const EFI_SYSTEM_TABLE *system_table, EFI_FILE_
         };
     }
     to_wchar(config->exec_path, exec_path, total_len);
-        k_info_str(system_table, L"      Booting", exec_path);
+        k_info_str(system_table, L"       Booting", exec_path);
     if (config->module_path != NULL) {
         to_wchar(config->module_path, exec_path + exec_path_len, total_len);
-        k_info_str(system_table, L"  with module", exec_path + exec_path_len);
+        k_info_str(system_table, L"   with module", exec_path + exec_path_len);
     }
     if (config->cmd_arg != NULL) {
         to_wchar(config->cmd_arg, exec_path + exec_path_len + mod_path_len, total_len);
@@ -113,7 +113,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     EFI_STATUS status = file_protocol->Open(file_protocol, &exec_file, paths.str, EFI_FILE_MODE_READ, 0);
     if (status != EFI_SUCCESS) {
         if (status == EFI_ERR(EFI_NOT_FOUND)) {
-            ErrorStatus error = {.error_code = EFI_ERR(EFI_NOT_FOUND), .status = ELF_FILE_NOT_FOUND};
+            ErrorStatus error = {.error_code = EFI_ERR(EFI_NOT_FOUND), .status = FILE_NOT_FOUND};
             file_protocol->Close(file_protocol);
             return error;
         }
@@ -130,7 +130,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         exec_file->Close(exec_file);
         return error;
     }
-    k_debug_hex(system_table, L"Executable size", exec_file_size);
+    k_debug_num(system_table, L"Executable size", exec_file_size);
 
     // ELF cannot realistically go under 128 if included KuroFooter. Could be more accurate but eh
     if (exec_file_size < MINIMUM_ELF_SIZE) {
@@ -159,32 +159,47 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
 
     if (config->secure_mode == 1) {
         k_info(system_table, L"Verifying the executable signature...\r\n");
-        const ErrorStatus SIGN_STATUS = verify_footer(exec, exec_file_size, config->public_key);
-        if (SIGN_STATUS.error_code != EFI_SUCCESS) {
-            exec_file->Close(exec_file);
+        const KuroStatus SIGN_STATUS = verify_footer(exec, exec_file_size, config->public_key);
+        if (SIGN_STATUS != SUCCESS) {
             file_protocol->Close(file_protocol);
-            return SIGN_STATUS;
+            system_table->BootServices->FreePages((EFI_PHYSICAL_ADDRESS) exec, TO_PAGES(exec_file_size));
+            return (ErrorStatus) {
+                .error_code = 0,
+                .status = SIGN_STATUS
+            };
         }
         k_success(system_table, L"The executable signature is valid!\r\n");
+    } else {
+        k_info(system_table, L"Skipping verification...\r\n");
     }
 
+    void* mod = 0;
     if (paths.mod_len == 0) {
+        k_br(system_table, KURO_LOG_LEVEL_INFO);
+        k_info(system_table, L"No module specified, skipping...\r\n");
         file_protocol->Close(file_protocol);
+        mod = NULL;
         goto skip_module;
     }
 
     k_br(system_table, KURO_LOG_LEVEL_INFO);
     k_info(system_table, L"Loading the module...\r\n");
 
-    status = exec_file->Open(exec_file, &mod_file, paths.str + paths.exec_len, EFI_FILE_MODE_READ, 0);
+    status = file_protocol->Open(file_protocol, &mod_file, paths.str + paths.exec_len, EFI_FILE_MODE_READ, 0);
     file_protocol->Close(file_protocol);
     if (status != EFI_SUCCESS) {
         if (status == EFI_ERR(EFI_NOT_FOUND)) {
-            ErrorStatus error = {.error_code = EFI_ERR(EFI_NOT_FOUND), .status = ELF_FILE_NOT_FOUND};
-            return error;
+            ErrorStatus error = {.error_code = EFI_ERR(EFI_NOT_FOUND), .status = FILE_NOT_FOUND};
+            k_error(system_table, error);
+            k_warning(system_table, L"Failed to load the module, skipping...\r\n");
+            mod = NULL;
+            goto skip_module;
         }
         ErrorStatus error = {.error_code = status, .status = SYSTEM_CANNOT_GET_FILE};
-        return error;
+        k_error(system_table, error);
+        k_warning(system_table, L"Failed to load the module, skipping...\r\n");
+        mod = NULL;
+        goto skip_module;
     }
 
     UINTN mod_file_size;
@@ -192,50 +207,59 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     if (status != EFI_SUCCESS) {
         ErrorStatus error = {.error_code = status, .status = SYSTEM_CANNOT_READ_FILESIZE};
         mod_file->Close(mod_file);
-        return error;
+        k_error(system_table, error);
+        k_warning(system_table, L"Failed to load the module, skipping...\r\n");
+        mod = NULL;
+        goto skip_module;
     }
-    k_debug_hex(system_table, L"Module size", mod_file_size);
+    k_debug_num(system_table, L"Module size", mod_file_size);
     status = mod_file->SetPosition(mod_file, 0);
     if (status != EFI_SUCCESS) {
         mod_file->Close(mod_file);
         ErrorStatus error = {.error_code = status, .status = LOAD_FAILED};
-        return error;
+        k_error(system_table, error);
+        k_warning(system_table, L"Failed to load the module, skipping...\r\n");
+        mod = NULL;
+        goto skip_module;
     }
 
-    void* mod = 0;
     error_status = load_file(system_table, mod, mod_file_size, mod_file);
     if (error_status.error_code != EFI_SUCCESS) {
         file_protocol->Close(file_protocol);
-        return error_status;
+        k_error(system_table, error_status);
+        k_warning(system_table, L"Failed to load the module, skipping...\r\n");
+        mod = NULL;
+        goto skip_module;
     }
 
     k_success(system_table, L"Loaded the module!\r\n");
 
     if (config->secure_mode == 1) {
         k_info(system_table, L"Verifying the module signature...\r\n");
-        const ErrorStatus SIGN_STATUS = verify_footer(mod, mod_file_size, config->public_key);
-        if (SIGN_STATUS.error_code != EFI_SUCCESS) {
+        const KuroStatus SIGN_STATUS = verify_footer(mod, mod_file_size, config->public_key);
+        if (SIGN_STATUS != SUCCESS) {
             mod_file->Close(mod_file);
-            return SIGN_STATUS;
+            system_table->BootServices->FreePages((EFI_PHYSICAL_ADDRESS) mod, TO_PAGES(mod_file_size));
+            k_error(system_table, (ErrorStatus) {
+                .error_code = 0,
+                .status = SIGN_STATUS
+            });
+            k_warning(system_table, L"Failed to load the module, skipping...\r\n");
+            mod = NULL;
+            goto skip_module;
         }
         k_success(system_table, L"The module signature is valid!\r\n");
+    } else {
+        k_info(system_table, L"Skipping verification...\r\n");
     }
 
     skip_module:
-
     system_table->BootServices->FreePool(paths.str);
 
     k_br(system_table, KURO_LOG_LEVEL_INFO);
     k_info(system_table, L"Starting boot procedure...\r\n");
 
 
-    // bi as in boot info not bisexual *please laugh*
-    // const size_t PAGES_REQUIRED_NO_BI = PROGRAM_SIZE_PAGE + STACK_SIZE_PAGE;
-
-    // k_debug(system_table, L"Base page requirements:\r\n");
-    // k_debug_num(system_table, L"  Program", PROGRAM_SIZE_PAGE);
-    // k_debug_num(system_table, L"  Stack  ", STACK_SIZE_PAGE);
-    // k_debug_num(system_table, L"  Total  ", PAGES_REQUIRED_NO_BI);
 
     k_br(system_table, KURO_LOG_LEVEL_DEBUG);
 
@@ -244,10 +268,10 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
     MemoryMap memory_map;
     const ErrorStatus EXIT_STATUS = exit_boot(system_table, image_handle, &memory_map);
     if (EXIT_STATUS.error_code != EFI_SUCCESS) {
+        system_table->BootServices->FreePages((EFI_PHYSICAL_ADDRESS) exec, TO_PAGES(exec_file_size));
+        system_table->BootServices->FreePages((EFI_PHYSICAL_ADDRESS) mod, TO_PAGES(mod_file_size));
         return EXIT_STATUS;
     }
-
-
 
     // panic:
     while (1) {

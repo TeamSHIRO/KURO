@@ -1,7 +1,8 @@
 #include "string.h"
 
-#include <protocol/efi-fp.h>
 #include <stddef.h>
+
+#include "efi.h"
 
 void strncpy(char *dest, const char *src, size_t n) {
     size_t i = 0;

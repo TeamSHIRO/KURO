@@ -4,8 +4,7 @@
 #include <stddef.h>
 
 #include "status.h"
-#include "protocol/efi-sfsp.h"
 
-ErrorStatus verify_footer(unsigned char *file, size_t FILE_SIZE, const uint8_t public_key[32]);
+KuroStatus verify_footer(unsigned char *file, size_t FILE_SIZE, const uint8_t public_key[32]);
 
 #endif // VERIFY_H

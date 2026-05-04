@@ -71,6 +71,7 @@ Checks: -*,
   google-readability-todo,
   readability-identifier-naming
 WarningsAsErrors: '*'
+HeaderFilterRegex: 'src/.*'
 FormatStyle: file
 CheckOptions:
   google-readability-todo.Style: Parentheses

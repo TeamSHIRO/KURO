@@ -17,8 +17,8 @@
 #     // .str_offset is not defined
 #     // Default is:
 #     // Executable path: \kernel
-#     // No module
-#     // Command-line arguments is empty
+#     //     Module path: \module
+#     //   cmd arguments: bootloader_test
 #     .identifier = // identification stuff yk the deal
 # };
 

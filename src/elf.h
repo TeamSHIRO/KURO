@@ -4,16 +4,27 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "protocol/efi-fp.h"
+#include "status.h"
 
 #define MINIMUM_ELF_SIZE 128
 
-typedef enum {
-    CHECK_FAILED = 0,
-    CHECK_PASSED = 1
-} CheckResult;
-
 #define EI_NIDENT 16
+
+#define ELFMAG0 0x7f
+#define ELFMAG1 'E'
+#define ELFMAG2 'L'
+#define ELFMAG3 'F'
+
+#define EI_MAG0 0
+#define EI_MAG1 1
+#define EI_MAG2 2
+#define EI_MAG3 3
+#define EI_CLASS 4
+#define EI_DATA 5
+#define EI_VERSION 6
+#define EI_OSABI 7
+#define EI_ABIVERSION 8
+#define EI_PAD 9
 
 typedef uint64_t Elf64_Addr;
 typedef uint64_t Elf64_Off;
@@ -131,8 +142,8 @@ typedef enum {
 
 typedef enum {
     EM_NONE = 0,
-    EM_X86_64 = 62
-    // More if needed
+    EM_X86_64 = 62,
+    EM_AARCH64 = 183
 } MachineType;
 
 typedef enum {
@@ -143,8 +154,84 @@ typedef enum {
     PF_MASKPROC = 0xf0000000
 } SegmentFlag;
 
-int is_valid_elf_header(const Elf64_Ehdr *header, const EFI_FILE_PROTOCOL *file);
-EFI_STATUS get_elf_info(const EFI_FILE_PROTOCOL *file, const Elf64_Ehdr *ehdr, size_t *out_mem_size,
-                                   size_t *out_start_mem);
+typedef enum {
+    ELFCLASSNONE = 0,
+    ELFCLASS32 = 1,
+    ELFCLASS64 = 2
+} ElfClass;
+
+typedef enum {
+    ELFDATANONE = 0,
+    ELFDATA2LSB = 1,
+    ELFDATA2MSB = 2
+} ElfData;
+
+typedef enum {
+    EV_NONE = 0,
+    EV_CURRENT = 1
+} ElfVersion;
+
+typedef struct {
+    Elf64_Sxword d_tag;
+    union {
+        Elf64_Xword d_val;
+        Elf64_Addr d_ptr;
+    } d_un;
+} Elf64_Dyn;
+
+typedef enum {
+    DT_NULL = 0,
+    DT_SYMTAB = 6,
+    DT_RELA = 7,
+    DT_RELASZ = 8,
+    DT_RELAENT = 9,
+    DT_REL = 17,
+    DT_RELSZ = 18,
+    DT_RELENT = 19,
+    DT_SYMTAB_SHNDX = 34,
+    DT_RELRSZ = 35,
+    DT_RELR = 36,
+    DT_RELRENT = 37
+} d_tag;
+
+typedef struct {
+    Elf64_Addr   r_offset;
+    Elf64_Xword  r_info;
+} Elf64_Rel;
+
+typedef struct {
+    Elf64_Addr   r_offset;
+    Elf64_Xword  r_info;
+    Elf64_Sxword r_addend;
+} Elf64_Rela;
+
+typedef Elf64_Xword Elf64_Relr;
+
+typedef struct {
+    Elf64_Phdr *phdr_load_start;
+    size_t phdr_load_num;
+
+    size_t mem_start;
+    size_t mem_end;
+
+    _Bool is_dyn;
+
+    Elf64_Rel *rel;
+    size_t rel_size;
+    size_t rel_num;
+
+    Elf64_Rela *rela;
+    size_t rela_size;
+    size_t rela_num;
+
+    Elf64_Relr *relr;
+    size_t relr_size;
+    size_t relr_num;
+
+    Elf64_Dyn *symtab;
+    Elf64_Dyn *symtab_shndx;
+} ExecPointOfInterest;
+
+KuroStatus parse_elf(const unsigned char *file, size_t FILE_SIZE, ExecPointOfInterest *out);
 
 #endif // ELF_H

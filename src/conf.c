@@ -19,7 +19,7 @@ typedef enum {
     IS_CMD_ARG
 } IsPath;
 
-static size_t len_n_verify(const char *str, int *is_valid, IsPath is_path) {
+static size_t len_n_verify(const char *str, _Bool *is_valid, IsPath is_path) {
     size_t i = 0;
     *is_valid = 1;
 
@@ -30,11 +30,11 @@ static size_t len_n_verify(const char *str, int *is_valid, IsPath is_path) {
         }
     }
     while (str[i] != '\0') {
-        i++;
         // Not ASCII
         if (is_path == IS_PATH_FILE && str[i] > 127 && *is_valid == 1) {
             *is_valid = 0;
         }
+        i++;
     }
 
     if (is_path == IS_PATH_FILE && str[i - 1] == '\\') {
@@ -165,8 +165,6 @@ static void setup_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_
             config->secure_mode = kuro_config->secure_mode;
         }
     }
-
-    k_br(system_table, KURO_LOG_LEVEL_WARNING);
     if (config->secure_mode == 0) {
         k_warning(system_table, L"Secure mode is disabled!\r\n");
     }
@@ -263,11 +261,10 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     config->exec_path = NULL;
 
     UINTN str_abs_offset;
-    int underflow_check = __builtin_sub_overflow(file_size - config_size, kuro_config.str_offset, &str_abs_offset);
-    if (underflow_check == 1) {
+    if (__builtin_sub_overflow(file_size - config_size, kuro_config.str_offset, &str_abs_offset) == 1) {
         exec_file->Close(exec_file);
         return (ErrorStatus) {
-            .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+            .error_code = 0,
             .status = INVALID_STRING_CONFIG
         };
     }
@@ -279,7 +276,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     if (str_config_size < 5) {
         exec_file->Close(exec_file);
         return (ErrorStatus) {
-            .error_code = EFI_ERR(EFI_BUFFER_TOO_SMALL),
+            .error_code = 0,
             .status = INVALID_STRING_CONFIG
         };
     }
@@ -316,13 +313,13 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     }
     exec_file->Close(exec_file);
 
-    int is_valid;
+    _Bool is_valid;
     size_t exec_len = len_n_verify(str_config, &is_valid, IS_PATH_FILE);
     size_t remaining_len = str_config_size - 2;
     if (exec_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
         return (ErrorStatus) {
-            .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+            .error_code = 0,
             .status = INVALID_STRING_CONFIG
         };
     }
@@ -333,7 +330,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     if (module_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
         return (ErrorStatus) {
-            .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+            .error_code = 0,
             .status = INVALID_STRING_CONFIG
         };
     }
@@ -344,7 +341,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     if (cmd_len + 1 > remaining_len || !is_valid) {
         system_table->BootServices->FreePool(str_config);
         return (ErrorStatus) {
-            .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+            .error_code = 0,
             .status = INVALID_STRING_CONFIG
         };
     }
@@ -353,7 +350,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         if (str_config[0] != '\\') {
             system_table->BootServices->FreePool(str_config);
             return (ErrorStatus) {
-                .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+                .error_code = 0,
                 .status = INVALID_STRING_CONFIG
             };
         }
@@ -361,7 +358,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
     } else {
         system_table->BootServices->FreePool(str_config);
         return (ErrorStatus) {
-            .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+            .error_code = 0,
             .status = INVALID_STRING_CONFIG
         };
     }
@@ -370,7 +367,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         if (module_off[0] != '\\') {
             system_table->BootServices->FreePool(str_config);
             return (ErrorStatus) {
-                .error_code = EFI_ERR(EFI_INVALID_PARAMETER),
+                .error_code = 0,
                 .status = INVALID_STRING_CONFIG
             };
         }
@@ -386,7 +383,7 @@ ErrorStatus get_config(const EFI_SYSTEM_TABLE *system_table, EFI_HANDLE image_ha
         config->cmd_arg = NULL;
     }
 
-    k_success(system_table, L"Finished reading config!");
+    k_success(system_table, L"Finished reading config!\r\n");
     return (ErrorStatus) {
         .error_code = EFI_SUCCESS,
         .status = SUCCESS

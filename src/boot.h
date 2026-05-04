@@ -12,7 +12,7 @@
 
 #define STACK_SIZE (STACK_SIZE_PAGE * PAGE_SIZE)
 
-#define TO_PAGES(a) ((a + 0xfff) / PAGE_SIZE)
+#define TO_PAGES(a) (((a) + 0xfff) / PAGE_SIZE)
 
 typedef struct {
     EFI_MEMORY_DESCRIPTOR *MemoryMap;

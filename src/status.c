@@ -8,7 +8,7 @@
 #include "protocol/efi-fp.h"
 
 const CHAR16 *status_to_str(ErrorStatus status) {
-    enum KuroStatus error = status.status;
+    KuroStatus error = status.status;
     switch (error) {
         case WATCHDOG_DISABLE_FAILED:
             return L"Failed to disable watchdog timer";
@@ -18,22 +18,44 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"Invalid string table inside the configuration";
         case LOG_INIT_FAILED:
             return L"Failed to initialize file logging";
+        case LOG_WRITE_FAILED:
+            return L"Failed to write to log file";
         case INIT_STR_HEAP_FAILED:
             return L"Failed to initialize string heap";
-        case ELF_FILE_NOT_FOUND:
-            return L"ELF file not found";
-        case ELF_UNREADABLE:
-            return L"ELF file is unreadable";
-        case ELF_FAILED_SET_POS:
-            return L"Failed to set position in ELF file";
+        case FILE_NOT_FOUND:
+            return L"File not found";
+        case FILE_UNREADABLE:
+            return L"File is unreadable";
+        case FILE_FAILED_SET_POS:
+            return L"Failed to set position in the file";
         case ELF_INVALID_FILE_SIZE:
             return L"ELF file has an impossible file size";
         case ELF_INVALID_HEADER:
             return L"ELF file has an invalid ELF header";
+        case ELF_UNSUPPORTED_ARCH:
+            return L"ELF file has an unsupported architecture";
+        case ELF_UNSUPPORTED_ENDIAN:
+            return L"ELF file has an unsupported endianness";
+        case ELF_UNSUPPORTED_VERSION:
+            return L"ELF file has an unsupported version";
+        case ELF_NOT_64_BIT:
+            return L"ELF file is not 64-bit";
+        case ELF_NOT_DYN:
+            return L"ELF file is not position independent";
         case ELF_INVALID_PROGRAM_HEADER:
             return L"ELF file has an invalid program header";
         case ELF_INVALID_MEMORY_SIZE:
             return L"ELF file has an invalid memory size";
+        case ELF_OUT_OF_BOUND:
+            return L"ELF file has an out of bound memory address";
+        case ELF_INVALID_DYN_SECTION:
+            return L"ELF file has an invalid dynamic section";
+        case ELF_INVALID_ENTRY:
+            return L"ELF file has an invalid entry point";
+        case ELF_INVALID_RELOCATION:
+            return L"ELF file has an invalid relocation";
+        case ELF_INVALID_SYMBOL:
+            return L"ELF file has an invalid symbol";
         case LOAD_FAILED:
             return L"Failed to load the file";
         case FOOTER_UNREADABLE:
@@ -64,6 +86,8 @@ const CHAR16 *status_to_str(ErrorStatus status) {
             return L"Cannot set file info";
         case SYSTEM_CANNOT_GET_TIME:
             return L"Cannot get time";
+        case SYSTEM_CANNOT_FLUSH_FILE:
+            return L"Cannot flush file";
         case SUCCESS:
             return L"Success";
         case UNKNOWN:
@@ -161,6 +185,11 @@ static EFI_FILE_INFO *g_file_info;
 static size_t g_log_size = 0;
 
 ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
+    static const char INITIAL[] = "[INFO] KURO bootloader v" PROJECT_VERSION "\n"
+                          "[INFO] Copyright (c) KURO Contributors\n"
+                          "[INFO] Licensed under the Apache License, Version 2.0\n\n";
+    static const size_t INITIAL_LEN = sizeof(INITIAL) - 1;
+
     if (g_file_log_level == KURO_LOG_LEVEL_NONE) {
         return (ErrorStatus) {
             .error_code = EFI_SUCCESS,
@@ -183,12 +212,19 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
         k_info(system_table, L"No log file found! Creating a new one...\r\n");
         status = volume->Open(volume, &g_log_file, L"\\kuro_log.txt", EFI_FILE_MODE_WRITE | EFI_FILE_MODE_READ | EFI_FILE_MODE_CREATE, 0);
         if (status != EFI_SUCCESS) {
-            system_table->BootServices->FreePool(g_file_info);
             return (ErrorStatus) {
                 .error_code = status,
-                .status = SYSTEM_CANNOT_GET_FILE
+                .status = LOG_INIT_FAILED
             };
         }
+        status = g_log_file->Write(g_log_file, (UINTN *) &INITIAL_LEN, (VOID*) INITIAL);
+        if (status != EFI_SUCCESS) {
+            k_error(system_table, (ErrorStatus) {
+                .error_code = status,
+                .status = LOG_WRITE_FAILED
+            });
+        }
+        g_log_size = INITIAL_LEN;
         goto skip_info;
     }
     if (status != EFI_SUCCESS) {
@@ -198,6 +234,15 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
         };
     }
 
+    status = g_log_file->Write(g_log_file, (UINTN *) &INITIAL_LEN, (VOID*) INITIAL);
+    if (status != EFI_SUCCESS) {
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = LOG_WRITE_FAILED
+        });
+    }
+    g_log_size = INITIAL_LEN;
+
     k_info(system_table, L"Log file found! Cleaning up logs...\r\n");
 
     status = system_table->BootServices->AllocatePool(EfiLoaderData, g_file_info_size, (void **) &g_file_info);
@@ -206,6 +251,7 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
             .error_code = status,
             .status = SYSTEM_OUT_OF_MEMORY
         });
+        k_warning(system_table, L"Failed to get file info! The log might be corrupted\r\n");
         goto skip_info;
     }
     status = g_log_file->GetInfo(g_log_file, (EFI_GUID *) &FI_ID, &g_file_info_size, g_file_info);
@@ -216,10 +262,10 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
             .error_code = status,
             .status = SYSTEM_CANNOT_GET_FILE_INFO
         });
+        k_warning(system_table, L"Failed to get file info! The log might be corrupted\r\n");
     }
-    g_log_size = 0;
 
-    skip_info:
+    skip_info:;
 
     k_success(system_table, L"Initialized the log file!\r\n");
     k_info(system_table, L"Allocating initial string heap...\r\n");
@@ -232,8 +278,10 @@ ErrorStatus init_log_file(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *syste
             .error_code = status,
             .status = INIT_STR_HEAP_FAILED
         });
+    } else {
+        k_success(system_table, L"Allocated initial string heap!\r\n");
     }
-    k_success(system_table, L"Allocated initial string heap!\r\n");
+
     return (ErrorStatus) {
         .error_code = EFI_SUCCESS,
         .status = SUCCESS
@@ -247,29 +295,18 @@ void fini_log_file(const EFI_SYSTEM_TABLE *system_table) {
     }
     k_info(system_table, L"Finalizing the log file...\r\n");
 
-    EFI_TIME g_current_time;
     if (g_file_info == NULL) {
         goto skip_info;
     }
 
-    EFI_STATUS status = system_table->RuntimeServices->GetTime(&g_current_time, NULL);
-    if (status == EFI_SUCCESS) {
-        g_file_info->LastAccessTime = g_current_time;
-        g_file_info->ModificationTime = g_current_time;
-        g_file_info->FileSize = g_log_size;
-        status = g_log_file->SetInfo(g_log_file, (EFI_GUID *) &FI_ID, g_file_info_size, g_file_info);
-        if (status != EFI_SUCCESS) {
-            system_table->BootServices->FreePool(g_file_info);
-            g_file_info = NULL;
-            k_error(system_table, (ErrorStatus) {
-                .error_code = status,
-                .status = SYSTEM_CANNOT_SET_FILE_INFO
-            });
-        }
-    } else {
+    g_file_info->FileSize = g_log_size;
+    EFI_STATUS status = g_log_file->SetInfo(g_log_file, (EFI_GUID *) &FI_ID, g_file_info_size, g_file_info);
+    if (status != EFI_SUCCESS) {
+        system_table->BootServices->FreePool(g_file_info);
+        g_file_info = NULL;
         k_error(system_table, (ErrorStatus) {
             .error_code = status,
-            .status = SYSTEM_CANNOT_GET_TIME
+            .status = SYSTEM_CANNOT_SET_FILE_INFO
         });
     }
 
@@ -288,6 +325,29 @@ void fini_log_file(const EFI_SYSTEM_TABLE *system_table) {
     }
     g_log_file->Close(g_log_file);
     g_log_file = NULL;
+}
+
+static void k_error_no_file(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {
+    if (g_console_log_level < KURO_LOG_LEVEL_ERROR) {
+        return;
+    }
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_RED);
+    system_table->ConOut->OutputString(system_table->ConOut, L"[ERR!]");
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_WHITE);
+    system_table->ConOut->OutputString(system_table->ConOut, L" ");
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) status_to_str(error));
+    system_table->ConOut->SetAttribute(system_table->ConOut, EFI_LIGHTGRAY);
+    if (error.error_code == 0) {
+        system_table->ConOut->OutputString(system_table->ConOut, L"\n\r");
+        return;
+    }
+    system_table->ConOut->OutputString(system_table->ConOut, L"\n\r       EFI Error code: ");
+    CHAR16 hex_code[HEX_BUFFER_SIZE];
+    to_hex(error.error_code, hex_code);
+    system_table->ConOut->OutputString(system_table->ConOut, hex_code);
+    system_table->ConOut->OutputString(system_table->ConOut, L" (");
+    system_table->ConOut->OutputString(system_table->ConOut, (CHAR16 *) efi_status_to_str(error.error_code));
+    system_table->ConOut->OutputString(system_table->ConOut, L")\n\r");
 }
 
 static void k_warning_no_file(const EFI_SYSTEM_TABLE *system_table, CHAR16 *message) {
@@ -327,16 +387,34 @@ static void print(const EFI_SYSTEM_TABLE *system_table, CHAR16 *string, KuroLogL
     if (status != EFI_SUCCESS) {
         g_temp_message_size = 0;
         g_temp_message = NULL;
+        k_error_no_file(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_OUT_OF_MEMORY
+        });
         k_warning_no_file(system_table, L"Failed to allocate memory for log file!\r\n");
         return;
     }
 
     file_print:
+    status = g_log_file->Flush(g_log_file);
+    if (status != EFI_SUCCESS) {
+        k_error_no_file(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_FLUSH_FILE
+        });
+        k_warning_no_file(system_table, L"Failed to flush log file!\r\n");
+    }
     to_char(string, g_temp_message, string_len + 1);
     clean_newline(g_temp_message, string_len + 1);
     size_t new_len = strlen(g_temp_message);
+    status = g_log_file->Write(g_log_file, &new_len, g_temp_message);
+    if (status != EFI_SUCCESS) {
+        k_error_no_file(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = LOG_WRITE_FAILED
+        });
+    }
     g_log_size += new_len;
-    g_log_file->Write(g_log_file, &new_len, g_temp_message);
 }
 
 void k_error(const EFI_SYSTEM_TABLE *system_table, ErrorStatus error) {

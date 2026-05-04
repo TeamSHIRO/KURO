@@ -1,8 +1,9 @@
 #ifndef STRING_H
 #define STRING_H
 
-#include <efi.h>
 #include <stddef.h>
+
+#include "efi.h"
 
 #define HEX_BUFFER_SIZE 19
 #define STR_BUFFER_SIZE 21

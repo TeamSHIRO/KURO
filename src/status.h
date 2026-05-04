@@ -4,24 +4,36 @@
 #include "efi.h"
 #include "kuro_conf.h"
 
-#define INITIAL_STR_HEAP 32
+#define INITIAL_STR_HEAP 64
 
-enum KuroStatus {
+typedef enum {
     WATCHDOG_DISABLE_FAILED,
 
     CONFIG_LOAD_FAILED,
     INVALID_STRING_CONFIG,
 
     LOG_INIT_FAILED,
+    LOG_WRITE_FAILED,
     INIT_STR_HEAP_FAILED,
 
-    ELF_FILE_NOT_FOUND,
-    ELF_UNREADABLE,
-    ELF_FAILED_SET_POS,
+    FILE_NOT_FOUND,
+    FILE_UNREADABLE,
+    FILE_FAILED_SET_POS,
+
     ELF_INVALID_FILE_SIZE,
     ELF_INVALID_HEADER,
+    ELF_UNSUPPORTED_ARCH,
+    ELF_UNSUPPORTED_ENDIAN,
+    ELF_UNSUPPORTED_VERSION,
+    ELF_NOT_64_BIT,
+    ELF_NOT_DYN,
     ELF_INVALID_PROGRAM_HEADER,
     ELF_INVALID_MEMORY_SIZE,
+    ELF_OUT_OF_BOUND,
+    ELF_INVALID_DYN_SECTION,
+    ELF_INVALID_ENTRY,
+    ELF_INVALID_RELOCATION,
+    ELF_INVALID_SYMBOL,
 
     LOAD_FAILED,
     FOOTER_UNREADABLE,
@@ -40,14 +52,15 @@ enum KuroStatus {
     SYSTEM_CANNOT_GET_FILE_INFO,
     SYSTEM_CANNOT_SET_FILE_INFO,
     SYSTEM_CANNOT_GET_TIME,
+    SYSTEM_CANNOT_FLUSH_FILE,
 
     UNKNOWN,
     SUCCESS
-};
+} KuroStatus;
 
 typedef struct {
     EFI_STATUS error_code; // This one tells us what error code is it exactly
-    enum KuroStatus status;
+    KuroStatus status;
 } ErrorStatus;
 
 const CHAR16 *status_to_str(ErrorStatus status);

@@ -4,6 +4,7 @@
 
 #include "efi.h"
 #include "efi_helper.h"
+#include "status.h"
 #include "protocol/efi-lip.h"
 #include "protocol/efi-sfsp.h"
 
@@ -71,21 +72,40 @@ EFI_STATUS get_file_size(const EFI_SYSTEM_TABLE *system_table, EFI_FILE_PROTOCOL
     EFI_STATUS status = file_protocol->GetInfo(file_protocol, (EFI_GUID *) &FI_ID,
                                                &file_info_size, NULL);
     if (status != EFI_ERR(EFI_BUFFER_TOO_SMALL)) {
-        return status;
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_FILE_INFO
+        });
+        goto fallback;
     }
 
     status = system_table->BootServices->AllocatePool(EfiLoaderData, file_info_size, (void **) &file_info);
     if (status != EFI_SUCCESS) {
-        return status;
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_OUT_OF_MEMORY
+        });
+        goto fallback;
     }
     status = file_protocol->GetInfo(file_protocol, (EFI_GUID *) &FI_ID, &file_info_size,
                                     file_info);
     if (status != EFI_SUCCESS) {
+        k_error(system_table, (ErrorStatus) {
+            .error_code = status,
+            .status = SYSTEM_CANNOT_GET_FILE_INFO
+        });
         system_table->BootServices->FreePool(file_info);
-        return status;
+        goto fallback;
     }
 
     *output = file_info->FileSize;
     system_table->BootServices->FreePool(file_info);
     return EFI_SUCCESS;
+
+    fallback:
+    status = file_protocol->SetPosition(file_protocol, 0xffffffffffffffff);
+    if (status != EFI_SUCCESS) {
+        return status;
+    }
+    return file_protocol->GetPosition(file_protocol, output);
 }

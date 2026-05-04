@@ -20,7 +20,7 @@ LOCAL_OVMF_CODE_PATH="ignore_automated/ovmf/${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd"
 REMOTE_OVMF_CODE_PATH="/usr/share/edk2/${OMVF_SUBDIR}/${OVMF_PREFIX}CODE${OVMF_SUFFIX}.fd"
 LOCAL_OVMF_VAR_PATH="ignore_automated/ovmf/${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd"
 REMOTE_OVMF_VAR_PATH="/usr/share/edk2/${OMVF_SUBDIR}/${OVMF_PREFIX}VARS${OVMF_SUFFIX}.fd"
-BOOT_DIRECTORY="ignore_automated/esp/EFI/BOOT"
+BOOT_DIRECTORY="ignore_automated/conf/esp/EFI/BOOT"
 BUILD_FILE_NAME="KUROX64"
 
 # Foreground colors
@@ -55,8 +55,8 @@ A_UNDERLINE='\033[4m'
 echo -e "${B_BLUE} INFO ${A_RESET} Starting build process..."
 
 cd "$PROJECT_ROOT" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DKURO_NO_CONFIG=ON
-cmake --build build
+cmake -S . -B ignore_build_conf -DCMAKE_BUILD_TYPE=Debug -DKURO_NO_CONFIG=OFF
+cmake --build ignore_build_conf
 mkdir -p ignore_automated
 
 echo -e "${B_GREEN}  OK  ${A_RESET} Build successful. Preparing boot directory..."
@@ -70,7 +70,8 @@ else
     cp build/$BUILD_FILE_NAME.EFI $BOOT_DIRECTORY/BOOTX64.EFI
 fi
 
-cp tests/kernel $BOOT_DIRECTORY/../../kernel
+cp tests/kernel $BOOT_DIRECTORY/../../not_kernel
+kuro-conf edit -c tests/kuro.conf $BOOT_DIRECTORY/BOOTX64.EFI
 
 cd "$PROJECT_ROOT" || error_exit "${B_RED} ERR! ${A_RESET} Failed to change directory"
 

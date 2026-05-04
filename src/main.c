@@ -2,12 +2,12 @@
 #include "boot.h"
 #include "conf.h"
 
-ErrorStatus main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
+static ErrorStatus main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
     system_table->ConOut->ClearScreen(system_table->ConOut);
 
     KuroConfigInternal config;
     ErrorStatus config_status = get_config(system_table, image_handle, &config);
-    if (config_status.error_code != EFI_SUCCESS) {
+    if (config_status.status != SUCCESS) {
         return config_status;
     }
     k_br(system_table, KURO_LOG_LEVEL_DEBUG);
