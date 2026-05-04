@@ -50,15 +50,19 @@ Prefer `kabab-case` for branch names.
 ### Contributing in a Nutshell
 
 Here are the steps to contribute to the project:
-1. If you didn't have write access to the repository, fork the repository to your own account.
-2. Create a new branch from `develop` called `feature/<feature-name>`.
-3. Implement your feature in your branch.
-4. Open a Pull Request (PR) back into `develop`.
-5. The maintainer will review your changes and provide feedback.
+
+1. Find the feature or bug you want to work on in the [issues](https://github.com/TeamSHIRO/KURO/issues).
+2. Comment on the issue to let others know that you are working on it.
+3. Wait for the maintainer to assign you the issue.
+4. If you didn't have write access to the repository, fork the repository to your own account.
+5. Create a new branch from `develop` called `feature/<feature-name>`.
+6. Implement your feature in your branch.
+7. Open a Pull Request (PR) back into `develop`.
+8. The maintainer will review your changes and provide feedback.
 
 We use the GitFlow to manage our branches.
 
-The relevant branches are:
+The most common branches are:
 
 - The `main` branch is the latest stable release.
 - The `develop` branch is the latest development branch.
