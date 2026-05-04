@@ -4,6 +4,7 @@ about: Suggest an idea for this project
 title: "[FEATURE] Quick summary of the feature"
 labels: enhancement
 assignees: ''
+type: Feature
 
 ---
 
@@ -16,3 +17,9 @@ A clear and concise description of what the problem is. Ex. I'm always frustrate
 **Describe the feature**
 
 A clear and concise description of what you want to happen.
+
+---
+
+**Implementation**
+
+How should it be implemented, if applicable.
