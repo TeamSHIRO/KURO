@@ -19,7 +19,7 @@ typedef enum {
     IS_CMD_ARG
 } IsPath;
 
-static size_t len_n_verify(const char *str, _Bool *is_valid, IsPath is_path) {
+static size_t len_n_verify(const unsigned char *str, _Bool *is_valid, IsPath is_path) {
     size_t i = 0;
     *is_valid = 1;
 

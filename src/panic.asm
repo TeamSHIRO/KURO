@@ -1,5 +1,7 @@
 section .text
     global panic
 panic:
+    cli
+.loop:
     hlt
-    jmp $ - 1
+    jmp .loop

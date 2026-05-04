@@ -60,18 +60,16 @@ static ErrorStatus conf_to_wchar(const EFI_SYSTEM_TABLE *system_table, const Kur
     return SUCCESS;
 }
 
-static ErrorStatus load_file(const EFI_SYSTEM_TABLE *system_table, void* file, size_t file_size, EFI_FILE_PROTOCOL *file_prot) {
-    file = NULL;
-    EFI_STATUS status = system_table->BootServices->AllocatePages(AllocateAnyPages, EfiLoaderData, TO_PAGES(file_size), (EFI_PHYSICAL_ADDRESS*) &file);
+static ErrorStatus load_file(const EFI_SYSTEM_TABLE *system_table, const void** file, size_t file_size, EFI_FILE_PROTOCOL *file_prot) {
+    *file = NULL;
+    EFI_STATUS status = system_table->BootServices->AllocatePages(AllocateAnyPages, EfiLoaderData, TO_PAGES(file_size), (EFI_PHYSICAL_ADDRESS*) file);
     ErrorStatus error = SUCCESS;
     if (status != EFI_SUCCESS) {
-        file_prot->Close(file);
         error = ERROR(status, SYSTEM_OUT_OF_MEMORY);
         goto cleanup;
     }
     status = file_prot->Read(file_prot, &file_size, file);
     if (status != EFI_SUCCESS) {
-        file_prot->Close(file_prot);
         error = ERROR(status, LOAD_FAILED);
     }
 
@@ -79,7 +77,7 @@ static ErrorStatus load_file(const EFI_SYSTEM_TABLE *system_table, void* file, s
     if (file_prot != NULL) {
         file_prot->Close(file_prot);
     }
-    if (file != NULL && error.status != K_SUCCESS) {
+    if (*file != NULL && error.status != K_SUCCESS) {
         system_table->BootServices->FreePages((EFI_PHYSICAL_ADDRESS) file, TO_PAGES(file_size));
     }
     return error;
@@ -143,7 +141,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         goto cleanup;
     }
 
-    error = load_file(system_table, exec, exec_file_size, exec_file);
+    error = load_file(system_table, &exec, exec_file_size, exec_file);
     if (error.status != K_SUCCESS) {
         goto cleanup;
     }
@@ -187,7 +185,7 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         goto done_module;
     }
 
-    error = load_file(system_table, mod, mod_file_size, mod_file);
+    error = load_file(system_table, &mod, mod_file_size, mod_file);
     if (error.status != K_SUCCESS) {
         goto done_module;
     }
@@ -245,12 +243,6 @@ ErrorStatus boot_elf(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_tab
         }
         if (mod != NULL) {
             system_table->BootServices->FreePages((EFI_PHYSICAL_ADDRESS) mod, TO_PAGES(mod_file_size));
-        }
-        if (exec_file != NULL) {
-            exec_file->Close(exec_file);
-        }
-        if (mod_file != NULL) {
-            mod_file->Close(mod_file);
         }
     }
     return error;
