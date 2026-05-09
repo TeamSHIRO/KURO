@@ -1,23 +1,21 @@
 #include <efi.h>
 #include "boot.h"
 #include "conf.h"
+#include "helper.h"
 
 static ErrorStatus main(EFI_HANDLE image_handle, const EFI_SYSTEM_TABLE *system_table) {
     system_table->ConOut->ClearScreen(system_table->ConOut);
 
     KuroConfigInternal config;
-    ErrorStatus config_status = get_config(system_table, image_handle, &config);
-    if (config_status.status != SUCCESS) {
-        return config_status;
+    const ErrorStatus CONFIG_STATUS = get_config(system_table, image_handle, &config);
+    if (CONFIG_STATUS.status != K_SUCCESS) {
+        return CONFIG_STATUS;
     }
     k_br(system_table, KURO_LOG_LEVEL_DEBUG);
 
     const EFI_STATUS DISABLE_WD = system_table->BootServices->SetWatchdogTimer(0, 0xFFFFF, 0, 0);
     if (DISABLE_WD != EFI_SUCCESS) {
-        return (ErrorStatus) {
-            .error_code = DISABLE_WD,
-            .status = WATCHDOG_DISABLE_FAILED
-        };
+        return ERROR(DISABLE_WD, WATCHDOG_DISABLE_FAILED);
     }
 
     return boot_elf(image_handle, system_table, &config);

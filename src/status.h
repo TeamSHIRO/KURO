@@ -16,7 +16,6 @@ typedef enum {
     LOG_WRITE_FAILED,
     INIT_STR_HEAP_FAILED,
 
-    FILE_NOT_FOUND,
     FILE_UNREADABLE,
     FILE_FAILED_SET_POS,
 
@@ -54,8 +53,8 @@ typedef enum {
     SYSTEM_CANNOT_GET_TIME,
     SYSTEM_CANNOT_FLUSH_FILE,
 
-    UNKNOWN,
-    SUCCESS
+    K_UNKNOWN,
+    K_SUCCESS
 } KuroStatus;
 
 typedef struct {
